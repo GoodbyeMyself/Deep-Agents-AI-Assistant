@@ -1,0 +1,33 @@
+{
+  "name": "@assistant/agent-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx src/main.ts",
+    "test": "vitest run src",
+    "smoke:real": "tsx src/main.ts",
+    "smoke:deepseek": "node --env-file=../../.env --import tsx src/main.ts",
+    "serve:m2": "node --env-file=../../.env --import tsx src/m2-server-main.ts",
+    "serve:m3-demo": "node --import tsx src/m3-demo-server-main.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@assistant/agent-runtime": "workspace:*",
+    "@assistant/capability-contracts": "workspace:*",
+    "@assistant/context": "workspace:*",
+    "@assistant/contracts": "workspace:*",
+    "@assistant/evidence": "workspace:*",
+    "@assistant/policy": "workspace:*",
+    "@assistant/plugin-runtime": "workspace:*",
+    "@langchain/core": "catalog:",
+    "@langchain/langgraph": "catalog:",
+    "@langchain/langgraph-checkpoint": "catalog:",
+    "@langchain/openai": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "tsx": "4.21.0"
+  }
+}

@@ -1,0 +1,210 @@
+:root {
+  --assistant-ink: #102a2c;
+  --assistant-muted: #667674;
+  --assistant-paper: #fbfaf6;
+  --assistant-line: #dfe6e2;
+  --assistant-teal: #087f76;
+}
+
+.assistant-workspace {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: calc(100vh - 72px);
+  background: var(--assistant-paper);
+  border: 1px solid var(--assistant-line);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 50px rgb(15 42 44 / 8%);
+}
+
+.assistant-conversations {
+  padding: 22px 14px;
+  background: var(--assistant-ink);
+  color: #eef7f3;
+}
+
+.assistant-conversations .ant-conversations-item,
+.assistant-conversations .ant-conversations-label {
+  color: #d9e9e5;
+}
+.assistant-conversations .ant-conversations-item-active {
+  background: #ffffff18 !important;
+}
+
+.assistant-sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 16px;
+  font:
+    600 13px/1.2 ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.assistant-sidebar-heading .ant-btn {
+  color: #fff;
+}
+
+.assistant-chat {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 72px);
+}
+.assistant-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--assistant-line);
+  background: rgb(251 250 246 / 94%);
+}
+.assistant-chat-header h1 {
+  margin: 3px 0 0;
+  color: var(--assistant-ink);
+  font:
+    650 27px/1.2 Georgia,
+    serif;
+}
+.assistant-eyebrow {
+  color: var(--assistant-teal);
+  font:
+    700 10px/1.4 ui-monospace,
+    monospace;
+  letter-spacing: 0.14em;
+}
+.assistant-context-chip {
+  display: grid;
+  gap: 2px;
+  padding: 9px 14px;
+  border: 1px solid #a9d7d1;
+  border-radius: 10px;
+  background: #effaf7;
+}
+.assistant-context-chip span {
+  color: var(--assistant-muted);
+  font-size: 11px;
+}
+.assistant-context-chip strong {
+  color: var(--assistant-ink);
+}
+
+.assistant-chat-scroll {
+  flex: 1;
+  overflow: auto;
+  padding: 24px clamp(18px, 4vw, 54px);
+}
+.assistant-message-list {
+  min-height: 100%;
+}
+.assistant-message-content {
+  width: min(100%, 720px);
+}
+.assistant-safe-content p {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+.assistant-safe-content pre,
+.assistant-view-card,
+.assistant-line-chart {
+  border: 1px solid var(--assistant-line);
+  border-radius: 12px;
+  background: #fff;
+}
+.assistant-safe-content pre {
+  overflow: auto;
+  padding: 14px;
+}
+.assistant-line-chart {
+  margin: 0;
+  padding: 16px;
+  color: var(--assistant-teal);
+}
+.assistant-line-chart figcaption {
+  margin-bottom: 10px;
+  color: var(--assistant-ink);
+  font-weight: 650;
+}
+.assistant-line-chart svg {
+  width: 100%;
+  height: 190px;
+  border-bottom: 1px solid var(--assistant-line);
+}
+.assistant-reference-list {
+  margin: 0;
+  padding-left: 20px;
+}
+.assistant-execution {
+  width: min(100%, 720px);
+  margin: 20px 0 8px 48px;
+  padding: 16px;
+  border-left: 3px solid #75bdb5;
+  background: #f2f7f4;
+}
+.assistant-private-note {
+  color: var(--assistant-muted);
+  font-size: 11px;
+}
+.assistant-composer {
+  padding: 16px clamp(18px, 4vw, 54px) 20px;
+  border-top: 1px solid var(--assistant-line);
+  background: #fff;
+}
+.assistant-composer > p {
+  margin: 7px 4px 0;
+  color: var(--assistant-muted);
+  font-size: 11px;
+  text-align: center;
+}
+.assistant-empty {
+  margin-top: 15vh;
+}
+.assistant-live-region {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 760px) {
+  .assistant-workspace {
+    grid-template-columns: 1fr;
+    border-radius: 0;
+  }
+  .assistant-conversations {
+    display: none;
+  }
+  .assistant-chat {
+    height: calc(100vh - 58px);
+  }
+  .assistant-chat-header {
+    padding: 16px;
+  }
+  .assistant-chat-header h1 {
+    font-size: 22px;
+  }
+  .assistant-context-chip {
+    max-width: 42%;
+  }
+  .assistant-chat-scroll {
+    padding: 18px 12px;
+  }
+  .assistant-composer {
+    padding: 12px;
+  }
+  .assistant-execution {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}

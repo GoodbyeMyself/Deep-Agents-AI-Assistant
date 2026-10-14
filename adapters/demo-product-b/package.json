@@ -1,0 +1,24 @@
+{
+  "name": "@assistant/demo-product-b",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@assistant/capability-contracts": "workspace:*",
+    "@assistant/plugin-sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "@assistant/capability-contract-testkit": "workspace:*"
+  }
+}

@@ -1,0 +1,150 @@
+html,
+body,
+#root {
+  min-width: 320px;
+  min-height: 100%;
+  margin: 0;
+}
+body {
+  background: #edf2ef;
+  color: #102a2c;
+  font-family: Inter, "Segoe UI", sans-serif;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+:focus-visible {
+  outline: 3px solid #f0a66e;
+  outline-offset: 2px;
+}
+.skip-link {
+  position: fixed;
+  z-index: 999;
+  top: 8px;
+  left: 8px;
+  transform: translateY(-150%);
+  padding: 8px 12px;
+  background: #fff;
+  color: #102a2c;
+}
+.skip-link:focus {
+  transform: none;
+}
+.web-shell {
+  min-height: 100vh;
+}
+.web-topbar {
+  height: 58px;
+  display: grid;
+  grid-template-columns: 260px 1fr auto;
+  align-items: center;
+  gap: 20px;
+  padding: 0 22px;
+  background: #fff;
+  border-bottom: 1px solid #dfe6e2;
+}
+.web-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: #102a2c;
+  cursor: pointer;
+}
+.web-brand span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: #102a2c;
+  color: #fff;
+  font:
+    700 12px ui-monospace,
+    monospace;
+}
+.web-topbar nav {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+.identity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #667674;
+  font-size: 12px;
+}
+.identity-control .ant-select {
+  width: 136px;
+}
+.web-assistant-page {
+  padding: 7px;
+}
+.web-page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+.web-page-heading {
+  margin-bottom: 28px;
+}
+.web-page-heading span {
+  color: #087f76;
+  font:
+    700 11px ui-monospace,
+    monospace;
+  letter-spacing: 0.13em;
+}
+.web-page-heading h1 {
+  margin: 4px 0 8px;
+  font:
+    650 38px Georgia,
+    serif;
+}
+.web-page-heading p {
+  margin: 0;
+  color: #667674;
+}
+.status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.status-grid .ant-card:last-child {
+  grid-column: 1 / -1;
+}
+@media (max-width: 760px) {
+  .web-topbar {
+    height: 58px;
+    grid-template-columns: auto 1fr;
+    padding: 0 10px;
+  }
+  .web-brand strong,
+  .identity-control > span {
+    display: none;
+  }
+  .web-topbar nav {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  .web-topbar nav .ant-btn span:not(.anticon) {
+    display: none;
+  }
+  .identity-control .ant-select {
+    width: 112px;
+  }
+  .web-assistant-page {
+    padding: 0;
+  }
+  .status-grid {
+    grid-template-columns: 1fr;
+  }
+  .status-grid .ant-card:last-child {
+    grid-column: auto;
+  }
+}

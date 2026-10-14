@@ -14,7 +14,6 @@ dist-ssr
 coverage
 *.local
 package-lock.json
-pnpm-workspace.yaml
 
 cache
 .temp
@@ -31,3 +30,7 @@ cache
 
 *.tsbuildinfo
 auto-imports.d.ts
+
+.env
+.env.*
+!.env.example

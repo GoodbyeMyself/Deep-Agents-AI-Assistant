@@ -1,0 +1,64 @@
+{
+  "capturedWith": {
+    "deepagents": "1.14.2",
+    "langchain": "1.5.10",
+    "langgraph": "1.4.10",
+    "model": "@langchain/core fakeModel"
+  },
+  "sanitization": "Run IDs and UUID namespace suffixes are replaced with stable placeholders; message content contains no credentials or business data.",
+  "rawUpdates": {
+    "call": "agent.stream(input, { streamMode: 'updates', subgraphs: true })",
+    "itemShape": "[namespace: string[], chunk: Record<nodeName, stateUpdate>]",
+    "observedSequence": [
+      { "namespace": [], "nodes": ["FilesystemMiddleware.before_agent"] },
+      { "namespace": [], "nodes": ["patchToolCallsMiddleware.before_agent"] },
+      { "namespace": [], "nodes": ["model_request"] },
+      { "namespace": ["tools:<subagent-run-id>"], "nodes": ["FilesystemMiddleware.before_agent"] },
+      {
+        "namespace": ["tools:<subagent-run-id>"],
+        "nodes": ["patchToolCallsMiddleware.before_agent"]
+      },
+      { "namespace": ["tools:<subagent-run-id>"], "nodes": ["model_request"] },
+      { "namespace": ["tools:<subagent-run-id>"], "nodes": ["tools"] },
+      { "namespace": ["tools:<subagent-run-id>"], "nodes": ["model_request"] },
+      { "namespace": [], "nodes": ["tools"] },
+      { "namespace": [], "nodes": ["model_request"] }
+    ]
+  },
+  "rawMessages": {
+    "call": "agent.stream(input, { streamMode: 'messages', subgraphs: true })",
+    "itemShape": "[namespace: string[], chunk: [BaseMessageChunk, metadata]]",
+    "observedSequence": [
+      {
+        "namespace": ["model_request:<run-id>"],
+        "messageType": "ai",
+        "toolNames": ["task"]
+      },
+      {
+        "namespace": ["tools:<subagent-run-id>", "tools:<tool-run-id>"],
+        "messageType": "tool",
+        "toolNames": ["read_only_probe"]
+      },
+      {
+        "namespace": ["tools:<subagent-run-id>", "model_request:<run-id>"],
+        "messageType": "ai",
+        "toolNames": []
+      },
+      {
+        "namespace": ["model_request:<run-id>"],
+        "messageType": "ai",
+        "toolNames": []
+      }
+    ]
+  },
+  "streamEventsV3": {
+    "call": "agent.streamEvents(input, { version: 'v3' })",
+    "projections": {
+      "messages": "AsyncIterable of AI message lifecycles; observed count 2",
+      "toolCalls": "AsyncIterable of tool-call lifecycles; observed root call name 'task'",
+      "subagents": "AsyncIterable of SubagentRunStream; observed count 1",
+      "output": "Promise of final graph state; observed keys include files and messages"
+    },
+    "failureBehavior": "An exception thrown by the custom Tool rejects invoke/output; it is not converted to a ToolMessage with status=error by default."
+  }
+}

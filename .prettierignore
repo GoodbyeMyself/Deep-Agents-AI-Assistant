@@ -1,0 +1,10 @@
+node_modules
+dist
+dist-types
+coverage
+test-results
+deepagentsjs
+pnpm-lock.yaml
+AGENTS.md
+README.md
+docs/architecture-v2.0
