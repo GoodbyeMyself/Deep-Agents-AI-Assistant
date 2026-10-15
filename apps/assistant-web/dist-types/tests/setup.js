@@ -34,9 +34,8 @@ function terminate(child) {
 export default async function setup() {
     const agentServer = spawn(process.execPath, [
         "--import",
-        pathToFileURL(resolve(repositoryRoot, "apps/agent-server/node_modules/tsx/dist/loader.mjs"))
-            .href,
-        resolve(repositoryRoot, "apps/agent-server/src/m3-demo-server-main.ts"),
+        pathToFileURL(resolve(repositoryRoot, "demo/server/node_modules/tsx/dist/loader.mjs")).href,
+        resolve(repositoryRoot, "demo/server/src/m3-demo-server-main.ts"),
     ], { cwd: repositoryRoot, windowsHide: true, stdio: "ignore" });
     const webServer = spawn(process.execPath, [resolve(appRoot, "node_modules/vite/bin/vite.js"), "--host", "127.0.0.1"], { cwd: appRoot, windowsHide: true, stdio: "ignore" });
     try {

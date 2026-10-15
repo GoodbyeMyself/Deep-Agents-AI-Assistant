@@ -10,7 +10,6 @@
     "smoke:real": "tsx src/main.ts",
     "smoke:deepseek": "node --env-file=../../.env --import tsx src/main.ts",
     "serve:m2": "node --env-file=../../.env --import tsx src/m2-server-main.ts",
-    "serve:m3-demo": "node --import tsx src/m3-demo-server-main.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

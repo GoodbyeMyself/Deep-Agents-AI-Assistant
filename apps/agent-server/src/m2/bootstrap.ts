@@ -5,6 +5,7 @@ import { MemorySaver } from "@langchain/langgraph";
 import { createAgentFromInstalledPlugins } from "../m1-bootstrap.js";
 import { createApiHandler } from "./api.js";
 import { ContextService, MockContextAuthorizer } from "./context-service.js";
+import { EmbedTicketService } from "./embed-ticket.js";
 import { MockIdentityProvider } from "./identity.js";
 import { AgentRunner, type StreamingAgent } from "./runner.js";
 import { AgentService } from "./service.js";
@@ -54,6 +55,7 @@ export async function createM2Application(options: {
     })),
   });
   const identity = new MockIdentityProvider();
-  const handler = createApiHandler({ identity, service });
-  return { ...boot, checkpointer, handler, identity, runner, service, store };
+  const embedTickets = new EmbedTicketService(identity);
+  const handler = createApiHandler({ identity, service, embedTickets });
+  return { ...boot, checkpointer, embedTickets, handler, identity, runner, service, store };
 }

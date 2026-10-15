@@ -130,6 +130,49 @@ importers:
         specifier: 4.21.0
         version: 4.21.0
 
+  apps/assistant-embed:
+    dependencies:
+      '@ant-design/x':
+        specifier: 2.9.0
+        version: 2.9.0(antd@6.6.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@assistant/assistant-sdk':
+        specifier: workspace:*
+        version: link:../../packages/assistant-sdk
+      '@assistant/assistant-transport':
+        specifier: workspace:*
+        version: link:../../packages/assistant-transport
+      '@assistant/assistant-ui':
+        specifier: workspace:*
+        version: link:../../packages/assistant-ui
+      '@assistant/context':
+        specifier: workspace:*
+        version: link:../../core/context
+      '@assistant/iframe-bridge':
+        specifier: workspace:*
+        version: link:../../packages/iframe-bridge
+      antd:
+        specifier: 6.6.6
+        version: 6.6.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: 6.1.2
+        version: 6.1.2(vite@8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1))
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1)
+
   apps/assistant-web:
     dependencies:
       '@ant-design/icons':
@@ -209,6 +252,155 @@ importers:
         specifier: workspace:*
         version: link:../capability
 
+  demo/product-a:
+    dependencies:
+      '@assistant/assistant-sdk':
+        specifier: workspace:*
+        version: link:../../packages/assistant-sdk
+      '@assistant/assistant-ui':
+        specifier: workspace:*
+        version: link:../../packages/assistant-ui
+      '@assistant/demo-product-shell':
+        specifier: workspace:*
+        version: link:../product-shell
+      antd:
+        specifier: 6.6.6
+        version: 6.6.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: 6.1.2
+        version: 6.1.2(vite@8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1))
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1)
+
+  demo/product-b:
+    dependencies:
+      '@assistant/assistant-sdk':
+        specifier: workspace:*
+        version: link:../../packages/assistant-sdk
+      '@assistant/assistant-ui':
+        specifier: workspace:*
+        version: link:../../packages/assistant-ui
+      '@assistant/demo-product-shell':
+        specifier: workspace:*
+        version: link:../product-shell
+      antd:
+        specifier: 6.6.6
+        version: 6.6.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: 6.1.2
+        version: 6.1.2(vite@8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1))
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1)
+
+  demo/product-shell:
+    dependencies:
+      '@assistant/assistant-sdk':
+        specifier: workspace:*
+        version: link:../../packages/assistant-sdk
+      '@assistant/assistant-ui':
+        specifier: workspace:*
+        version: link:../../packages/assistant-ui
+      '@assistant/context':
+        specifier: workspace:*
+        version: link:../../core/context
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+    devDependencies:
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+
+  demo/sdk-host:
+    dependencies:
+      '@assistant/assistant-sdk':
+        specifier: workspace:*
+        version: link:../../packages/assistant-sdk
+      '@assistant/assistant-transport':
+        specifier: workspace:*
+        version: link:../../packages/assistant-transport
+      '@assistant/assistant-ui':
+        specifier: workspace:*
+        version: link:../../packages/assistant-ui
+      '@assistant/context':
+        specifier: workspace:*
+        version: link:../../core/context
+      '@assistant/iframe-bridge':
+        specifier: workspace:*
+        version: link:../../packages/iframe-bridge
+      antd:
+        specifier: 6.6.6
+        version: 6.6.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@playwright/test':
+        specifier: 1.64.0
+        version: 1.64.0
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      '@vitejs/plugin-react':
+        specifier: 6.1.2
+        version: 6.1.2(vite@8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1))
+      vite:
+        specifier: 8.3.4
+        version: 8.3.4(@types/node@26.1.0)(esbuild@0.27.7)(tsx@4.21.0)(yaml@2.9.1)
+
+  demo/server:
+    dependencies:
+      '@langchain/core':
+        specifier: 'catalog:'
+        version: 1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6))
+      '@langchain/openai':
+        specifier: 'catalog:'
+        version: 1.6.2(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))(undici@8.11.2)
+    devDependencies:
+      tsx:
+        specifier: 4.21.0
+        version: 4.21.0
+
   packages/agent-runtime:
     dependencies:
       '@assistant/capability-contracts':
@@ -236,6 +428,40 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
 
+  packages/assistant-sdk:
+    dependencies:
+      '@assistant/assistant-transport':
+        specifier: workspace:*
+        version: link:../assistant-transport
+      '@assistant/assistant-ui':
+        specifier: workspace:*
+        version: link:../assistant-ui
+      '@assistant/context':
+        specifier: workspace:*
+        version: link:../../core/context
+      antd:
+        specifier: 6.6.6
+        version: 6.6.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      react:
+        specifier: 19.3.0
+        version: 19.3.0
+      react-dom:
+        specifier: 19.3.0
+        version: 19.3.0(react@19.3.0)
+    devDependencies:
+      '@testing-library/react':
+        specifier: 16.3.3
+        version: 16.3.3(@testing-library/dom@10.4.2)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@types/react':
+        specifier: 19.3.0
+        version: 19.3.0
+      '@types/react-dom':
+        specifier: 19.3.0
+        version: 19.3.0(@types/react@19.3.0)
+      jsdom:
+        specifier: 30.1.2
+        version: 30.1.2
+
   packages/assistant-transport:
     dependencies:
       '@assistant/contracts':
@@ -256,6 +482,9 @@ importers:
       '@assistant/assistant-transport':
         specifier: workspace:*
         version: link:../assistant-transport
+      '@assistant/context':
+        specifier: workspace:*
+        version: link:../../core/context
       '@assistant/contracts':
         specifier: workspace:*
         version: link:../contracts
@@ -287,6 +516,15 @@ importers:
 
   packages/contracts:
     dependencies:
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
+
+  packages/iframe-bridge:
+    dependencies:
+      '@assistant/context':
+        specifier: workspace:*
+        version: link:../../core/context
       zod:
         specifier: 4.3.6
         version: 4.3.6

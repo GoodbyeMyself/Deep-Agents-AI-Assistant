@@ -96,10 +96,11 @@ export class AssistantApiTransport {
 
   createContextSnapshot(
     context: JsonObject,
+    mode: "assistant" | "standalone" = "standalone",
   ): Promise<{ id: string; version: string; capturedAt: string }> {
     return this.#request("/context/snapshots", {
       method: "POST",
-      headers: { "x-assistant-mode": "standalone" },
+      headers: { "x-assistant-mode": mode },
       body: JSON.stringify(context),
     });
   }
@@ -136,6 +137,30 @@ export class AssistantApiTransport {
 
   listCapabilities(): Promise<{ items: JsonObject[] }> {
     return this.#request("/capabilities");
+  }
+
+  createEmbedTicket(targetOrigin: string): Promise<{ ticket: string; expiresAt: string }> {
+    return this.#request("/embed/tickets", {
+      method: "POST",
+      body: JSON.stringify({ targetOrigin }),
+    });
+  }
+
+  async exchangeEmbedTicket(
+    ticket: string,
+    origin?: string,
+  ): Promise<{ accessCredential: string; expiresIn: number }> {
+    const response = await this.#fetch(`${this.#baseUrl}/embed/exchange`, {
+      method: "POST",
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+        ...(origin === undefined ? {} : { origin }),
+      },
+      body: JSON.stringify({ ticket }),
+    });
+    if (!response.ok) await this.#throwResponse(response);
+    return (await response.json()) as { accessCredential: string; expiresIn: number };
   }
 
   async *watchRun(runId: string, signal?: AbortSignal): AsyncGenerator<AssistantEvent> {

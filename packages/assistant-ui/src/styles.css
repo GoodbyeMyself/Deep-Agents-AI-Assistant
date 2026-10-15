@@ -25,7 +25,7 @@
 
 .assistant-conversations .ant-conversations-item,
 .assistant-conversations .ant-conversations-label {
-  color: #d9e9e5;
+  color: #d9e9e5 !important;
 }
 .assistant-conversations .ant-conversations-item-active {
   background: #ffffff18 !important;
@@ -100,6 +100,7 @@
 }
 .assistant-message-content {
   width: min(100%, 720px);
+  color: #274846;
 }
 .assistant-safe-content p {
   margin: 0 0 8px;

@@ -124,12 +124,12 @@ export class CapabilityExecutor {
 
     if (!binding) {
       const result = contract.outputSchema.parse(
-        errorResult("PROVIDER_UNAVAILABLE", "No provider is installed for this capability.", true),
+        errorResult("UNSUPPORTED", "This deployment does not support the requested capability."),
       );
       await this.#audit.write({
         ...baseAudit,
         outcome: "error",
-        errorCode: "PROVIDER_UNAVAILABLE",
+        errorCode: "UNSUPPORTED",
         evidenceRefs: [],
       });
       return result;

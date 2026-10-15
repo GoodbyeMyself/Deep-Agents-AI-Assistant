@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import { AIMessage } from "@langchain/core/messages";
 import { fakeModel } from "@langchain/core/testing";
 
-import { createM2Application } from "./m2/bootstrap.js";
-import { createNodeHttpServer } from "./m2/node-http.js";
+import { createM2Application } from "../../../apps/agent-server/src/m2/bootstrap.js";
+import { createNodeHttpServer } from "../../../apps/agent-server/src/m2/node-http.js";
 
 const pluginId = "demo-product-a";
 const installDir = fileURLToPath(new URL(`../../../adapters/${pluginId}/`, import.meta.url));

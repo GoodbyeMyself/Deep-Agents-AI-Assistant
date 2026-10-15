@@ -34,6 +34,12 @@ const application = await createM2Application({
 });
 const server = createNodeHttpServer(application.handler);
 const port = Number(process.env["SERVER_PORT"] ?? "3000");
-server.listen(port, "127.0.0.1", () =>
-  console.log(`Agent Server listening on http://127.0.0.1:${port}`),
+const host = process.env["SERVER_HOST"] ?? "127.0.0.1";
+if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+  throw new Error("SERVER_PORT must be an integer between 1 and 65535.");
+}
+server.listen(port, host, () =>
+  console.log(
+    `Agent Server listening for deployment '${process.env["DEPLOYMENT_ID"] ?? "local"}' on http://${host}:${port}`,
+  ),
 );

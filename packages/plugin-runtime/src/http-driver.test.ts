@@ -70,4 +70,25 @@ describe("HTTP capability driver", () => {
         }),
     ).toThrow("loopback");
   });
+
+  it("aborts a provider request that exceeds the configured timeout", async () => {
+    const fetchImplementation = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener("abort", () => reject(new Error("Provider timed out.")), {
+            once: true,
+          });
+        }),
+    );
+    const driver = new HttpCapabilityDriver({
+      baseUrl: "https://business.example.test/adapter/",
+      allowedOrigins: new Set(["https://business.example.test"]),
+      timeoutMs: 5,
+      fetchImplementation,
+    });
+
+    await expect(
+      driver.invoke("data_quality.get_trend", "1.0.0", { tableId: "orders" }, context),
+    ).rejects.toBeDefined();
+  });
 });

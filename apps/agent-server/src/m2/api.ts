@@ -2,6 +2,7 @@ import { apiErrorSchema, openApiDocument } from "@assistant/contracts";
 import { randomUUID } from "node:crypto";
 
 import { ServiceError } from "./errors.js";
+import type { EmbedTicketService } from "./embed-ticket.js";
 import type { IdentityProvider } from "./identity.js";
 import type { AgentService } from "./service.js";
 
@@ -54,6 +55,7 @@ export class FixedWindowRateLimiter {
 export function createApiHandler(options: {
   identity: IdentityProvider;
   service: AgentService;
+  embedTickets?: EmbedTicketService;
   rateLimiter?: FixedWindowRateLimiter;
 }) {
   const limiter = options.rateLimiter ?? new FixedWindowRateLimiter();
@@ -65,6 +67,20 @@ export function createApiHandler(options: {
         return json(openApiDocument);
       if (!url.pathname.startsWith("/api/v1/"))
         throw new ServiceError("NOT_FOUND", "Resource not found.", 404);
+      if (url.pathname === "/api/v1/embed/exchange" && request.method === "POST") {
+        if (options.embedTickets === undefined)
+          throw new ServiceError("NOT_FOUND", "Resource not found.", 404);
+        const payload = await body(request);
+        const ticket =
+          typeof payload === "object" && payload !== null && "ticket" in payload
+            ? (payload as { ticket?: unknown }).ticket
+            : undefined;
+        if (typeof ticket !== "string")
+          throw new ServiceError("INVALID_EMBED_TICKET", "Embed ticket is required.", 400);
+        return json(options.embedTickets.exchange(ticket, request.headers.get("origin")), 200, {
+          "cache-control": "no-store",
+        });
+      }
       const principal = await options.identity.authenticate(request.headers.get("authorization"));
       if (!limiter.check(principal.id))
         throw new ServiceError("RATE_LIMITED", "Too many requests.", 429);
@@ -77,6 +93,20 @@ export function createApiHandler(options: {
           { id: snapshot.id, version: snapshot.version, capturedAt: snapshot.capturedAt },
           201,
         );
+      }
+      if (url.pathname === "/api/v1/embed/tickets" && request.method === "POST") {
+        if (options.embedTickets === undefined)
+          throw new ServiceError("NOT_FOUND", "Resource not found.", 404);
+        const payload = await body(request);
+        const targetOrigin =
+          typeof payload === "object" && payload !== null && "targetOrigin" in payload
+            ? (payload as { targetOrigin?: unknown }).targetOrigin
+            : undefined;
+        if (typeof targetOrigin !== "string")
+          throw new ServiceError("INVALID_ORIGIN", "Target origin is required.", 400);
+        return json(options.embedTickets.create(principal, targetOrigin), 201, {
+          "cache-control": "no-store",
+        });
       }
       if (url.pathname === "/api/v1/sessions" && request.method === "POST")
         return json(options.service.createSession(await body(request), principal), 201);

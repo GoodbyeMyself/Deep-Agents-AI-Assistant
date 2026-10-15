@@ -36,9 +36,8 @@ export default async function setup() {
     process.execPath,
     [
       "--import",
-      pathToFileURL(resolve(repositoryRoot, "apps/agent-server/node_modules/tsx/dist/loader.mjs"))
-        .href,
-      resolve(repositoryRoot, "apps/agent-server/src/m3-demo-server-main.ts"),
+      pathToFileURL(resolve(repositoryRoot, "demo/server/node_modules/tsx/dist/loader.mjs")).href,
+      resolve(repositoryRoot, "demo/server/src/m3-demo-server-main.ts"),
     ],
     { cwd: repositoryRoot, windowsHide: true, stdio: "ignore" },
   );

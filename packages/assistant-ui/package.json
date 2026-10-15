@@ -17,6 +17,7 @@
     "@ant-design/icons": "6.1.0",
     "@ant-design/x": "2.9.0",
     "@assistant/assistant-transport": "workspace:*",
+    "@assistant/context": "workspace:*",
     "@assistant/contracts": "workspace:*",
     "antd": "6.6.6",
     "react": "19.3.0",

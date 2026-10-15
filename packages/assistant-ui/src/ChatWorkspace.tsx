@@ -1,4 +1,5 @@
 import type { AssistantApiTransport, MessageDto, SessionDto } from "@assistant/assistant-transport";
+import type { RawHostContext } from "@assistant/context";
 import { PlusOutlined } from "@ant-design/icons";
 import { Conversations } from "@ant-design/x";
 import { Alert, Button, Spin } from "antd";
@@ -28,9 +29,13 @@ const toMessage = (message: MessageDto): ChatMessage => ({
 export function ChatWorkspace({
   transport,
   selectedObject,
+  getContext,
+  mode = "standalone",
 }: {
   transport: AssistantApiTransport;
   selectedObject?: SelectedBusinessObject;
+  getContext?: () => RawHostContext | Promise<RawHostContext>;
+  mode?: "assistant" | "standalone";
 }) {
   const [sessions, setSessions] = useState<SessionDto[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>();
@@ -45,12 +50,12 @@ export function ChatWorkspace({
   }, [transport]);
 
   const createSession = useCallback(async () => {
-    const session = await transport.createSession({ title: "数据质量分析", mode: "standalone" });
+    const session = await transport.createSession({ title: "数据质量分析", mode });
     setSessions((current) => [session, ...current]);
     setActiveSessionId(session.id);
     dispatch({ type: "reset", messages: [] });
     return session.id;
-  }, [transport]);
+  }, [mode, transport]);
 
   useEffect(() => {
     let disposed = false;
@@ -107,11 +112,19 @@ export function ChatWorkspace({
           views: [],
         },
       });
-      const snapshot = await transport.createContextSnapshot({
-        page: { type: "standalone-assistant", route: "/assistant", title: "企业数据助手" },
-        object: { type: selectedObject.type, rawId: selectedObject.id, name: selectedObject.name },
-        business: { domain: "data-governance", module: "quality" },
-      });
+      const capturedContext =
+        getContext === undefined
+          ? {
+              page: { type: "standalone-assistant", route: "/assistant", title: "企业数据助手" },
+              object: {
+                type: selectedObject.type,
+                rawId: selectedObject.id,
+                name: selectedObject.name,
+              },
+              business: { domain: "data-governance", module: "quality" },
+            }
+          : await getContext();
+      const snapshot = await transport.createContextSnapshot(capturedContext, mode);
       const run = await transport.createRun(sessionId, {
         message,
         contextSnapshotId: snapshot.id,

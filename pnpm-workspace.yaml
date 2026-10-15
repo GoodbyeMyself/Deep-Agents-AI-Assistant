@@ -4,6 +4,7 @@ packages:
   - "core/*"
   - "adapters/*"
   - "tests/*"
+  - "demo/*"
 
 catalog:
   "@langchain/core": 1.2.14

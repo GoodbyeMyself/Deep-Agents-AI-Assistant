@@ -43,9 +43,27 @@ export interface IdentityProvider {
 }
 
 export class MockIdentityProvider implements IdentityProvider {
+  readonly #temporary = new Map<string, { principal: VerifiedPrincipal; expiresAt: number }>();
+
+  issueTemporaryCredential(principal: VerifiedPrincipal, ttlMs = 5 * 60_000): string {
+    const token = `embed_${crypto.randomUUID().replaceAll("-", "")}`;
+    this.#temporary.set(token, { principal, expiresAt: Date.now() + ttlMs });
+    return token;
+  }
+
   authenticate(authorization: string | null): Promise<VerifiedPrincipal> {
     const token = authorization?.match(/^Bearer ([A-Za-z0-9._-]+)$/)?.[1];
-    const principal = token === undefined ? undefined : principals.get(token);
+    const temporary = token === undefined ? undefined : this.#temporary.get(token);
+    if (temporary !== undefined && temporary.expiresAt <= Date.now()) {
+      this.#temporary.delete(token!);
+    }
+    const principal =
+      token === undefined
+        ? undefined
+        : (principals.get(token) ??
+          (temporary !== undefined && temporary.expiresAt > Date.now()
+            ? temporary.principal
+            : undefined));
     if (principal === undefined) {
       return Promise.reject(new ServiceError("UNAUTHENTICATED", "Authentication required.", 401));
     }

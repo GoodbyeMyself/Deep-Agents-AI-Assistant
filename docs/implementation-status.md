@@ -1,6 +1,6 @@
 # 实施状态
 
-更新日期：2026-10-14
+更新日期：2026-10-15
 
 ## M0：工程初始化与框架验证
 
@@ -74,3 +74,64 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
   LangGraph raw chunk，未进入 M4 React/JS/iframe SDK。
 - Playwright 已通过真实浏览器验证模拟产品 A 的质量查询、SSE 结果、图表、证据、管理员
   隔离和窄屏主路径。服务端与业务数据仍是 M2 Mock/内存边界，不冒充生产集成。
+
+## M4：嵌入式助手与多宿主 SDK
+
+状态：完成并通过退出门禁，详细证据与页面预览见 `m4-acceptance-report.md` 和
+`m4-preview.png`。
+
+- 已实现 `assistant-sdk` 的 React 组件/Hook 与原生 JavaScript API，统一支持
+  `mount/open/close/updateContext/getState/destroy` 以及 floating/drawer/inline 展示模式。
+- React、原生 JavaScript 和跨域 iframe 三种宿主复用 M3 Chat Core、Transport 与同一
+  Agent Server；SDK 不暴露 Deep Agents/LangGraph 内部对象。
+- Host Context 使用既有 `RawHostContext` 白名单；每次提交前捕获一次服务端 Snapshot，
+  页面从 X 切换到 Y 只影响下一次 Run，身份和权限仍由服务端凭证建立。
+- `iframe-bridge` 对 `origin/source/channelId/version/requestId/schema` 全部校验；URL 和
+  `postMessage` 不传长期 Token，一次性票据绑定目标 Origin、60 秒过期且消费后立即失效，
+  只换取 5 分钟临时凭证。
+- Playwright 已在独立 Origin 上验证 X→Y、SDK 挂载/销毁与 iframe 票据启动；iframe 使用
+  sandbox 和 `frame-ancestors`。Vite 开发服务器因 React Refresh 使用 `unsafe-inline`，生产
+  部署必须改为构建产物并使用 nonce/hash 的严格 CSP。
+
+M4 仍使用 M2 的 Mock Identity、内存存储、离线 Fake Model 和模拟 Adapter；未宣称真实产品
+SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
+
+## M5：独立部署与系统验收
+
+状态：完成开发与离线系统验收；生产依赖替换和真实业务联调仍是明确上线前置条件，详见
+`m5-acceptance-report.md`。
+
+- 已提供 A/B 两套独立环境样例；同一 Agent Server 组合分别只批准 Product A 或 Product B
+  Adapter，端口、密钥注入、插件目录、Store 与 Checkpointer 边界独立。
+- A/B 使用不同原始 API 字段，但对外注册相同的两项标准 Capability；系统测试验证质量分数、
+  单位、聚合、缺失日期、Partial、业务对象与 Evidence 语义一致。
+- 已验证跨实例 Session 不可见、对象拒绝、Context 服务端归一化与固定 Snapshot、Evidence
+  范围/方法/来源，以及当前内存存储在进程重启后不恢复的真实边界。
+- 未安装 Provider 的标准能力改为不可重试 `UNSUPPORTED`，避免把不支持误报为临时故障；
+  HTTP Provider 超时新增自动化验证。
+- 已提供部署、插件接入、升级、回滚和可观测性清单；没有恢复用户已删除的 GitHub Actions。
+
+本阶段的 A/B 业务 API、Identity、模型调用和持久化仍为 Mock/离线或配置样例。生产上线前必须
+接入企业 IdP、真实业务 API、独立持久化 Repository、官方持久化 Checkpointer、密钥管理、
+指标告警和严格 CSP；因此“M5 工程退出门禁通过”不等同于“生产上线批准”。
+
+## M5 后：双产品可演示样例
+
+状态：已完成离线可复现演示增强，不改变 M5 架构范围和生产边界。
+
+所有可执行演示工程已集中到根目录 `demo/`；正式 `apps/`、`packages/` 不再混放产品演示页面、
+共享演示壳、Fake Model Server 入口或演示启动脚本。架构规定的 Adapter 契约样例仍保留在
+`adapters/`，由 Demo Server 作为已批准插件加载。
+
+- 新增 Product A 数据质量运营台与 Product B 数据资产驾驶舱，分别以独立 Web、Agent
+  Server 端口和批准插件运行；两者共享 `demo-product-shell`、Assistant SDK、Chat Core、
+  Transport 和标准 Capability Contract。
+- 两套页面提供不同品牌、业务指标、对象列表和活动信息，并把当前订单/客户对象通过宿主
+  Context 传入助手；工具结果展示标准指标、Partial 限制与 Evidence。
+- 根命令 `pnpm demo` 一次启动四个进程；Windows 下使用父进程与心跳监控，启动器退出后
+  自动清理子进程。`pnpm demo:e2e` 分别执行 A/B 的真实浏览器主路径。
+- 页面显式标识 Offline Demo、Mock Identity 和 Fake Model，未把样例数据、固定测试凭证或
+  脚本问答描述为真实企业集成。
+
+完整操作流程与边界见 `dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换
+企业 IdP、业务 API、模型与持久化驱动，并完成目标环境的安全配置和联调。

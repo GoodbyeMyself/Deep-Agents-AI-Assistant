@@ -127,7 +127,7 @@ describe("capability registry and executor", () => {
     expect(qualityTrendResultSchema.parse(result).error?.code).toBe("SCHEMA_MISMATCH");
   });
 
-  it("returns PROVIDER_UNAVAILABLE for a catalog capability that is not installed", async () => {
+  it("returns UNSUPPORTED for a catalog capability that is not installed", async () => {
     const executor = new CapabilityExecutor({
       catalog: createStandardCapabilityCatalog(),
       registry: new CapabilityRegistry(),
@@ -135,6 +135,6 @@ describe("capability registry and executor", () => {
 
     const result = await executor.execute("data_quality.get_trend", "1.0.0", input, context);
 
-    expect(qualityTrendResultSchema.parse(result).error?.code).toBe("PROVIDER_UNAVAILABLE");
+    expect(qualityTrendResultSchema.parse(result).error?.code).toBe("UNSUPPORTED");
   });
 });

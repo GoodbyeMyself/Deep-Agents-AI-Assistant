@@ -1,0 +1,21 @@
+{
+  "name": "@assistant/demo-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "serve:m3": "node --import tsx src/m3-demo-server-main.ts",
+    "serve:m4": "node --import tsx src/m4-demo-server-main.ts",
+    "serve:product-a": "node --import tsx src/demo-product-a-server-main.ts",
+    "serve:product-b": "node --import tsx src/demo-product-b-server-main.ts",
+    "test": "vitest run src --passWithNoTests",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@langchain/core": "catalog:",
+    "@langchain/openai": "catalog:"
+  },
+  "devDependencies": {
+    "tsx": "4.21.0"
+  }
+}
