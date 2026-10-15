@@ -70,6 +70,12 @@ describe("M2 trusted execution loop", () => {
       model: qualityModel(),
       installDir,
       approvedPluginIds: new Set(["demo-product-a"]),
+      modelConfig: {
+        id: "deepseek-demo",
+        provider: "deepseek",
+        model: "deepseek-chat",
+        version: "7",
+      },
     });
     const snapshotResponse = await request(app.handler, "POST", "/api/v1/context/snapshots", {
       page: { type: "table-detail", route: "/tables/orders" },
@@ -99,7 +105,9 @@ describe("M2 trusted execution loop", () => {
     expect(firstResponse.status).toBe(202);
     const firstRunId = String((await jsonValue(firstResponse))["runId"]);
     await app.runner.wait(firstRunId);
-    expect(app.store.requireRun(firstRunId, principal).status).toBe("completed");
+    const completedRun = app.store.requireRun(firstRunId, principal);
+    expect(completedRun.status).toBe("completed");
+    expect(completedRun.modelConfigVersion).toBe("deepseek-demo@7");
 
     const eventsResponse = await request(app.handler, "GET", `/api/v1/runs/${firstRunId}/events`);
     const eventText = await eventsResponse.text();

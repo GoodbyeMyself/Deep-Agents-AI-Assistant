@@ -11,8 +11,6 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@assistant/assistant-sdk": "workspace:*",
-    "@assistant/assistant-ui": "workspace:*",
     "@assistant/demo-product-shell": "workspace:*",
     "antd": "6.6.6",
     "react": "19.3.0",

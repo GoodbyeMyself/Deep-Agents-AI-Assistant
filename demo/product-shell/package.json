@@ -16,9 +16,9 @@
     "./styles.css": "./src/styles.css"
   },
   "dependencies": {
-    "@assistant/assistant-sdk": "workspace:*",
-    "@assistant/assistant-ui": "workspace:*",
+    "@assistant/assistant-transport": "workspace:*",
     "@assistant/context": "workspace:*",
+    "@assistant/iframe-bridge": "workspace:*",
     "react": "19.3.0"
   },
   "devDependencies": {

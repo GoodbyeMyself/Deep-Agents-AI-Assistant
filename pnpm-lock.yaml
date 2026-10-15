@@ -254,12 +254,6 @@ importers:
 
   demo/product-a:
     dependencies:
-      '@assistant/assistant-sdk':
-        specifier: workspace:*
-        version: link:../../packages/assistant-sdk
-      '@assistant/assistant-ui':
-        specifier: workspace:*
-        version: link:../../packages/assistant-ui
       '@assistant/demo-product-shell':
         specifier: workspace:*
         version: link:../product-shell
@@ -291,12 +285,6 @@ importers:
 
   demo/product-b:
     dependencies:
-      '@assistant/assistant-sdk':
-        specifier: workspace:*
-        version: link:../../packages/assistant-sdk
-      '@assistant/assistant-ui':
-        specifier: workspace:*
-        version: link:../../packages/assistant-ui
       '@assistant/demo-product-shell':
         specifier: workspace:*
         version: link:../product-shell
@@ -328,15 +316,15 @@ importers:
 
   demo/product-shell:
     dependencies:
-      '@assistant/assistant-sdk':
+      '@assistant/assistant-transport':
         specifier: workspace:*
-        version: link:../../packages/assistant-sdk
-      '@assistant/assistant-ui':
-        specifier: workspace:*
-        version: link:../../packages/assistant-ui
+        version: link:../../packages/assistant-transport
       '@assistant/context':
         specifier: workspace:*
         version: link:../../core/context
+      '@assistant/iframe-bridge':
+        specifier: workspace:*
+        version: link:../../packages/iframe-bridge
       react:
         specifier: 19.3.0
         version: 19.3.0

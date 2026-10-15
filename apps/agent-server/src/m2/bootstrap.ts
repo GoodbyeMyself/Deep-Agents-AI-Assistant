@@ -22,7 +22,13 @@ export async function createM2Application(options: {
     readonly version: string;
   };
 }) {
-  const store = new InMemoryAgentStore();
+  const modelConfig = options.modelConfig ?? {
+    id: "default",
+    provider: "test",
+    model: "configured-model",
+    version: "1",
+  };
+  const store = new InMemoryAgentStore(`${modelConfig.id}@${modelConfig.version}`);
   const checkpointer = new MemorySaver();
   const boot = await createAgentFromInstalledPlugins({
     ...options,
@@ -34,12 +40,7 @@ export async function createM2Application(options: {
   const service = new AgentService(store, new ContextService(new MockContextAuthorizer()), runner, {
     models: [
       {
-        ...(options.modelConfig ?? {
-          id: "default",
-          provider: "test",
-          model: "configured-model",
-          version: "1",
-        }),
+        ...modelConfig,
         enabled: true,
       },
     ],

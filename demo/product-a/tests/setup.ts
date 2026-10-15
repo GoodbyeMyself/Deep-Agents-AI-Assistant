@@ -38,11 +38,10 @@ export default async function setup() {
       [
         "--import",
         pathToFileURL(resolve(repositoryRoot, "demo/server/node_modules/tsx/dist/loader.mjs")).href,
-        resolve(repositoryRoot, "demo/server/src/demo-product-a-server-main.ts"),
+        resolve(repositoryRoot, "demo/server/src/demo-product-a-e2e-server-main.ts"),
       ],
       {
         cwd: repositoryRoot,
-        env: { ...process.env, DEMO_MODEL_MODE: "fake" },
         windowsHide: true,
         stdio: "ignore",
       },
@@ -52,11 +51,31 @@ export default async function setup() {
       [resolve(appRoot, "node_modules/vite/bin/vite.js"), "--host", "127.0.0.1"],
       { cwd: appRoot, windowsHide: true, stdio: "ignore" },
     ),
+    spawn(
+      process.execPath,
+      [
+        resolve(repositoryRoot, "apps/assistant-embed/node_modules/vite/bin/vite.js"),
+        "--host",
+        "127.0.0.1",
+      ],
+      {
+        cwd: resolve(repositoryRoot, "apps/assistant-embed"),
+        env: {
+          ...process.env,
+          ASSISTANT_EMBED_PORT: "5511",
+          ASSISTANT_API_TARGET: "http://127.0.0.1:3411",
+          ASSISTANT_HOST_ORIGIN: "http://127.0.0.1:5411",
+        },
+        windowsHide: true,
+        stdio: "ignore",
+      },
+    ),
   );
   try {
     await Promise.all([
       waitFor("http://127.0.0.1:3411/api/v1/openapi.json"),
       waitFor("http://127.0.0.1:5411"),
+      waitFor("http://127.0.0.1:5511"),
     ]);
   } catch (error) {
     children.forEach(terminate);

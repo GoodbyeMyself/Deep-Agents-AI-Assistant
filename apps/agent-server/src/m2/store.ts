@@ -55,6 +55,8 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
   readonly #activeRuns = new Map<string, string>();
   readonly auditRecords: CapabilityAuditRecord[] = [];
 
+  constructor(private readonly modelConfigVersion = "mock-model-config@1") {}
+
   write(record: CapabilityAuditRecord): Promise<void> {
     this.auditRecords.push(structuredClone(record));
     return Promise.resolve();
@@ -158,7 +160,7 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
       contextSnapshotId: input.contextSnapshotId,
       clientRequestId: input.clientRequestId,
       message: input.message,
-      modelConfigVersion: "mock-model-config@1",
+      modelConfigVersion: this.modelConfigVersion,
       status: "queued",
       createdAt: new Date().toISOString(),
     };

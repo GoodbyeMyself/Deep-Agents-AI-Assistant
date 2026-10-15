@@ -19,6 +19,7 @@ export const bridgeMessageSchema = z.discriminatedUnion("type", [
   envelopeSchema.extend({ type: z.literal("host.context"), payload: rawHostContextSchema }),
   envelopeSchema.extend({ type: z.literal("host.open"), payload: z.object({}) }),
   envelopeSchema.extend({ type: z.literal("host.close"), payload: z.object({}) }),
+  envelopeSchema.extend({ type: z.literal("assistant.loaded"), payload: z.object({}) }),
   envelopeSchema.extend({ type: z.literal("assistant.ready"), payload: z.object({}) }),
   envelopeSchema.extend({
     type: z.literal("assistant.error"),
@@ -57,10 +58,13 @@ export function createIframeHostBridge(options: {
   onError?: (error: { code: string; message: string }) => void;
 }) {
   let started = false;
+  let helloSent = false;
   const seenRequestIds = new Set<string>();
   const send = (message: BridgeMessage) =>
     options.iframe.contentWindow?.postMessage(message, options.targetOrigin);
   const hello = async () => {
+    if (helloSent) return;
+    helloSent = true;
     send({
       ...envelope(options.channelId),
       type: "host.hello",
@@ -68,6 +72,12 @@ export function createIframeHostBridge(options: {
         ticket: await options.getTicket(),
         context: rawHostContextSchema.parse(await options.getContext()),
       },
+    });
+  };
+  const requestHello = () => {
+    void hello().catch(() => {
+      helloSent = false;
+      options.onError?.({ code: "BOOTSTRAP_FAILED", message: "Assistant bootstrap failed." });
     });
   };
   const listener = (event: MessageEvent) => {
@@ -78,10 +88,11 @@ export function createIframeHostBridge(options: {
     });
     if (message !== undefined && seenRequestIds.has(message.requestId)) return;
     if (message !== undefined) seenRequestIds.add(message.requestId);
+    if (message?.type === "assistant.loaded") requestHello();
     if (message?.type === "assistant.ready") options.onReady?.();
     if (message?.type === "assistant.error") options.onError?.(message.payload);
   };
-  const loadListener = () => void hello();
+  const loadListener = requestHello;
   return {
     start() {
       if (started) return;
@@ -151,6 +162,7 @@ export function createIframeAssistantBridge(options: {
   return {
     start() {
       window.addEventListener("message", listener);
+      send({ ...envelope(options.channelId), type: "assistant.loaded", payload: {} });
     },
     destroy() {
       window.removeEventListener("message", listener);

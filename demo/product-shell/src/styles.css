@@ -535,8 +535,9 @@ button {
 }
 
 .assistant-stage {
-  padding-bottom: 12px;
+  padding: 0;
   overflow: hidden;
+  background: #f8faf9;
 }
 
 .live-chip i {
@@ -546,52 +547,77 @@ button {
   background: #39af78;
 }
 
-.assistant-hint {
-  margin: 13px 0 14px;
-  padding: 10px 12px;
-  border-left: 3px solid var(--product-accent);
-  color: #64736c;
-  background: color-mix(in srgb, var(--product-accent) 6%, white);
-  font-size: 11px;
-  line-height: 1.6;
-}
-
 .assistant-embedded {
-  height: 646px;
-  margin: 0 -8px;
+  height: 720px;
 }
 
-.assistant-embedded .assistant-sdk-inline {
-  min-height: 100%;
+.assistant-frame-shell {
+  position: relative;
+  height: 100%;
+}
+
+.assistant-frame-shell iframe {
+  display: block;
+  width: 100%;
   height: 100%;
   border: 0;
-  border-radius: 12px;
+  background: #f8faf9;
 }
 
-.assistant-embedded .assistant-workspace {
-  grid-template-columns: minmax(0, 1fr);
-  border-color: rgb(21 54 44 / 9%);
-  box-shadow: none;
+.assistant-frame-status {
+  position: absolute;
+  z-index: 2;
+  inset: 18px 20px auto auto;
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding: 7px 10px;
+  border: 1px solid rgb(20 125 100 / 18%);
+  border-radius: 999px;
+  color: #536761;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 8px 24px rgb(16 42 44 / 10%);
+  font-size: 10px;
+  pointer-events: none;
+  transition: opacity 180ms ease;
 }
 
-.assistant-embedded .assistant-conversations {
+.assistant-frame-status i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e2a43a;
+  box-shadow: 0 0 0 4px rgb(226 164 58 / 12%);
+}
+
+.assistant-frame-status--ready {
+  opacity: 0;
+}
+
+.assistant-frame-status--error {
+  color: #a33a3a;
+  border-color: rgb(180 56 56 / 22%);
+}
+
+.assistant-frame-status--error i {
+  background: #cc4f4f;
+}
+
+@media (max-width: 1180px) {
+  .assistant-embedded {
+    height: 680px;
+  }
+}
+
+@media (max-width: 760px) {
+  .assistant-embedded {
+    height: min(720px, 82dvh);
+  }
+}
+
+/* The assistant UI is intentionally isolated inside the iframe. */
+.assistant-frame-status--ready {
   display: none;
-}
-
-.assistant-embedded .assistant-chat-scroll {
-  overflow-x: hidden;
-  padding-right: 24px;
-  padding-left: 24px;
-}
-
-.assistant-embedded .assistant-message-content {
-  width: 100%;
-  max-width: 100%;
-  overflow-wrap: anywhere;
-}
-
-.assistant-embedded .assistant-execution {
-  margin-left: 0;
 }
 
 @media (max-width: 1180px) {

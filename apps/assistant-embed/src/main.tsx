@@ -1,6 +1,7 @@
 import "antd/dist/reset.css";
 import "../../../packages/assistant-ui/src/styles.css";
 import "@assistant/assistant-sdk/styles.css";
+import "./styles.css";
 
 import { AssistantReact } from "@assistant/assistant-sdk";
 import { AssistantApiTransport } from "@assistant/assistant-transport";
@@ -41,14 +42,15 @@ function EmbedApp() {
   }, [channelId, hostOrigin]);
 
   if (error !== undefined) return <Alert type="error" showIcon title={error} />;
-  if (credential === undefined) return <Spin fullscreen tip="正在建立安全会话" />;
+  if (credential === undefined) return <Spin fullscreen description="正在建立安全会话" />;
   return (
-    <div className="assistant-sdk-root" style={{ minHeight: "100vh" }}>
+    <div className="assistant-sdk-root assistant-embed-page">
       <AssistantReact
         options={{
           presentation: "inline",
           getAccessCredential: () => credential,
           initialContext: context,
+          title: "业务智能助手",
         }}
       />
     </div>

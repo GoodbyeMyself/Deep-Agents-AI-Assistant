@@ -102,7 +102,7 @@ pnpm format:check
 
 ### 双产品业务接入演示（推荐）
 
-一条命令同时启动 Product A、Product B 及其各自独立的 Agent Server：
+先在根目录 `.env` 配置 `DEEPSEEK_API_KEY`，再用一条命令同时启动 Product A、Product B、各自独立的 Agent Server 和 iframe 助手：
 
 ```bash
 pnpm demo
@@ -111,27 +111,15 @@ pnpm demo
 - Product A 数据质量运营台：`http://127.0.0.1:5411`
 - Product B 数据资产驾驶舱：`http://127.0.0.1:5412`
 
-两套页面复用同一个 Assistant SDK 和标准 Capability，但分别连接 `demo-product-a`、`demo-product-b` Adapter，端口、进程、会话与 Checkpointer 独立。完整讲解顺序和边界见 [双产品演示指南](docs/dual-product-demo-guide.md)。
+两套页面都通过安全 iframe Bridge 挂载同一套 Assistant SDK 和标准 Capability，但分别连接 `demo-product-a`、`demo-product-b` Adapter，端口、进程、会话与 Checkpointer 独立。助手头部和输入区固定，中间消息区独立滚动。完整讲解顺序和边界见 [双产品演示指南](docs/dual-product-demo-guide.md)。
+
+交互式演示只使用真实 DeepSeek，页面显示 `LIVE DEEPSEEK` 和实际模型名称；缺少 Key 时服务端会明确启动失败，不提供离线回退。自动化测试使用隔离的 LangChain Test Double，不属于可启动的演示模式。
 
 ![Product A 数据质量运营台](docs/demo-product-a.png)
 
 ![Product B 数据资产驾驶舱](docs/demo-product-b.png)
 
-### 独立助手 Web
-
-独立 Web 使用离线 Fake Model，不需要 API Key。分别打开两个终端：
-
-```bash
-pnpm --filter @assistant/demo-server serve:m3
-```
-
-```bash
-pnpm dev:web
-```
-
-浏览器访问 `http://127.0.0.1:5173`，可以查看会话、流式回答、Tool 进度、质量趋势、Evidence 和实例管理状态。
-
-嵌入式 React/JavaScript/iframe 效果及自动化运行方式见 [M4 验收报告](docs/m4-acceptance-report.md)。浏览器回归命令：
+历史 M3 独立 Web 与 M4 三接入方式的自动化验证仍作为回归测试保留，不作为当前交互式演示入口。浏览器回归命令：
 
 ```bash
 pnpm --filter @assistant/assistant-web e2e

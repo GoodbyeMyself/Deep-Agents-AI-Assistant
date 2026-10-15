@@ -1,6 +1,4 @@
 import "antd/dist/reset.css";
-import "../../../packages/assistant-ui/src/styles.css";
-import "@assistant/assistant-sdk/styles.css";
 import "@assistant/demo-product-shell/styles.css";
 
 import { DemoProductShell, type DemoProductConfig } from "@assistant/demo-product-shell";
@@ -17,6 +15,7 @@ const config: DemoProductConfig = {
   accentStrong: "#0d6551",
   canvas: "#edf2ec",
   panel: "#fffef9",
+  assistantOrigin: "http://127.0.0.1:5511",
   navItems: ["运营总览", "数据目录", "质量规则", "问题工单", "审计中心"],
   activeNav: "运营总览",
   entities: [

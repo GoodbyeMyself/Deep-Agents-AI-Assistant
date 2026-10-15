@@ -1,6 +1,7 @@
-import { AssistantController, AssistantProvider, AssistantSurface } from "@assistant/assistant-sdk";
+import { AssistantApiTransport } from "@assistant/assistant-transport";
 import type { RawHostContext } from "@assistant/context";
-import { useEffect, useMemo, useState, type CSSProperties } from "react";
+import { createIframeHostBridge } from "@assistant/iframe-bridge";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 export interface DemoEntity {
   readonly id: "orders" | "customers";
@@ -31,6 +32,7 @@ export interface DemoProductConfig {
   readonly accentStrong: string;
   readonly canvas: string;
   readonly panel: string;
+  readonly assistantOrigin: string;
   readonly navItems: readonly string[];
   readonly activeNav: string;
   readonly entities: readonly [DemoEntity, DemoEntity];
@@ -70,7 +72,7 @@ function modelDisplay(value: unknown): ModelDisplay {
   const items = (value as { items?: unknown }).items;
   if (!Array.isArray(items) || items.length === 0)
     return { label: "模型状态未知", badge: "AI DEMO" };
-  const model = items[0];
+  const model: unknown = items[0];
   if (typeof model !== "object" || model === null)
     return { label: "模型状态未知", badge: "AI DEMO" };
   const provider = (model as { provider?: unknown }).provider;
@@ -78,9 +80,67 @@ function modelDisplay(value: unknown): ModelDisplay {
   if (typeof provider !== "string" || typeof modelName !== "string") {
     return { label: "模型状态未知", badge: "AI DEMO" };
   }
-  if (provider === "offline") return { label: "Fake Model", badge: "OFFLINE DEMO" };
   if (provider === "deepseek") return { label: `DeepSeek · ${modelName}`, badge: "LIVE DEEPSEEK" };
-  return { label: `${provider} · ${modelName}`, badge: "LIVE AI" };
+  return { label: `${provider} · ${modelName}`, badge: "TEST MODEL" };
+}
+
+function DemoAssistantFrame({
+  assistantOrigin,
+  context,
+}: {
+  assistantOrigin: string;
+  context: RawHostContext;
+}) {
+  const frame = useRef<HTMLIFrameElement>(null);
+  const bridge = useRef<ReturnType<typeof createIframeHostBridge> | undefined>(undefined);
+  const latestContext = useRef(context);
+  latestContext.current = context;
+  const channelId = useMemo(() => crypto.randomUUID(), []);
+  const [status, setStatus] = useState<"connecting" | "ready" | "error">("connecting");
+  const transport = useMemo(
+    () => new AssistantApiTransport({ getAccessCredential: () => "mock-token-admin" }),
+    [],
+  );
+
+  useEffect(() => {
+    if (frame.current === null) return;
+    const currentBridge = createIframeHostBridge({
+      iframe: frame.current,
+      targetOrigin: assistantOrigin,
+      channelId,
+      getTicket: async () => (await transport.createEmbedTicket(assistantOrigin)).ticket,
+      getContext: () => latestContext.current,
+      onReady: () => setStatus("ready"),
+      onError: () => setStatus("error"),
+    });
+    bridge.current = currentBridge;
+    currentBridge.start();
+    return () => {
+      currentBridge.destroy();
+      bridge.current = undefined;
+    };
+  }, [assistantOrigin, channelId, transport]);
+
+  useEffect(() => bridge.current?.updateContext(context), [context]);
+
+  return (
+    <div className="assistant-frame-shell">
+      <div className={`assistant-frame-status assistant-frame-status--${status}`} role="status">
+        <i />
+        {status === "ready"
+          ? "安全通道已连接"
+          : status === "error"
+            ? "助手连接失败"
+            : "正在建立安全通道"}
+      </div>
+      <iframe
+        ref={frame}
+        title="企业业务智能助手"
+        sandbox="allow-scripts allow-same-origin"
+        src={`${assistantOrigin}/?hostOrigin=${encodeURIComponent(location.origin)}&channelId=${channelId}`}
+      />
+    </div>
+  );
 }
 
 export function DemoProductShell({ config }: { config: DemoProductConfig }) {
@@ -88,19 +148,6 @@ export function DemoProductShell({ config }: { config: DemoProductConfig }) {
   const [model, setModel] = useState<ModelDisplay>({ label: "正在连接模型", badge: "AI DEMO" });
   const selected = config.entities.find((entity) => entity.id === entityId) ?? config.entities[0];
   const context = contextFor(config, selected);
-  const controller = useMemo(
-    () =>
-      new AssistantController({
-        presentation: "inline",
-        getAccessCredential: () => "mock-token-admin",
-        initialContext: contextFor(config, config.entities[0]),
-        title: `${config.brand} 智能助手`,
-      }),
-    [config],
-  );
-
-  useEffect(() => controller.updateContext(context), [context, controller]);
-
   useEffect(() => {
     const abortController = new AbortController();
     void fetch("/api/v1/models", {
@@ -250,23 +297,9 @@ export function DemoProductShell({ config }: { config: DemoProductConfig }) {
               </article>
             </div>
 
-            <aside className="assistant-stage" aria-label="嵌入式业务智能助手">
-              <div className="assistant-stage-head">
-                <div>
-                  <span>CONTEXT-AWARE ASSISTANT</span>
-                  <h2>业务智能助手</h2>
-                </div>
-                <span className="live-chip">
-                  <i /> 已连接
-                </span>
-              </div>
-              <p className="assistant-hint">
-                试着询问“当前数据质量怎么样？”助手会使用右侧已授权对象调用标准能力并返回证据。
-              </p>
+            <aside className="assistant-stage" aria-label="iframe 嵌入式业务智能助手">
               <div className="assistant-embedded">
-                <AssistantProvider controller={controller}>
-                  <AssistantSurface />
-                </AssistantProvider>
+                <DemoAssistantFrame assistantOrigin={config.assistantOrigin} context={context} />
               </div>
             </aside>
           </section>

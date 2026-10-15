@@ -117,21 +117,23 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## M5 后：双产品可演示样例
 
-状态：已完成离线可复现演示增强，不改变 M5 架构范围和生产边界。
+状态：已完成真实 DeepSeek + iframe 双产品演示增强，不改变 M5 架构范围和生产边界。
 
 所有可执行演示工程已集中到根目录 `demo/`；正式 `apps/`、`packages/` 不再混放产品演示页面、
-共享演示壳、Fake Model Server 入口或演示启动脚本。架构规定的 Adapter 契约样例仍保留在
+共享演示壳、测试模型入口或演示启动脚本。架构规定的 Adapter 契约样例仍保留在
 `adapters/`，由 Demo Server 作为已批准插件加载。
 
 - 新增 Product A 数据质量运营台与 Product B 数据资产驾驶舱，分别以独立 Web、Agent
-  Server 端口和批准插件运行；两者共享 `demo-product-shell`、Assistant SDK、Chat Core、
+  Server、iframe Assistant 端口和批准插件运行；两者共享 `demo-product-shell`、Assistant SDK、Chat Core、
   Transport 和标准 Capability Contract。
 - 两套页面提供不同品牌、业务指标、对象列表和活动信息，并把当前订单/客户对象通过宿主
   Context 传入助手；工具结果展示标准指标、Partial 限制与 Evidence。
-- 根命令 `pnpm demo` 一次启动四个进程；Windows 下使用父进程与心跳监控，启动器退出后
+- 根命令 `pnpm demo` 一次启动六个进程；Windows 下使用父进程与心跳监控，启动器退出后
   自动清理子进程。`pnpm demo:e2e` 分别执行 A/B 的真实浏览器主路径。
-- 页面显式标识 Offline Demo、Mock Identity 和 Fake Model，未把样例数据、固定测试凭证或
-  脚本问答描述为真实企业集成。
+- 交互式演示缺少 DeepSeek Key 时明确失败，不提供离线回退；Playwright 仅通过独立测试入口
+  使用 Test Double。Mock Identity 和模拟业务数据始终明确展示，未把真实模型调用描述为真实企业数据集成。
+- A/B 页面均通过固定 Origin、一次性票据和 channelId 校验的 iframe Bridge 挂载助手；助手
+  头部与输入区固定，中间消息区独立滚动，页面对象切换只更新后续 Run 的 ContextSnapshot。
 
 完整操作流程与边界见 `dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换
 企业 IdP、业务 API、模型与持久化驱动，并完成目标环境的安全配置和联调。

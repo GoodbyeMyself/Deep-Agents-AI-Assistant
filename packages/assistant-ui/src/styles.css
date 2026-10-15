@@ -61,11 +61,37 @@
   background: rgb(251 250 246 / 94%);
 }
 .assistant-chat-header h1 {
-  margin: 3px 0 0;
+  margin: 2px 0 1px;
   color: var(--assistant-ink);
   font:
     650 27px/1.2 Georgia,
     serif;
+}
+.assistant-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+.assistant-heading-mark {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  color: #fff;
+  background: linear-gradient(145deg, #102a2c, #087f76);
+  box-shadow: 0 9px 22px rgb(8 127 118 / 24%);
+  font:
+    750 12px/1 ui-monospace,
+    monospace;
+  letter-spacing: 0.08em;
+}
+.assistant-heading small {
+  display: block;
+  color: var(--assistant-muted);
+  font-size: 11px;
 }
 .assistant-eyebrow {
   color: var(--assistant-teal);

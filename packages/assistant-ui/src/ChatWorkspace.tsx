@@ -167,9 +167,15 @@ export function ChatWorkspace({
       </aside>
       <section className="assistant-chat" aria-label="智能助手对话">
         <header className="assistant-chat-header">
-          <div>
-            <span className="assistant-eyebrow">TRUSTED BUSINESS AI</span>
-            <h1>数据证据工作台</h1>
+          <div className="assistant-heading">
+            <span className="assistant-heading-mark" aria-hidden="true">
+              AI
+            </span>
+            <div>
+              <span className="assistant-eyebrow">DEEPSEEK · TRUSTED BUSINESS AI</span>
+              <h1>业务智能助手</h1>
+              <small>基于当前页面上下文提供可信回答</small>
+            </div>
           </div>
           <div className="assistant-context-chip">
             <span>当前对象</span>

@@ -76,4 +76,22 @@ describe("iframe bridge validation", () => {
     bridge.destroy();
     expect(onContext).toHaveBeenCalledOnce();
   });
+
+  it("announces iframe readiness so the host cannot miss a fast load event", () => {
+    const postMessage = vi.fn();
+    const hostWindow = { postMessage } as unknown as Window;
+    const bridge = createIframeAssistantBridge({
+      hostWindow,
+      hostOrigin: "https://host.example",
+      channelId: valid.channelId,
+      onHello: vi.fn(),
+      onContext: vi.fn(),
+    });
+    bridge.start();
+    bridge.destroy();
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ type: "assistant.loaded", channelId: valid.channelId }),
+      "https://host.example",
+    );
+  });
 });
