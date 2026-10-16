@@ -124,7 +124,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 `adapters/`，由 Demo Server 作为已批准插件加载。
 
 - 新增 Product A 数据质量运营台与 Product B 数据资产驾驶舱，分别以独立 Web、Agent
-  Server、iframe Assistant 端口和批准插件运行；两者共享 `demo-product-shell`、Assistant SDK、Chat Core、
+  Server、iframe Assistant 端口和批准插件运行；Product A 宿主采用 React + Ant Design，Product B 宿主采用 Vue 3 + Element Plus + Vite，两者共享 Assistant SDK、Chat Core、
   Transport 和标准 Capability Contract。
 - 两套页面提供不同品牌、业务指标、对象列表和活动信息，并把当前订单/客户对象通过宿主
   Context 传入助手；工具结果展示标准指标、Partial 限制与 Evidence。

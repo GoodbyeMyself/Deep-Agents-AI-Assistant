@@ -54,9 +54,9 @@ Deep-Agents-AI-Assistant/
 │  ├─ plugin-runtime/                # 插件发现、校验、加载、生命周期和 Driver
 │  └─ plugin-sdk/                    # definePlugin/implementCapability 开发 API
 ├─ demo/                             # 所有可执行演示工程，和正式模块隔离
-│  ├─ product-a/                     # Product A 数据治理接入演示
-│  ├─ product-b/                     # Product B 数据资产接入演示
-│  ├─ product-shell/                 # A/B 共用业务壳和助手接入层
+│  ├─ product-a/                     # React + Ant Design 数据治理接入演示
+│  ├─ product-b/                     # Vue 3 + Element Plus 数据资产接入演示
+│  ├─ product-shell/                 # Product A React 业务壳和助手接入层
 │  ├─ sdk-host/                      # React/JS/iframe 三种接入方式演示宿主
 │  ├─ server/                        # M3/M4/A/B 离线 Demo Server 入口
 │  ├─ scripts/                       # 双产品一键启动与进程清理
@@ -108,10 +108,10 @@ pnpm format:check
 pnpm demo
 ```
 
-- Product A 数据质量运营台：`http://127.0.0.1:5411`
-- Product B 数据资产驾驶舱：`http://127.0.0.1:5412`
+- Product A 数据质量运营台（React 19 + Ant Design 6）：`http://127.0.0.1:5411`
+- Product B 数据资产驾驶舱（Vue 3 + Element Plus + Vite）：`http://127.0.0.1:5412`
 
-两套页面都通过安全 iframe Bridge 挂载同一套 Assistant SDK 和标准 Capability，但分别连接 `demo-product-a`、`demo-product-b` Adapter，端口、进程、会话与 Checkpointer 独立。助手头部和输入区固定，中间消息区独立滚动。完整讲解顺序和边界见 [双产品演示指南](docs/dual-product-demo-guide.md)。
+两套页面采用不同宿主框架和视觉语言，但都通过安全 iframe Bridge 挂载同一套 Assistant SDK 和标准 Capability，分别连接 `demo-product-a`、`demo-product-b` Adapter；端口、进程、会话与 Checkpointer 独立。助手头部和输入区固定，中间消息区独立滚动。完整讲解顺序和边界见 [双产品演示指南](docs/dual-product-demo-guide.md)。
 
 交互式演示只使用真实 DeepSeek，页面显示 `LIVE DEEPSEEK` 和实际模型名称；缺少 Key 时服务端会明确启动失败，不提供离线回退。自动化测试使用隔离的 LangChain Test Double，不属于可启动的演示模式。
 

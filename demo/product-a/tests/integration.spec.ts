@@ -17,6 +17,7 @@ test("Product A embeds the assistant with its current governed table", async ({ 
     timeout: 20_000,
   });
   await expect(assistant.getByText("可信依据")).toBeVisible();
+  await page.evaluate(() => globalThis.scrollTo(0, 0));
   await page.screenshot({ path: "../../docs/demo-product-a.png", fullPage: true });
 });
 

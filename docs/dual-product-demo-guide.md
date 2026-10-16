@@ -4,7 +4,7 @@
 
 ## 演示目标
 
-用两个外观、业务术语和原始 Adapter 不同的产品，说明同一个企业助手如何通过标准 Capability、服务端权限、页面 ContextSnapshot 和 Evidence 接入业务系统。
+用两个宿主框架、外观、业务术语和原始 Adapter 不同的产品，说明同一个企业助手如何通过标准 Capability、服务端权限、页面 ContextSnapshot 和 Evidence 接入业务系统。Product A 使用 React + Ant Design，Product B 使用 Vue 3 + Element Plus + Vite；iframe 内仍是同一套 React/Ant Design X Assistant。
 
 本演示使用 Mock Identity 和模拟业务数据，但模型调用强制使用根目录 `.env` 中配置的真实 DeepSeek。缺少 `DEEPSEEK_API_KEY` 时 Agent Server 明确启动失败，不回退到离线模型。真实模型已接通不代表真实企业 API 或生产身份已经联通。
 
@@ -29,12 +29,12 @@ pnpm demo
 
 ## 推荐演示流程
 
-1. 先打开 Product A，指出页面右上角的“助手当前感知”和右侧 iframe 助手；助手头部与消息输入区固定，中间对话区滚动。
+1. 先打开 Product A，指出“当前治理对象”下方的上下文同步条和右侧 iframe 助手；助手头部与消息输入区固定，中间对话区滚动。
 2. 在“订单明细表”上下文输入“当前数据质量怎么样？”。说明助手调用的是 `data_quality.get_trend@1.0.0`，结果来自 Product A Adapter。
 3. 展示 96% 结果、Partial/缺失日期限制、质量趋势卡片和 Evidence；强调模型文本不是授权依据。
 4. 切换到“客户主数据表”，观察助手输入框和当前对象随下一次请求更新，已有 Run 的 Snapshot 不变化。
 5. 打开 Product B，重复订单资产查询。指出 Product B 原始分数字段为比例 `0.96`，经其 Adapter 映射后仍得到标准 `96 percent`。
-6. 对比两个页面：Agent Server、SDK、Chat Core 和 Capability Contract 相同；品牌页面、插件、原始字段、进程、会话与 Checkpointer 独立。
+6. 对比两个页面：A 是 React/Ant Design 治理控制台，B 是 Vue/Element Plus 资产运营驾驶舱；Agent Server、iframe Assistant、SDK、Chat Core 和 Capability Contract 相同，品牌页面、插件、原始字段、进程、会话与 Checkpointer 独立。
 
 ## 自动化验收
 

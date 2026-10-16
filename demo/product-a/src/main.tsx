@@ -1,4 +1,3 @@
-import "antd/dist/reset.css";
 import "@assistant/demo-product-shell/styles.css";
 
 import { DemoProductShell, type DemoProductConfig } from "@assistant/demo-product-shell";

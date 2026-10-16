@@ -1,7 +1,40 @@
+import {
+  AlertOutlined,
+  AppstoreOutlined,
+  AuditOutlined,
+  BellOutlined,
+  CheckCircleFilled,
+  DatabaseOutlined,
+  FileSearchOutlined,
+  LineChartOutlined,
+  MoreOutlined,
+  SafetyCertificateOutlined,
+  SettingOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
 import { AssistantApiTransport } from "@assistant/assistant-transport";
 import type { RawHostContext } from "@assistant/context";
 import { createIframeHostBridge } from "@assistant/iframe-bridge";
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  ConfigProvider,
+  Flex,
+  Layout,
+  Menu,
+  Progress,
+  Space,
+  Statistic,
+  Tag,
+  Tooltip,
+  Typography,
+} from "antd";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+const { Header, Sider, Content } = Layout;
+const { Text, Title } = Typography;
 
 export interface DemoEntity {
   readonly id: "orders" | "customers";
@@ -39,49 +72,41 @@ export interface DemoProductConfig {
   readonly activities: readonly DemoActivity[];
 }
 
+interface ModelDisplay {
+  readonly label: string;
+  readonly badge: string;
+  readonly live: boolean;
+}
+
 function contextFor(config: DemoProductConfig, entity: DemoEntity): RawHostContext {
   return {
     page: { route: entity.route, title: entity.name, type: "asset-detail" },
     object: { type: entity.kind, rawId: entity.id, name: entity.name },
-    business: {
-      domain: config.productCode === "A" ? "data-governance" : "asset-operations",
-      module: "quality",
-    },
+    business: { domain: "data-governance", module: "quality" },
     metadata: { demoProduct: config.productCode, environment: "demo" },
   };
 }
 
-function Metric({ label, value, meta }: { label: string; value: string; meta: string }) {
-  return (
-    <article className="product-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{meta}</small>
-    </article>
-  );
-}
-
-interface ModelDisplay {
-  readonly label: string;
-  readonly badge: string;
-}
-
 function modelDisplay(value: unknown): ModelDisplay {
-  if (typeof value !== "object" || value === null)
-    return { label: "模型状态未知", badge: "AI DEMO" };
+  if (typeof value !== "object" || value === null) {
+    return { label: "模型状态未知", badge: "AI DEMO", live: false };
+  }
   const items = (value as { items?: unknown }).items;
-  if (!Array.isArray(items) || items.length === 0)
-    return { label: "模型状态未知", badge: "AI DEMO" };
+  if (!Array.isArray(items) || items.length === 0) {
+    return { label: "模型状态未知", badge: "AI DEMO", live: false };
+  }
   const model: unknown = items[0];
-  if (typeof model !== "object" || model === null)
-    return { label: "模型状态未知", badge: "AI DEMO" };
+  if (typeof model !== "object" || model === null) {
+    return { label: "模型状态未知", badge: "AI DEMO", live: false };
+  }
   const provider = (model as { provider?: unknown }).provider;
   const modelName = (model as { model?: unknown }).model;
   if (typeof provider !== "string" || typeof modelName !== "string") {
-    return { label: "模型状态未知", badge: "AI DEMO" };
+    return { label: "模型状态未知", badge: "AI DEMO", live: false };
   }
-  if (provider === "deepseek") return { label: `DeepSeek · ${modelName}`, badge: "LIVE DEEPSEEK" };
-  return { label: `${provider} · ${modelName}`, badge: "TEST MODEL" };
+  return provider === "deepseek"
+    ? { label: `DeepSeek · ${modelName}`, badge: "LIVE DEEPSEEK", live: true }
+    : { label: `${provider} · ${modelName}`, badge: "TEST MODEL", live: false };
 }
 
 function DemoAssistantFrame({
@@ -125,14 +150,12 @@ function DemoAssistantFrame({
 
   return (
     <div className="assistant-frame-shell">
-      <div className={`assistant-frame-status assistant-frame-status--${status}`} role="status">
-        <i />
-        {status === "ready"
-          ? "安全通道已连接"
-          : status === "error"
-            ? "助手连接失败"
-            : "正在建立安全通道"}
-      </div>
+      {status !== "ready" && (
+        <div className={`assistant-frame-status assistant-frame-status--${status}`} role="status">
+          <i />
+          {status === "error" ? "助手连接失败" : "正在建立安全通道"}
+        </div>
+      )}
       <iframe
         ref={frame}
         title="企业业务智能助手"
@@ -143,11 +166,23 @@ function DemoAssistantFrame({
   );
 }
 
+const menuIcons = [
+  <AppstoreOutlined key="overview" />,
+  <DatabaseOutlined key="catalog" />,
+  <SafetyCertificateOutlined key="quality" />,
+  <AlertOutlined key="issue" />,
+  <AuditOutlined key="audit" />,
+];
+
 export function DemoProductShell({ config }: { config: DemoProductConfig }) {
   const [entityId, setEntityId] = useState<DemoEntity["id"]>(config.entities[0].id);
-  const [model, setModel] = useState<ModelDisplay>({ label: "正在连接模型", badge: "AI DEMO" });
+  const [model, setModel] = useState<ModelDisplay>({
+    label: "正在连接模型",
+    badge: "AI CONNECTING",
+    live: false,
+  });
   const selected = config.entities.find((entity) => entity.id === entityId) ?? config.entities[0];
-  const context = contextFor(config, selected);
+
   useEffect(() => {
     const abortController = new AbortController();
     void fetch("/api/v1/models", {
@@ -160,151 +195,255 @@ export function DemoProductShell({ config }: { config: DemoProductConfig }) {
       })
       .catch((error: unknown) => {
         if (!(error instanceof DOMException && error.name === "AbortError")) {
-          setModel({ label: "模型连接失败", badge: "AI ERROR" });
+          setModel({ label: "模型连接失败", badge: "AI ERROR", live: false });
         }
       });
     return () => abortController.abort();
   }, []);
 
-  const style = {
-    "--product-accent": config.accent,
-    "--product-accent-strong": config.accentStrong,
-    "--product-canvas": config.canvas,
-    "--product-panel": config.panel,
-  } as CSSProperties;
+  const navItems = config.navItems.map((label, index) => ({
+    key: label,
+    icon: menuIcons[index],
+    label,
+  }));
 
   return (
-    <div className={`product-demo product-demo--${config.productCode.toLowerCase()}`} style={style}>
-      <aside className="product-sidebar">
-        <div className="product-mark" aria-hidden="true">
-          {config.productCode}
-        </div>
-        <div className="product-brand">
-          <strong>{config.brand}</strong>
-          <span>ENTERPRISE SUITE</span>
-        </div>
-        <nav aria-label={`${config.brand} 主导航`}>
-          {config.navItems.map((item, index) => (
-            <button className={item === config.activeNav ? "active" : ""} key={item} type="button">
-              <i aria-hidden="true">{String(index + 1).padStart(2, "0")}</i>
-              {item}
-            </button>
-          ))}
-        </nav>
-        <div className="product-sidebar-foot">
-          <span className="status-dot" />
-          <div>
-            <strong>演示环境在线</strong>
-            <small>Mock Identity · {model.label}</small>
-          </div>
-        </div>
-      </aside>
-
-      <div className="product-page">
-        <header className="product-topbar">
-          <div>
-            <span className="crumb">工作台 / {config.activeNav}</span>
-            <strong>{config.eyebrow}</strong>
-          </div>
-          <div className="product-actions">
-            <span className="demo-badge">{model.badge}</span>
-            <button type="button" aria-label="通知">
-              <span aria-hidden="true">•••</span>
-            </button>
-            <span className="avatar">陈</span>
-          </div>
-        </header>
-
-        <main className="product-content">
-          <section className="product-intro">
+    <ConfigProvider
+      theme={{
+        token: {
+          colorPrimary: "#0f8f70",
+          borderRadius: 10,
+          fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
+          colorText: "#17322b",
+        },
+      }}
+    >
+      <Layout className="aurora-app">
+        <Sider className="aurora-sider" width={244} breakpoint="lg" collapsedWidth={0}>
+          <div className="brand-lockup">
+            <span className="brand-glyph">A</span>
             <div>
-              <span className="section-kicker">{config.eyebrow}</span>
-              <h1>{config.title}</h1>
-              <p>{config.description}</p>
+              <strong>{config.brand}</strong>
+              <small>DATA GOVERNANCE CLOUD</small>
             </div>
-            <div className="context-proof">
-              <span>助手当前感知</span>
-              <strong>{selected.name}</strong>
-              <code>{selected.route}</code>
+          </div>
+          <Text className="menu-label">工作空间</Text>
+          <Menu
+            className="aurora-menu"
+            mode="inline"
+            theme="dark"
+            selectedKeys={[config.activeNav]}
+            items={navItems}
+          />
+          <div className="sider-spacer" />
+          <Card className="governance-score" bordered={false}>
+            <Flex justify="space-between" align="center">
+              <Text>治理成熟度</Text>
+              <Tag color="green">本月 +4.2%</Tag>
+            </Flex>
+            <strong>LEVEL 4</strong>
+            <Progress percent={82} showInfo={false} strokeColor="#63d9ae" trailColor="#29453f" />
+          </Card>
+          <div className="sider-status">
+            <Badge status={model.live ? "success" : "warning"} />
+            <div>
+              <strong>演示环境在线</strong>
+              <small>{model.label}</small>
             </div>
-          </section>
+          </div>
+        </Sider>
 
-          <section className="entity-switcher" aria-label="选择业务对象">
-            {config.entities.map((entity) => (
-              <button
-                className={entity.id === selected.id ? "active" : ""}
-                key={entity.id}
-                onClick={() => setEntityId(entity.id)}
-                type="button"
-              >
-                <span>{entity.kind}</span>
-                <strong>{entity.name}</strong>
-                <small>{entity.owner}</small>
-              </button>
-            ))}
-          </section>
-
-          <section className="product-grid">
-            <div className="product-overview">
-              <div className="metrics-grid">
-                <Metric label="质量评分" value={`${selected.quality}%`} meta="标准能力实时映射" />
-                <Metric label="数据规模" value={selected.records} meta="当前授权对象范围" />
-                <Metric label="最近更新" value={selected.freshness} meta="Asia/Shanghai" />
+        <Layout className="aurora-main">
+          <Header className="aurora-header">
+            <div>
+              <Text type="secondary">数据治理中心 / 运营总览</Text>
+              <strong>华东生产环境</strong>
+            </div>
+            <Space size={12}>
+              <Tag className={model.live ? "model-tag model-tag--live" : "model-tag"}>
+                <span /> {model.badge}
+              </Tag>
+              <Tooltip title="系统通知">
+                <Button aria-label="通知" shape="circle" icon={<BellOutlined />} />
+              </Tooltip>
+              <Tooltip title="全局设置">
+                <Button aria-label="设置" shape="circle" icon={<SettingOutlined />} />
+              </Tooltip>
+              <Avatar className="user-avatar">陈</Avatar>
+              <div className="user-meta">
+                <strong>陈思远</strong>
+                <small>数据治理管理员</small>
               </div>
+            </Space>
+          </Header>
 
-              <article className="quality-card">
-                <div className="card-heading">
-                  <div>
-                    <span>QUALITY PULSE</span>
-                    <h2>{selected.name}质量趋势</h2>
-                  </div>
-                  <span className="status-pill">{selected.status}</span>
-                </div>
-                <div className="trend-stage" aria-label={`质量评分 ${selected.quality}%`}>
-                  {[88, 90, 91, 94, 93, selected.quality].map((point, index) => (
-                    <div className="trend-column" key={`${point}-${index}`}>
-                      <i style={{ height: `${point - 68}%` }} />
-                      <span>{index + 9}日</span>
+          <Content className="aurora-content">
+            <section className="page-heading">
+              <div>
+                <Text className="eyebrow">{config.eyebrow}</Text>
+                <Title level={1}>{config.title}</Title>
+                <Text>{config.description}</Text>
+              </div>
+              <Space>
+                <Button icon={<FileSearchOutlined />}>导出治理报告</Button>
+                <Button type="primary" icon={<SafetyCertificateOutlined />}>
+                  新建质量规则
+                </Button>
+              </Space>
+            </section>
+
+            <div className="workspace-grid">
+              <div className="governance-column">
+                <section className="metric-row" aria-label="数据治理指标">
+                  <Card className="metric-card" bordered={false}>
+                    <Statistic title="综合质量评分" value={selected.quality} suffix="%" />
+                    <Text className="metric-delta positive">↑ 2.4% 较上周</Text>
+                    <SafetyCertificateOutlined className="metric-watermark" />
+                  </Card>
+                  <Card className="metric-card" bordered={false}>
+                    <Statistic title="活跃质量规则" value={1284} />
+                    <Text className="metric-delta">今日执行 24,680 次</Text>
+                    <LineChartOutlined className="metric-watermark" />
+                  </Card>
+                  <Card className="metric-card" bordered={false}>
+                    <Statistic title="待处理问题" value={18} />
+                    <Text className="metric-delta warning">5 项将在 24h 内超时</Text>
+                    <AlertOutlined className="metric-watermark" />
+                  </Card>
+                  <Card className="metric-card" bordered={false}>
+                    <Statistic title="责任人覆盖率" value="98.6" suffix="%" />
+                    <Text className="metric-delta positive">已覆盖 642 个对象</Text>
+                    <TeamOutlined className="metric-watermark" />
+                  </Card>
+                </section>
+
+                <Card className="asset-focus-card" bordered={false}>
+                  <Flex className="card-titlebar" justify="space-between" align="center">
+                    <div>
+                      <Text className="section-code">CURRENT GOVERNANCE OBJECT</Text>
+                      <Title level={3}>当前治理对象</Title>
                     </div>
-                  ))}
-                  <div className="trend-score">
-                    <strong>{selected.quality}</strong>
-                    <span>当前得分</span>
+                    <Button type="text" icon={<MoreOutlined />} aria-label="更多对象操作" />
+                  </Flex>
+                  <div className="entity-switcher" aria-label="选择业务对象">
+                    {config.entities.map((entity) => (
+                      <button
+                        className={
+                          entity.id === selected.id ? "entity-option active" : "entity-option"
+                        }
+                        key={entity.id}
+                        onClick={() => setEntityId(entity.id)}
+                        type="button"
+                      >
+                        <span className="entity-icon">
+                          <DatabaseOutlined />
+                        </span>
+                        <span className="entity-copy">
+                          <strong>{entity.name}</strong>
+                          <small>{entity.owner}</small>
+                        </span>
+                        <span className="entity-score">
+                          {entity.quality}
+                          <small>分</small>
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                </div>
-              </article>
+                  <div className="context-strip">
+                    <CheckCircleFilled />
+                    <span>助手已同步当前页面上下文</span>
+                    <strong>{selected.name}</strong>
+                    <code>{selected.route}</code>
+                  </div>
+                </Card>
 
-              <article className="activity-card">
-                <div className="card-heading">
-                  <div>
-                    <span>RECENT SIGNALS</span>
-                    <h2>最近业务信号</h2>
-                  </div>
-                  <button type="button">查看全部</button>
-                </div>
-                <div className="activity-list">
-                  {config.activities.map((activity) => (
-                    <div className="activity-row" key={`${activity.time}-${activity.title}`}>
-                      <span className={`activity-tone activity-tone--${activity.tone}`} />
-                      <time>{activity.time}</time>
+                <div className="analysis-grid">
+                  <Card className="trend-card" bordered={false}>
+                    <Flex className="card-titlebar" justify="space-between" align="start">
                       <div>
-                        <strong>{activity.title}</strong>
-                        <small>{activity.detail}</small>
+                        <Text className="section-code">QUALITY TREND · 7 DAYS</Text>
+                        <Title level={3}>{selected.name}质量趋势</Title>
+                      </div>
+                      <Tag color="green">{selected.status}</Tag>
+                    </Flex>
+                    <div className="quality-chart" aria-label={`质量评分 ${selected.quality}%`}>
+                      <span className="chart-label chart-label--top">100</span>
+                      <span className="chart-label chart-label--middle">95</span>
+                      <span className="chart-label chart-label--bottom">90</span>
+                      <svg viewBox="0 0 600 190" preserveAspectRatio="none" role="img">
+                        <defs>
+                          <linearGradient id="qualityArea" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stopColor="#17a47d" stopOpacity=".26" />
+                            <stop offset="1" stopColor="#17a47d" stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <path
+                          className="chart-area"
+                          d="M0 150 L100 127 L200 132 L300 89 L400 98 L500 55 L600 63 L600 190 L0 190 Z"
+                        />
+                        <path
+                          className="chart-line"
+                          d="M0 150 L100 127 L200 132 L300 89 L400 98 L500 55 L600 63"
+                        />
+                        <circle cx="600" cy="63" r="6" />
+                      </svg>
+                      <div className="chart-days">
+                        <span>10/10</span>
+                        <span>10/11</span>
+                        <span>10/12</span>
+                        <span>10/13</span>
+                        <span>10/14</span>
+                        <span>10/15</span>
+                        <span>今天</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </article>
-            </div>
+                  </Card>
 
-            <aside className="assistant-stage" aria-label="iframe 嵌入式业务智能助手">
-              <div className="assistant-embedded">
-                <DemoAssistantFrame assistantOrigin={config.assistantOrigin} context={context} />
+                  <Card className="signals-card" bordered={false}>
+                    <Flex className="card-titlebar" justify="space-between" align="start">
+                      <div>
+                        <Text className="section-code">RECENT SIGNALS</Text>
+                        <Title level={3}>治理动态</Title>
+                      </div>
+                      <Button type="link">查看全部</Button>
+                    </Flex>
+                    <div className="signal-list">
+                      {config.activities.map((activity) => (
+                        <div className="signal-item" key={`${activity.time}-${activity.title}`}>
+                          <span className={`signal-dot signal-dot--${activity.tone}`} />
+                          <div>
+                            <Flex justify="space-between">
+                              <strong>{activity.title}</strong>
+                              <time>{activity.time}</time>
+                            </Flex>
+                            <Text>{activity.detail}</Text>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
               </div>
-            </aside>
-          </section>
-        </main>
-      </div>
-    </div>
+
+              <aside className="assistant-stage" aria-label="iframe 嵌入式业务智能助手">
+                <div className="assistant-stage-label">
+                  <div>
+                    <span className="ai-orb">AI</span>
+                    <strong>治理智能助手</strong>
+                  </div>
+                  <Tag color="green">上下文已同步</Tag>
+                </div>
+                <div className="assistant-embedded">
+                  <DemoAssistantFrame
+                    assistantOrigin={config.assistantOrigin}
+                    context={contextFor(config, selected)}
+                  />
+                </div>
+              </aside>
+            </div>
+          </Content>
+        </Layout>
+      </Layout>
+    </ConfigProvider>
   );
 }
