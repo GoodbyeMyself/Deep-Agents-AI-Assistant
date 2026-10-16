@@ -17,9 +17,7 @@
   },
   "dependencies": {
     "@ant-design/icons": "6.3.4",
-    "@assistant/assistant-transport": "workspace:*",
     "@assistant/context": "workspace:*",
-    "@assistant/iframe-bridge": "workspace:*",
     "antd": "6.6.6",
     "react": "19.3.0"
   },

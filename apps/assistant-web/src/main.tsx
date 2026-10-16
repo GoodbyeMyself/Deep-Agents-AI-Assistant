@@ -12,7 +12,7 @@ import { App } from "./App.js";
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ConfigProvider
-      theme={{ token: { colorPrimary: "#087f76", colorText: "#102a2c", borderRadius: 10 } }}
+      theme={{ token: { colorPrimary: "#2563eb", colorText: "#1f2937", borderRadius: 10 } }}
     >
       <XProvider>
         <App />

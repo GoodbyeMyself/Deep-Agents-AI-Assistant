@@ -40,6 +40,11 @@ function configuredModel(options: DemoProductServerOptions) {
       apiKey: deepSeekApiKey,
       model: modelName,
       temperature: 0,
+      maxTokens: 2_048,
+      maxRetries: 1,
+      timeout: 30_000,
+      streamUsage: false,
+      modelKwargs: { thinking: { type: "disabled" } },
       ...(baseURL === undefined ? {} : { configuration: { baseURL } }),
     }),
     modelConfig: {

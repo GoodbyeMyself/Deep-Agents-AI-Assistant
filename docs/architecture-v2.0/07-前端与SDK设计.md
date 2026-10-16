@@ -61,6 +61,8 @@ Bridge Message 建议 `{protocol:'assistant-bridge', version:'1', channelId, req
 必需事件：`HOST_HELLO`、`ASSISTANT_READY`、`CONTEXT_UPDATE`、`OPEN`、`CLOSE`、`ASSISTANT_ERROR`。  
 安全检查：`event.origin` + `event.source` + 通道随机数 + 消息 Schema + 目标 origin 白名单；不要 `postMessage(..., '*')`；CSP `frame-ancestors` 限定允许宿主；短时一次性 embed ticket 由服务端兑换会话认证，不通过 URL 明文长期令牌。
 
+iframe 接入默认由平台提供的声明式 `assistant-loader.js` 完成。Loader 在隔离的 Shadow DOM 中统一创建悬浮按钮、固定面板和 iframe，并持有 Host Bridge；业务产品不得重复实现这套容器或样式。宿主入口 HTML 只声明 iframe URL、Ticket Endpoint、初始 Context 和非敏感外观参数。生产 Ticket Endpoint 必须根据宿主可信登录态签发一次性 Ticket；长期 Token 不得进入 HTML。动态页面对象通过标准 `enterprise-assistant:context` 事件更新后续请求 Context。
+
 **页面切换**：已有 Run 固定提问当时 ContextSnapshot，后续切换只更新下一次提问。**独立部署** 不等于跨产品共享 Context。
 
 ## 6. Shared Chat Store 状态
@@ -100,6 +102,7 @@ interface ChatUIState {
 ## 9. UI 验收重点
 
 - 共享 ChatWorkspace 在独立 Web、React 宿主、原生 JS 宿主、iframe 中均有统一消息/进度/证据呈现。
+- A/B 业务宿主只通过入口 HTML 加载同一声明式 iframe Loader；悬浮按钮、面板与响应式样式不得在产品工程复制。
 - Floating / Drawer / Inline 的布局和容器销毁无事件泄露；iframe/Shadow DOM 不污染宿主样式。
 - 长回答、Markdown 代码块、中文、错误/超时、数据部分成功、空状态、断流恢复、浏览器刷新都可交互。
 - 管理页普通用户直接访问 URL / API 无法越权访问。

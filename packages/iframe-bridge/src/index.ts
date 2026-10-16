@@ -1,6 +1,13 @@
 import { rawHostContextSchema, type RawHostContext } from "@assistant/context";
 import { z } from "zod";
 
+export {
+  ASSISTANT_CONTEXT_EVENT,
+  mountIframeAssistant,
+  type IframeAssistantHost,
+  type IframeAssistantHostOptions,
+} from "./host-loader.js";
+
 export const BRIDGE_PROTOCOL = "enterprise-assistant-bridge";
 export const BRIDGE_VERSION = 1;
 

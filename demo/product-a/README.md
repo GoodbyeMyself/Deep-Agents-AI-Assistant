@@ -1,6 +1,6 @@
 # Product A Web Demo
 
-Product A 数据质量运营台。宿主采用 React 19 + Ant Design 6，界面按企业数据治理控制台设计；助手通过 iframe 接入，并把当前表、路由和业务域同步为标准 Host Context。
+Product A 数据质量运营台。宿主采用 React 19 + Ant Design 6 + ProComponents（ProLayout / PageContainer）；助手通过 `index.html` 中的 loader 脚本 iframe 接入，并把当前表、路由和业务域同步为标准 Host Context。
 
 ## 本地端口
 
@@ -10,8 +10,9 @@ Product A 数据质量运营台。宿主采用 React 19 + Ant Design 6，界面�
 
 ## 主要文件
 
-- `src/main.tsx`：Product A 品牌、业务对象和页面指标配置。
-- `../product-shell/`：React/Ant Design 控制台布局与安全 iframe 宿主实现。
+- `src/config.ts`：Product A 品牌、导航与业务对象配置。
+- `src/App.tsx`：Ant Design Pro 布局与助手 Host Context 同步。
+- `index.html`：企业助手 loader 与初始页面上下文 JSON。
 - `vite.config.ts`：Web 端口及 Agent API 代理。
 - `tests/`：iframe 问答与页面上下文切换 E2E。
 

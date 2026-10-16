@@ -21,6 +21,7 @@
 - Host SDK 和 iframe `postMessage` 双向协议，精确 `targetOrigin`、校验 `event.origin/event.source`、channelId、请求 ID 和版本。
 - 短期一次性嵌入票据，不在 URL 或消息中发送原平台长期 Token。
 - 校验 CSP `frame-ancestors`、`sandbox` 配置；对 Shadow DOM/Portal/跨域 cookie 限制写明测试结果。
+- 默认提供声明式 `assistant-loader.js`：业务入口 HTML 配置 iframe URL 和 Ticket Endpoint，Loader 在 Shadow DOM 中统一管理悬浮按钮、固定窗口、iframe 生命周期与 Bridge；业务页面只负责提供业务 Context，不实现助手容器。
 
 ### M4-T04 兼容及测试
 

@@ -3,7 +3,7 @@ import type { RawHostContext } from "@assistant/context";
 import { PlusOutlined } from "@ant-design/icons";
 import { Conversations } from "@ant-design/x";
 import { Alert, Button, Spin } from "antd";
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useState, type ReactNode } from "react";
 
 import { ChatComposer } from "./ChatComposer.js";
 import { ExecutionTimeline } from "./ExecutionTimeline.js";
@@ -31,12 +31,20 @@ export function ChatWorkspace({
   selectedObject,
   getContext,
   mode = "standalone",
+  headingTitle,
+  workspaceClassName,
+  sidebarFooter,
 }: {
   transport: AssistantApiTransport;
   selectedObject?: SelectedBusinessObject;
   getContext?: () => RawHostContext | Promise<RawHostContext>;
   mode?: "assistant" | "standalone";
+  headingTitle?: string;
+  workspaceClassName?: string;
+  sidebarFooter?: ReactNode;
 }) {
+  const resolvedHeading =
+    headingTitle ?? (mode === "standalone" ? "数据证据工作台" : "业务智能助手");
   const [sessions, setSessions] = useState<SessionDto[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>();
   const [loading, setLoading] = useState(true);
@@ -148,7 +156,13 @@ export function ChatWorkspace({
   };
 
   return (
-    <div className="assistant-workspace">
+    <div
+      className={
+        workspaceClassName
+          ? `assistant-workspace ${workspaceClassName}`
+          : "assistant-workspace"
+      }
+    >
       <aside className="assistant-conversations" aria-label="会话列表">
         <div className="assistant-sidebar-heading">
           <span>分析会话</span>
@@ -159,11 +173,16 @@ export function ChatWorkspace({
             onClick={() => void createSession()}
           />
         </div>
-        <Conversations
-          {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
-          items={sessions.map((session) => ({ key: session.id, label: session.title }))}
-          onActiveChange={setActiveSessionId}
-        />
+        <div className="assistant-conversations-body">
+          <Conversations
+            {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
+            items={sessions.map((session) => ({ key: session.id, label: session.title }))}
+            onActiveChange={setActiveSessionId}
+          />
+        </div>
+        {sidebarFooter !== undefined ? (
+          <div className="assistant-sidebar-footer">{sidebarFooter}</div>
+        ) : null}
       </aside>
       <section className="assistant-chat" aria-label="智能助手对话">
         <header className="assistant-chat-header">
@@ -173,7 +192,7 @@ export function ChatWorkspace({
             </span>
             <div>
               <span className="assistant-eyebrow">DEEPSEEK · TRUSTED BUSINESS AI</span>
-              <h1>业务智能助手</h1>
+              <h1>{resolvedHeading}</h1>
               <small>基于当前页面上下文提供可信回答</small>
             </div>
           </div>

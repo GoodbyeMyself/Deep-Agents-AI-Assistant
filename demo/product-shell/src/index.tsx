@@ -12,9 +12,7 @@ import {
   SettingOutlined,
   TeamOutlined,
 } from "@ant-design/icons";
-import { AssistantApiTransport } from "@assistant/assistant-transport";
 import type { RawHostContext } from "@assistant/context";
-import { createIframeHostBridge } from "@assistant/iframe-bridge";
 import {
   Avatar,
   Badge,
@@ -31,7 +29,7 @@ import {
   Tooltip,
   Typography,
 } from "antd";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 const { Header, Sider, Content } = Layout;
 const { Text, Title } = Typography;
@@ -65,7 +63,6 @@ export interface DemoProductConfig {
   readonly accentStrong: string;
   readonly canvas: string;
   readonly panel: string;
-  readonly assistantOrigin: string;
   readonly navItems: readonly string[];
   readonly activeNav: string;
   readonly entities: readonly [DemoEntity, DemoEntity];
@@ -109,63 +106,6 @@ function modelDisplay(value: unknown): ModelDisplay {
     : { label: `${provider} · ${modelName}`, badge: "TEST MODEL", live: false };
 }
 
-function DemoAssistantFrame({
-  assistantOrigin,
-  context,
-}: {
-  assistantOrigin: string;
-  context: RawHostContext;
-}) {
-  const frame = useRef<HTMLIFrameElement>(null);
-  const bridge = useRef<ReturnType<typeof createIframeHostBridge> | undefined>(undefined);
-  const latestContext = useRef(context);
-  latestContext.current = context;
-  const channelId = useMemo(() => crypto.randomUUID(), []);
-  const [status, setStatus] = useState<"connecting" | "ready" | "error">("connecting");
-  const transport = useMemo(
-    () => new AssistantApiTransport({ getAccessCredential: () => "mock-token-admin" }),
-    [],
-  );
-
-  useEffect(() => {
-    if (frame.current === null) return;
-    const currentBridge = createIframeHostBridge({
-      iframe: frame.current,
-      targetOrigin: assistantOrigin,
-      channelId,
-      getTicket: async () => (await transport.createEmbedTicket(assistantOrigin)).ticket,
-      getContext: () => latestContext.current,
-      onReady: () => setStatus("ready"),
-      onError: () => setStatus("error"),
-    });
-    bridge.current = currentBridge;
-    currentBridge.start();
-    return () => {
-      currentBridge.destroy();
-      bridge.current = undefined;
-    };
-  }, [assistantOrigin, channelId, transport]);
-
-  useEffect(() => bridge.current?.updateContext(context), [context]);
-
-  return (
-    <div className="assistant-frame-shell">
-      {status !== "ready" && (
-        <div className={`assistant-frame-status assistant-frame-status--${status}`} role="status">
-          <i />
-          {status === "error" ? "助手连接失败" : "正在建立安全通道"}
-        </div>
-      )}
-      <iframe
-        ref={frame}
-        title="企业业务智能助手"
-        sandbox="allow-scripts allow-same-origin"
-        src={`${assistantOrigin}/?hostOrigin=${encodeURIComponent(location.origin)}&channelId=${channelId}`}
-      />
-    </div>
-  );
-}
-
 const menuIcons = [
   <AppstoreOutlined key="overview" />,
   <DatabaseOutlined key="catalog" />,
@@ -182,6 +122,14 @@ export function DemoProductShell({ config }: { config: DemoProductConfig }) {
     live: false,
   });
   const selected = config.entities.find((entity) => entity.id === entityId) ?? config.entities[0];
+
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("enterprise-assistant:context", {
+        detail: contextFor(config, selected),
+      }),
+    );
+  }, [config, selected]);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -424,22 +372,6 @@ export function DemoProductShell({ config }: { config: DemoProductConfig }) {
                   </Card>
                 </div>
               </div>
-
-              <aside className="assistant-stage" aria-label="iframe 嵌入式业务智能助手">
-                <div className="assistant-stage-label">
-                  <div>
-                    <span className="ai-orb">AI</span>
-                    <strong>治理智能助手</strong>
-                  </div>
-                  <Tag color="green">上下文已同步</Tag>
-                </div>
-                <div className="assistant-embedded">
-                  <DemoAssistantFrame
-                    assistantOrigin={config.assistantOrigin}
-                    context={contextFor(config, selected)}
-                  />
-                </div>
-              </aside>
             </div>
           </Content>
         </Layout>

@@ -89,6 +89,9 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
 - `iframe-bridge` 对 `origin/source/channelId/version/requestId/schema` 全部校验；URL 和
   `postMessage` 不传长期 Token，一次性票据绑定目标 Origin、60 秒过期且消费后立即失效，
   只换取 5 分钟临时凭证。
+- iframe 悬浮入口已收敛为 Assistant Embed 提供的声明式 `assistant-loader.js`：Loader 在
+  Shadow DOM 中统一维护按钮、固定面板、iframe 与 Bridge；A/B 业务工程仅在入口 HTML
+  声明地址、Ticket Endpoint 和初始 Context，不再复制助手模板或 CSS。
 - Playwright 已在独立 Origin 上验证 X→Y、SDK 挂载/销毁与 iframe 票据启动；iframe 使用
   sandbox 和 `frame-ancestors`。Vite 开发服务器因 React Refresh 使用 `unsafe-inline`，生产
   部署必须改为构建产物并使用 nonce/hash 的严格 CSP。
@@ -132,8 +135,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   自动清理子进程。`pnpm demo:e2e` 分别执行 A/B 的真实浏览器主路径。
 - 交互式演示缺少 DeepSeek Key 时明确失败，不提供离线回退；Playwright 仅通过独立测试入口
   使用 Test Double。Mock Identity 和模拟业务数据始终明确展示，未把真实模型调用描述为真实企业数据集成。
-- A/B 页面均通过固定 Origin、一次性票据和 channelId 校验的 iframe Bridge 挂载助手；助手
-  头部与输入区固定，中间消息区独立滚动，页面对象切换只更新后续 Run 的 ContextSnapshot。
+- A/B 页面均通过固定 Origin、一次性票据和 channelId 校验的 iframe Bridge 挂载助手；宿主右下角固定按钮按需展开悬浮助手窗，不占用业务页面布局且不随页面滚动；助手头部与输入区固定，中间消息区独立滚动，页面对象切换只更新后续 Run 的 ContextSnapshot。
 
 完整操作流程与边界见 `dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换
 企业 IdP、业务 API、模型与持久化驱动，并完成目标环境的安全配置和联调。

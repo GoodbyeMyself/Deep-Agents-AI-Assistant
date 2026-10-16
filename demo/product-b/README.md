@@ -1,6 +1,6 @@
 # Product B Web Demo
 
-Product B 数据资产驾驶舱。宿主采用 Vue 3 + Element Plus + Vite，用于验证不同前端框架、产品术语、页面结构和 Adapter 仍可复用相同 iframe Assistant 与标准 Capability。
+Product B 数据资产驾驶舱。宿主采用 Vue 3 + Element Plus + **Art Design Pro 风格布局**（侧栏菜单 + 顶栏面包屑 + 卡片化内容区）；助手通过 `index.html` 中的 loader 脚本 iframe 接入，用于验证不同前端框架、产品术语与 Adapter 仍可复用相同助手契约。
 
 ## 本地端口
 
@@ -10,9 +10,9 @@ Product B 数据资产驾驶舱。宿主采用 Vue 3 + Element Plus + Vite，用
 
 ## 主要文件
 
-- `src/App.vue`：资产运营驾驶舱、业务对象切换与 iframe 助手宿主。
-- `src/main.ts`：Vue 与 Element Plus 应用入口。
-- `src/styles.css`：Product B 独立的深色资产运营视觉系统。
+- `src/config.ts`：Product B 品牌、导航与资产业务对象配置。
+- `src/App.vue`：Art Design Pro 风格壳层、资产切换与 Host Context 同步。
+- `index.html`：企业助手 loader 与初始页面上下文 JSON。
 - `vite.config.ts`：Web 端口及 Agent API 代理。
 - `tests/`：iframe 问答与资产上下文切换 E2E。
 

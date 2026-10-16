@@ -8,6 +8,8 @@
 
 本演示使用 Mock Identity 和模拟业务数据，但模型调用强制使用根目录 `.env` 中配置的真实 DeepSeek。缺少 `DEEPSEEK_API_KEY` 时 Agent Server 明确启动失败，不回退到离线模型。真实模型已接通不代表真实企业 API 或生产身份已经联通。
 
+交互式 Demo 的 DeepSeek Chat Completions 配置显式关闭 thinking 模式，并设置 30 秒请求超时和一次重试，以避免多工具提示触发长时间推理而让演示界面持续等待；这只属于 Demo 模型接入参数，不改变 Deep Agents 运行时、Capability 或生产模型策略。
+
 ## 一键启动
 
 在仓库根目录执行：
@@ -25,11 +27,11 @@ pnpm demo
 
 启动器包含父进程与心跳监控；在 Windows 上即使启动器异常退出，六个子服务也会自动清理，避免演示结束后继续占用端口。
 
-页面左下角及顶部只读取服务端安全模型元数据，显示 `LIVE DEEPSEEK` 和模型名；API Key 不会返回浏览器。A/B 宿主通过一次性票据、固定 Origin 和 channelId 与各自的跨 Origin iframe 建立短期会话，长期凭证不会进入 iframe URL 或 `postMessage`。
+页面左下角及顶部只读取服务端安全模型元数据，显示 `LIVE DEEPSEEK` 和模型名；API Key 不会返回浏览器。A/B 的入口 HTML 加载同一声明式 Assistant Loader，由 Loader 在 Shadow DOM 中统一创建右下角按钮、固定浮窗和 iframe；宿主不包含助手容器实现。Loader 通过一次性票据、固定 Origin 和 channelId 与各自的跨 Origin iframe 建立短期会话，长期凭证不会进入 iframe URL 或 `postMessage`。
 
 ## 推荐演示流程
 
-1. 先打开 Product A，指出“当前治理对象”下方的上下文同步条和右侧 iframe 助手；助手头部与消息输入区固定，中间对话区滚动。
+1. 先打开 Product A，指出“当前治理对象”下方的上下文同步条和页面右下角的 AI 助手按钮；点击后助手以固定悬浮窗展开，宿主页面滚动时位置不变，助手内部头部与消息输入区固定、中间对话区滚动。
 2. 在“订单明细表”上下文输入“当前数据质量怎么样？”。说明助手调用的是 `data_quality.get_trend@1.0.0`，结果来自 Product A Adapter。
 3. 展示 96% 结果、Partial/缺失日期限制、质量趋势卡片和 Evidence；强调模型文本不是授权依据。
 4. 切换到“客户主数据表”，观察助手输入框和当前对象随下一次请求更新，已有 Run 的 Snapshot 不变化。

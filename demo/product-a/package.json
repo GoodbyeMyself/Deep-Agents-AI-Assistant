@@ -11,7 +11,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@assistant/demo-product-shell": "workspace:*",
+    "@ant-design/icons": "6.3.4",
+    "@ant-design/pro-components": "3.1.15-7",
+    "@assistant/context": "workspace:*",
     "antd": "6.6.6",
     "react": "19.3.0",
     "react-dom": "19.3.0"

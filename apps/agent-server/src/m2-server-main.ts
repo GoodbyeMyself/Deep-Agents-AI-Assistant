@@ -19,6 +19,11 @@ const model = new ChatOpenAI({
   apiKey,
   model: modelName,
   temperature: 0,
+  maxTokens: 2_048,
+  maxRetries: 1,
+  timeout: 30_000,
+  streamUsage: false,
+  ...(deepSeekKey === undefined ? {} : { modelKwargs: { thinking: { type: "disabled" } } }),
   ...(baseURL === undefined ? {} : { configuration: { baseURL } }),
 });
 const application = await createM2Application({
