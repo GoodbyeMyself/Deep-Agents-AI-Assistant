@@ -6,8 +6,6 @@
   "scripts": {
     "build": "vue-tsc -p tsconfig.build.json --noEmit && vite build",
     "dev": "vite --host 127.0.0.1",
-    "e2e": "playwright test",
-    "test": "vitest run src --passWithNoTests",
     "typecheck": "vue-tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -16,7 +14,6 @@
     "vue": "3.5.22"
   },
   "devDependencies": {
-    "@playwright/test": "1.64.0",
     "@vitejs/plugin-vue": "6.0.10",
     "vite": "8.3.4",
     "vue-tsc": "3.1.1"

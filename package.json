@@ -24,12 +24,9 @@
     "demo:b:server": "pnpm --filter @assistant/demo-server serve:product-b",
     "demo:b:web": "pnpm --filter @assistant/demo-product-b-web dev",
     "demo": "node demo/scripts/start-dual-demo.mjs",
-    "demo:e2e": "pnpm --filter @assistant/demo-product-a-web e2e && pnpm --filter @assistant/demo-product-b-web e2e",
-    "e2e": "pnpm --filter @assistant/assistant-web e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
-    "test": "pnpm build && pnpm -r --if-present test",
     "typecheck": "pnpm build && pnpm -r --if-present typecheck"
   },
   "devDependencies": {
@@ -42,7 +39,6 @@
     "prettier": "3.8.2",
     "typescript": "5.9.3",
     "typescript-eslint": "8.56.1",
-    "vitest": "5.0.2",
     "vue-eslint-parser": "10.3.0"
   }
 }

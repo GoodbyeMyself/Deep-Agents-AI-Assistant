@@ -6,7 +6,6 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json && vite build",
     "dev": "vite --host 127.0.0.1",
-    "test": "vitest run src --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

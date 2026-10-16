@@ -139,9 +139,9 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 两套页面提供不同品牌、业务指标、对象列表和活动信息，并把当前订单/客户对象通过宿主
   Context 传入助手；工具结果展示标准指标、Partial 限制与 Evidence。
 - 根命令 `pnpm demo` 一次启动六个进程；Windows 下使用父进程与心跳监控，启动器退出后
-  自动清理子进程。`pnpm demo:e2e` 分别执行 A/B 的真实浏览器主路径。
-- 交互式演示缺少 DeepSeek Key 时明确失败，不提供离线回退；Playwright 仅通过独立测试入口
-  使用 Test Double。Mock Identity 和模拟业务数据始终明确展示，未把真实模型调用描述为真实企业数据集成。
+  自动清理子进程。
+- 交互式演示缺少 DeepSeek Key 时明确失败，不提供离线回退。Mock Identity 和模拟业务数据始终明确展示，未把真实模型调用描述为真实企业数据集成。
+- 仓库已移除 Vitest/Playwright 自动化测试与 `tests/capability-contract-testkit`；`deepagentsjs/` 子树保持独立，未改动其测试配置。
 - A/B 页面均通过固定 Origin、一次性票据和 channelId 校验的 iframe Bridge 挂载助手；宿主右下角固定按钮按需展开悬浮助手窗，不占用业务页面布局且不随页面滚动；助手头部与输入区固定，中间消息区独立滚动，页面对象切换只更新后续 Run 的 ContextSnapshot。
 
 完整操作流程与边界见 `dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换

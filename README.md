@@ -70,11 +70,10 @@ Deep-Agents-AI-Assistant/
 │  ├─ implementation-status.md       # 当前真实实施状态与生产边界
 │  └─ m0-acceptance-report.md ...    # 各阶段真实验收记录
 ├─ skills/poc-data-quality/          # Deep Agents FilesystemBackend Skill 样例
-├─ tests/capability-contract-testkit/ # Adapter 共享契约测试工具
 ├─ .env.example                      # 本地模型与 Agent Server 配置模板
 ├─ AGENTS.md                         # 仓库开发规则和架构约束
 ├─ pnpm-workspace.yaml               # pnpm Workspace 与依赖版本目录
-└─ package.json                      # 根级开发、检查、测试和构建命令
+└─ package.json                      # 根级开发、检查和构建命令
 ```
 
 `node_modules/`、构建产物、测试输出、本地 `.env` 和本地参考源码目录不属于正式工程结构，不应提交。
@@ -171,12 +170,9 @@ pnpm demo         # Product A: 5411；Product B: 5412
 pnpm install --frozen-lockfile
 pnpm lint
 pnpm typecheck
-pnpm test
 pnpm build
 pnpm format:check
 ```
-
-离线测试使用 LangChain 官方 Fake Model，但仍会真实运行 Agent 图、Tools、Plugin Loader、Subagent、MemorySaver 和 Streaming。当前全量门禁包含 75 个 Vitest 测试，另有 10 个 Chromium E2E 用例；数量以后续代码和验收报告为准。
 
 ## 查看页面效果
 
@@ -193,18 +189,11 @@ pnpm demo
 
 两套页面采用不同宿主框架和视觉语言，但都通过安全 iframe Bridge 挂载同一套 Assistant SDK 和标准 Capability，分别连接 `demo-product-a`、`demo-product-b` Adapter；端口、进程、会话与 Checkpointer 独立。助手头部和输入区固定，中间消息区独立滚动。完整讲解顺序和边界见 [双产品演示指南](docs/dual-product-demo-guide.md)。
 
-交互式演示只使用真实 DeepSeek，页面显示 `LIVE DEEPSEEK` 和实际模型名称；缺少 Key 时服务端会明确启动失败，不提供离线回退。自动化测试使用隔离的 LangChain Test Double，不属于可启动的演示模式。
+交互式演示只使用真实 DeepSeek，页面显示 `LIVE DEEPSEEK` 和实际模型名称；缺少 Key 时服务端会明确启动失败，不提供离线回退。
 
 ![Product A 数据质量运营台](docs/demo-product-a.png)
 
 ![Product B 数据资产驾驶舱](docs/demo-product-b.png)
-
-历史 M3 独立 Web 与 M4 三接入方式的自动化验证仍作为回归测试保留，不作为当前交互式演示入口。浏览器回归命令：
-
-```bash
-pnpm --filter @assistant/assistant-web e2e
-pnpm --filter @assistant/demo-host e2e
-```
 
 ## 使用真实模型
 

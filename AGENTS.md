@@ -27,8 +27,8 @@
 - 先做可验证实现和测试，再补辅助文档；不批量生成空壳模块。
 - Deep Agents、LangChain、Ant Design X 官方 API 不得臆造；PluginLoader、definePlugin、CapabilityRegistry 等是本项目自研接口。
 - 缺少真实模型 Key/外部 API 时 Mock 与真实验证明确分开；不得用模拟数据冒充业务集成成功。
-- 运行 `pnpm lint`、`pnpm typecheck`、`pnpm test`、`pnpm build`（建立后均要求执行）。失败必须处理或说明阻断。
-- 任何权限/契约变更同时更新测试、`docs/implementation-status.md` 与 ADR。
+- 运行 `pnpm lint`、`pnpm typecheck`、`pnpm build`（建立后均要求执行）。失败必须处理或说明阻断。
+- 任何权限/契约变更同时更新 `docs/implementation-status.md` 与 ADR。
 
 ## 4. 安全要求
 

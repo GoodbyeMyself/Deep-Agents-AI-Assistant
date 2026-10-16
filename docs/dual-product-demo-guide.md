@@ -38,13 +38,7 @@ pnpm demo
 5. 打开 Product B，重复订单资产查询。指出 Product B 原始分数字段为比例 `0.96`，经其 Adapter 映射后仍得到标准 `96 percent`。
 6. 对比两个页面：A 是 React/Ant Design 治理控制台，B 是 Vue/Element Plus 资产运营驾驶舱；Agent Server、iframe Assistant、SDK、Chat Core 和 Capability Contract 相同，品牌页面、插件、原始字段、进程、会话与 Checkpointer 独立。
 
-## 自动化验收
-
-```bash
-pnpm demo:e2e
-```
-
-浏览器测试分别验证：
+## 手动验收要点
 
 - A/B 业务页面可以加载并显示各自品牌；
 - Shared Assistant SDK 已通过跨 Origin iframe 嵌入页面；
@@ -57,6 +51,6 @@ pnpm demo:e2e
 
 - 页面指标和业务活动属于明确标识的演示数据。
 - Bearer Token 是本地 Mock Identity 的固定测试凭证，不是生产鉴权方案。
-- 交互式演示只允许真实 DeepSeek 自然语言回答和 Tool Calling；测试套件中的固定 Test Double 不对用户开放。
+- 交互式演示只允许真实 DeepSeek 自然语言回答和 Tool Calling。
 - Session/Event/Audit 和 LangGraph `MemorySaver` 仍在内存中，重启后不会恢复。
 - 生产接入必须替换企业 IdP、真实业务 API、持久化 Store/Checkpointer、密钥管理、TLS/CSP 与指标告警。

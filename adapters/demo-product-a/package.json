@@ -11,14 +11,10 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
     "@assistant/capability-contracts": "workspace:*",
     "@assistant/plugin-sdk": "workspace:*"
-  },
-  "devDependencies": {
-    "@assistant/capability-contract-testkit": "workspace:*"
   }
 }

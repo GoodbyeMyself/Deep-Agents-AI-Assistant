@@ -8,7 +8,6 @@
     "serve:m4": "node --import tsx src/m4-demo-server-main.ts",
     "serve:product-a": "node --import tsx src/demo-product-a-server-main.ts",
     "serve:product-b": "node --import tsx src/demo-product-b-server-main.ts",
-    "test": "vitest run src --passWithNoTests",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {

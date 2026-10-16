@@ -5,6 +5,8 @@ import { AppstoreOutlined, HomeOutlined, MessageOutlined } from "@ant-design/ico
 import { PageContainer, ProCard, ProLayout } from "@ant-design/pro-components";
 import { Alert, Button, Descriptions, Empty, Select, Space, Table, Tag } from "antd";
 import { useEffect, useMemo, useState } from "react";
+import { Link, Navigate, Outlet, Route, Routes, useLocation, useOutletContext, } from "react-router-dom";
+const PAGE_PATHS = ["/assistant", "/sessions", "/runtime"];
 function displayValue(value, fallback = "—") {
     return typeof value === "string" || typeof value === "number" || typeof value === "boolean"
         ? String(value)
@@ -35,6 +37,11 @@ const shellRoute = {
         { path: "/runtime", name: "运行状态", icon: _jsx(AppstoreOutlined, {}) },
     ],
 };
+function normalizePathname(pathname) {
+    if (PAGE_PATHS.includes(pathname))
+        return pathname;
+    return "/assistant";
+}
 function RuntimeStatus({ transport, isAdmin, }) {
     const [models, setModels] = useState([]);
     const [capabilities, setCapabilities] = useState([]);
@@ -108,18 +115,52 @@ function IdentitySelect({ profile, onChange, }) {
                     label: config.label,
                 })) })] }));
 }
-export function App() {
+function AssistantChatPage({ transport, selectedObject, profileKey, }) {
+    return (_jsx("div", { className: "assistant-web-chat-host", children: _jsx(ChatWorkspace, { transport: transport, selectedObject: selectedObject, workspaceClassName: "codex-workspace" }, profileKey) }));
+}
+function useAppOutletContext() {
+    const context = useOutletContext();
+    if (context === undefined) {
+        throw new Error("App routes must render inside AppLayout.");
+    }
+    return context;
+}
+function AssistantRoute() {
+    const { transport, profile, selectedObject } = useAppOutletContext();
+    return (_jsx(AssistantChatPage, { transport: transport, selectedObject: selectedObject, profileKey: profile }));
+}
+function SessionsRoute() {
+    const { transport } = useAppOutletContext();
+    return _jsx(SessionsPage, { transport: transport });
+}
+function RuntimeRoute() {
+    const { transport, isAdmin } = useAppOutletContext();
+    return _jsx(RuntimeStatus, { transport: transport, isAdmin: isAdmin });
+}
+function AppLayout() {
+    const location = useLocation();
     const [profile, setProfile] = useState("user-a");
-    const [page, setPage] = useState("/assistant");
+    const [collapsed, setCollapsed] = useState(true);
     const current = profileConfig[profile];
     const transport = useMemo(() => new AssistantApiTransport({ getAccessCredential: () => current.token }), [current.token]);
-    const isChatPage = page === "/assistant";
-    return (_jsxs(ProLayout, { className: isChatPage ? "assistant-web-layout assistant-web-layout--chat" : "assistant-web-layout", title: "Enterprise Assistant", logo: _jsx("div", { className: "assistant-web-logo", "aria-hidden": true, children: "EA" }), layout: "mix", fixSiderbar: true, location: { pathname: page }, route: shellRoute, menuItemRender: (item, dom) => (_jsx("a", { href: item.path, onClick: (event) => {
-                event.preventDefault();
-                if (typeof item.path === "string")
-                    setPage(item.path);
-            }, children: dom })), siderWidth: 220, contentStyle: isChatPage
+    const pathname = normalizePathname(location.pathname);
+    const isChatPage = pathname === "/assistant";
+    const outletContext = useMemo(() => ({
+        transport,
+        profile,
+        isAdmin: profile === "admin",
+        selectedObject: current.object,
+    }), [transport, profile, current.object]);
+    return (_jsx(ProLayout, { className: isChatPage ? "assistant-web-layout assistant-web-layout--chat" : "assistant-web-layout", title: "Enterprise Assistant", logo: _jsx("div", { className: "assistant-web-logo", "aria-hidden": true, children: "EA" }), layout: "mix", fixSiderbar: true, collapsed: collapsed, onCollapse: setCollapsed, location: { pathname }, route: shellRoute, menuItemRender: (item, dom) => {
+            const target = typeof item.path === "string" ? item.path : "/assistant";
+            return _jsx(Link, { to: target, children: dom });
+        }, siderWidth: 220, contentStyle: isChatPage
             ? { padding: 0, height: "calc(100vh - 56px)", overflow: "hidden" }
-            : { minHeight: "calc(100vh - 56px)" }, actionsRender: () => [_jsx(IdentitySelect, { profile: profile, onChange: setProfile }, "identity")], children: [isChatPage ? (_jsx("div", { className: "assistant-web-chat-host", children: _jsx(ChatWorkspace, { transport: transport, selectedObject: current.object, workspaceClassName: "codex-workspace" }, profile) })) : null, page === "/sessions" && _jsx(SessionsPage, { transport: transport }), page === "/runtime" && (_jsx(RuntimeStatus, { transport: transport, isAdmin: profile === "admin" }))] }));
+            : { minHeight: "calc(100vh - 56px)" }, actionsRender: () => [
+            _jsx(IdentitySelect, { profile: profile, onChange: setProfile }, "identity"),
+        ], children: _jsx(Outlet, { context: outletContext }) }));
+}
+export function App() {
+    return (_jsx(Routes, { children: _jsxs(Route, { element: _jsx(AppLayout, {}), children: [_jsx(Route, { path: "/", element: _jsx(Navigate, { to: "/assistant", replace: true }) }), _jsx(Route, { path: "/assistant", element: _jsx(AssistantRoute, {}) }), _jsx(Route, { path: "/sessions", element: _jsx(SessionsRoute, {}) }), _jsx(Route, { path: "/runtime", element: _jsx(RuntimeRoute, {}) }), _jsx(Route, { path: "*", element: _jsx(Navigate, { to: "/assistant", replace: true }) })] }) }));
 }
 //# sourceMappingURL=App.js.map
