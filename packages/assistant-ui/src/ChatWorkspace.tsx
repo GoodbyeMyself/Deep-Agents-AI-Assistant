@@ -1,12 +1,16 @@
 import type { AssistantApiTransport, MessageDto, SessionDto } from "@assistant/assistant-transport";
 import type { RawHostContext } from "@assistant/context";
-import { PlusOutlined } from "@ant-design/icons";
+import {
+  FolderOutlined,
+  MoreOutlined,
+  PlusOutlined,
+  UnorderedListOutlined,
+} from "@ant-design/icons";
 import { Conversations } from "@ant-design/x";
-import { Alert, Button, Spin } from "antd";
+import { Alert, Button, Divider, Spin } from "antd";
 import { useCallback, useEffect, useReducer, useState, type ReactNode } from "react";
 
 import { ChatComposer } from "./ChatComposer.js";
-import { ExecutionTimeline } from "./ExecutionTimeline.js";
 import { MessageList } from "./MessageList.js";
 import { chatReducer, initialChatState } from "./store.js";
 import type { ChatMessage } from "./types.js";
@@ -22,6 +26,7 @@ const toMessage = (message: MessageDto): ChatMessage => ({
   role: message.role,
   content: message.content,
   status: "success",
+  executionSteps: [],
   evidenceIds: [...message.evidenceRefs],
   views: [],
 });
@@ -108,6 +113,7 @@ export function ChatWorkspace({
           role: "user",
           content: message,
           status: "success",
+          executionSteps: [],
           evidenceIds: [],
           views: [],
         },
@@ -116,6 +122,7 @@ export function ChatWorkspace({
           role: "assistant",
           content: "",
           status: "loading",
+          executionSteps: [],
           evidenceIds: [],
           views: [],
         },
@@ -155,12 +162,14 @@ export function ChatWorkspace({
     if (state.activeRunId !== undefined) void transport.cancelRun(state.activeRunId);
   };
 
+  const useSessionHeader = workspaceClassName?.includes("codex-workspace") ?? false;
+  const activeSessionTitle =
+    sessions.find((session) => session.id === activeSessionId)?.title ?? "新会话";
+
   return (
     <div
       className={
-        workspaceClassName
-          ? `assistant-workspace ${workspaceClassName}`
-          : "assistant-workspace"
+        workspaceClassName ? `assistant-workspace ${workspaceClassName}` : "assistant-workspace"
       }
     >
       <aside className="assistant-conversations" aria-label="会话列表">
@@ -185,21 +194,46 @@ export function ChatWorkspace({
         ) : null}
       </aside>
       <section className="assistant-chat" aria-label="智能助手对话">
-        <header className="assistant-chat-header">
-          <div className="assistant-heading">
-            <span className="assistant-heading-mark" aria-hidden="true">
-              AI
-            </span>
-            <div>
-              <span className="assistant-eyebrow">DEEPSEEK · TRUSTED BUSINESS AI</span>
-              <h1>{resolvedHeading}</h1>
-              <small>基于当前页面上下文提供可信回答</small>
+        <header
+          className={
+            useSessionHeader
+              ? "assistant-chat-header assistant-chat-header--session"
+              : "assistant-chat-header"
+          }
+        >
+          {useSessionHeader ? (
+            <>
+              <h1 className="assistant-sr-only">{resolvedHeading}</h1>
+              <div className="assistant-session-title">
+                <FolderOutlined aria-hidden />
+                <span className="assistant-session-title-text" title={activeSessionTitle}>
+                  {activeSessionTitle}
+                </span>
+              </div>
+              <div className="assistant-session-actions">
+                <Button type="text" icon={<MoreOutlined />} aria-label="更多操作" />
+                <Button type="text" icon={<UnorderedListOutlined />} aria-label="会话概要" />
+                <Divider orientation="vertical" />
+                <Button
+                  type="text"
+                  icon={<PlusOutlined />}
+                  aria-label="新建会话"
+                  onClick={() => void createSession()}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="assistant-heading">
+              <span className="assistant-heading-mark" aria-hidden="true">
+                AI
+              </span>
+              <div>
+                <span className="assistant-eyebrow">DEEPSEEK · TRUSTED BUSINESS AI</span>
+                <h1>{resolvedHeading}</h1>
+                <small>基于当前页面上下文提供可信回答</small>
+              </div>
             </div>
-          </div>
-          <div className="assistant-context-chip">
-            <span>当前对象</span>
-            <strong>{selectedObject?.name ?? "未选择"}</strong>
-          </div>
+          )}
         </header>
         {error && (
           <Alert closable onClose={() => setError(undefined)} type="error" showIcon title={error} />
@@ -208,8 +242,15 @@ export function ChatWorkspace({
           {state.activeRunId ? "助手正在执行" : "助手已就绪"}
         </div>
         <div className="assistant-chat-scroll">
-          {loading ? <Spin /> : <MessageList messages={state.messages} transport={transport} />}
-          <ExecutionTimeline steps={state.steps} />
+          {loading ? (
+            <Spin />
+          ) : (
+            <MessageList
+              messages={state.messages}
+              transport={transport}
+              {...(selectedObject?.name ? { objectName: selectedObject.name } : {})}
+            />
+          )}
         </div>
         <ChatComposer
           loading={state.activeRunId !== undefined}

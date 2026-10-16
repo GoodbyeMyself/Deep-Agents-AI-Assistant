@@ -12,7 +12,7 @@ test("runs a trusted quality query and exposes evidence", async ({ page }) => {
 });
 test("keeps administrative plugin status separated", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "运行状态" }).click();
+    await page.getByRole("menuitem", { name: "运行状态" }).click();
     await expect(page.getByText("管理员可查看插件运行明细")).toBeVisible();
     await page.getByLabel("本地模拟身份").click();
     await page.getByText("平台管理员", { exact: true }).click();

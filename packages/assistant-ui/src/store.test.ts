@@ -8,6 +8,7 @@ const assistant = {
   role: "assistant" as const,
   content: "",
   status: "loading" as const,
+  executionSteps: [],
   evidenceIds: [],
   views: [],
 };
@@ -16,6 +17,7 @@ const user = {
   role: "user" as const,
   content: "hello",
   status: "success" as const,
+  executionSteps: [],
   evidenceIds: [],
   views: [],
 };
@@ -50,6 +52,65 @@ describe("chatReducer", () => {
     const partial = chatReducer(submitted, { type: "event", event: baseEvent });
     const failed = chatReducer(partial, { type: "failed", message: "network interrupted" });
     expect(failed.messages[1]).toMatchObject({ content: "结果", status: "error" });
+  });
+
+  it("attaches public execution steps to the matching assistant message", () => {
+    const submitted = chatReducer(initialChatState, { type: "submit", user, assistant });
+    const toolStarted = chatReducer(submitted, {
+      type: "event",
+      event: {
+        ...baseEvent,
+        eventId: "tool-started",
+        type: "tool.started",
+        data: {
+          toolCallId: "private-call-id",
+          toolName: "data_quality_get_trend",
+        },
+      },
+    });
+    const assistantMessage = toolStarted.messages[1];
+
+    expect(assistantMessage?.executionSteps).toEqual([
+      { key: "run", title: "正在分析请求", status: "loading" },
+      {
+        key: "tool:private-call-id",
+        title: "查询数据质量趋势",
+        detail: "业务能力 · data_quality_get_trend",
+        status: "loading",
+      },
+    ]);
+  });
+
+  it("retains the public subagent namespace as execution detail", () => {
+    const submitted = chatReducer(initialChatState, { type: "submit", user, assistant });
+    const started = chatReducer(submitted, {
+      type: "event",
+      event: {
+        ...baseEvent,
+        eventId: "subagent-started",
+        type: "subagent.started",
+        data: { namespace: "tools:02c1f3dd-77d6-5667-995d-41c76be1f8c3" },
+      },
+    });
+
+    expect(started.messages[1]?.executionSteps.at(-1)).toMatchObject({
+      title: "协作智能体处理",
+      detail: "tools:02c1f3dd-77d6-5667-995d-41c76be1f8c3",
+    });
+  });
+
+  it("does not overwrite execution steps on an earlier assistant message", () => {
+    const first = chatReducer(initialChatState, { type: "submit", user, assistant });
+    const second = chatReducer(first, {
+      type: "submit",
+      user: { ...user, id: "u2" },
+      assistant: { ...assistant, id: "a2" },
+    });
+
+    expect(second.messages[1]?.executionSteps).toEqual(first.messages[1]?.executionSteps);
+    expect(second.messages[3]?.executionSteps).toEqual([
+      { key: "run", title: "正在分析请求", status: "loading" },
+    ]);
   });
 
   it("produces the same product-agnostic view model for normalized A/B events", () => {

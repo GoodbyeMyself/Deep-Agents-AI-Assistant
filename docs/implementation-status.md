@@ -66,12 +66,19 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
 
 - 已实现 `assistant-transport`：Bearer REST、Fetch SSE、事件 Schema 校验、断流续传、
   `Last-Event-ID`、事件去重与终态查询，不把网络断开伪装为完成。
-- 已实现 React Shared Chat Core：会话切换、增量文本、公开 Tool/Subagent 进度、取消、
-  Evidence 二次解析，以及 text/metric/table/chart.line/references 受控 View Renderer。
+- 已实现 React Shared Chat Core：会话切换、增量文本、取消、Evidence 二次解析，以及
+  text/metric/table/chart.line/references 受控 View Renderer。公开 Tool/Subagent 进度使用
+  Ant Design X ThoughtChain 归属到对应助手消息；执行中展开、完成后折叠，支持显式展开/收起；
+  步骤同时展示业务名称、标准 Capability 标识和公开协作 namespace，但不展示模型私有推理。
+- 消息列表使用 Ant Design X `Bubble.List`，模型正文使用 `@ant-design/x-markdown@2.9.0`
+  解析 CommonMark/GFM；流式状态传递给渲染器，原始 HTML 转义为文本并保留 XSS 净化边界。
 - 独立 Web 已提供业务对象选择语义、用户会话管理、模型/能力状态和管理员插件状态；
   普通用户与管理员页面按服务端权限分离。
 - 使用 React 19、Ant Design 6.6.6、Ant Design X 2.9.0 与 Vite 8.3.4；未直接消费
   LangGraph raw chunk，未进入 M4 React/JS/iframe SDK。
+- 独立 Web Shell（`assistant-web`）已对齐 Ant Design Pro：`ProLayout` 导航、
+  `PageContainer`/`ProCard` 管理页，与 `demo/product-a` 宿主壳一致；聊天区仍复用
+  Shared Chat Core。
 - Playwright 已通过真实浏览器验证模拟产品 A 的质量查询、SSE 结果、图表、证据、管理员
   隔离和窄屏主路径。服务端与业务数据仍是 M2 Mock/内存边界，不冒充生产集成。
 

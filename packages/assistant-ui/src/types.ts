@@ -5,6 +5,7 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
   status: "loading" | "success" | "error" | "abort";
+  executionSteps: PublicExecutionStep[];
   evidenceIds: string[];
   views: AssistantView[];
 }
@@ -18,7 +19,6 @@ export interface PublicExecutionStep {
 
 export interface ChatState {
   messages: ChatMessage[];
-  steps: PublicExecutionStep[];
   seenEventIds: Set<string>;
   activeRunId: string | undefined;
 }

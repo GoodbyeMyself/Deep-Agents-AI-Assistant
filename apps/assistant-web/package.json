@@ -12,13 +12,15 @@
   },
   "dependencies": {
     "@ant-design/icons": "6.1.0",
+    "@ant-design/pro-components": "3.1.15-7",
     "@ant-design/x": "2.9.0",
     "@assistant/assistant-transport": "workspace:*",
     "@assistant/assistant-ui": "workspace:*",
     "@assistant/contracts": "workspace:*",
     "antd": "6.6.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "react-router-dom": "7.9.4"
   },
   "devDependencies": {
     "@playwright/test": "1.64.0",

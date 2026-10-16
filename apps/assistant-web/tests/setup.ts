@@ -19,6 +19,21 @@ async function waitFor(url: string): Promise<void> {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
+async function waitForViteOptimizedDeps(baseUrl: string): Promise<void> {
+  const depUrl = `${baseUrl}/node_modules/.vite/deps/react-router-dom.js`;
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(depUrl);
+      if (response.ok) return;
+    } catch {
+      // Vite is still pre-bundling dependencies.
+    }
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 300));
+  }
+  throw new Error(`Timed out waiting for Vite optimized deps at ${depUrl}`);
+}
+
 function terminate(child: ChildProcess): void {
   if (child.pid === undefined) return;
   if (process.platform === "win32") {
@@ -49,7 +64,9 @@ export default async function setup() {
   try {
     await Promise.all([
       waitFor("http://127.0.0.1:3000/api/v1/openapi.json"),
-      waitFor("http://127.0.0.1:5173"),
+      waitFor("http://127.0.0.1:5173").then(() =>
+        waitForViteOptimizedDeps("http://127.0.0.1:5173"),
+      ),
     ]);
   } catch (error) {
     terminate(agentServer);

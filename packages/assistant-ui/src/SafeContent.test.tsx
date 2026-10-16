@@ -10,4 +10,14 @@ describe("SafeContent", () => {
     expect(container.querySelector("img")).toBeNull();
     expect(screen.getByText(/onerror/)).toBeTruthy();
   });
+
+  it("renders model output as markdown", () => {
+    const { container } = render(
+      <SafeContent content={"## 质量分析\n\n- **完整率**：98%\n- 异常记录：2"} />,
+    );
+
+    expect(screen.getByRole("heading", { level: 2, name: "质量分析" })).toBeTruthy();
+    expect(container.querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByText("完整率").tagName).toBe("STRONG");
+  });
 });

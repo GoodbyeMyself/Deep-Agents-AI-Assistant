@@ -1,22 +1,12 @@
-import { Fragment } from "react";
+import { XMarkdown } from "@ant-design/x-markdown";
 
-export function SafeContent({ content }: { content: string }) {
-  const blocks = content.split(/```/);
+export function SafeContent({ content, streaming = false }: { content: string; streaming?: boolean }) {
   return (
-    <div className="assistant-safe-content">
-      {blocks.map((block, index) =>
-        index % 2 === 1 ? (
-          <pre key={index} tabIndex={0}>
-            <code>{block.replace(/^\w+\n/, "")}</code>
-          </pre>
-        ) : (
-          <Fragment key={index}>
-            {block.split("\n").map((line, lineIndex) => (
-              <p key={lineIndex}>{line || "\u00a0"}</p>
-            ))}
-          </Fragment>
-        ),
-      )}
-    </div>
+    <XMarkdown
+      className="assistant-safe-content"
+      content={content}
+      escapeRawHtml
+      streaming={{ hasNextChunk: streaming, enableAnimation: false }}
+    />
   );
 }

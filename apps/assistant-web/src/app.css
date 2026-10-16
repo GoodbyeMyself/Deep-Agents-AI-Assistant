@@ -8,9 +8,9 @@ body,
 }
 
 body {
-  background: #f7f7f8;
+  background: #f5f5f5;
   color: #1f2937;
-  font-family: Inter, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-family: "Microsoft YaHei", "PingFang SC", Inter, "Segoe UI", sans-serif;
   overscroll-behavior: none;
 }
 
@@ -22,216 +22,72 @@ select {
 }
 
 :focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #1677ff;
   outline-offset: 2px;
 }
 
-.codex-shell {
-  display: grid;
-  grid-template-columns: 56px minmax(0, 1fr);
-  height: 100%;
-  overflow: hidden;
-  background: #f7f7f8;
-}
-
-.codex-rail {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  height: 100%;
-  padding: 10px 0 12px;
-  overflow: hidden;
-  border-right: 1px solid #ececf1;
-  background: #fbfbfc;
-}
-
-.codex-rail-btn {
+.assistant-web-logo {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 10px;
-  color: #6b7280;
-  background: transparent;
-  cursor: pointer;
-}
-
-.codex-rail-btn:hover,
-.codex-rail-btn.active {
-  color: #2563eb;
-  background: #eff6ff;
-}
-
-.codex-rail-spacer {
-  flex: 1;
-}
-
-.codex-stage {
-  display: grid;
-  min-width: 0;
-  min-height: 0;
-  height: 100%;
-  overflow: hidden;
-  grid-template-columns: 280px minmax(0, 1fr);
-  background: #fff;
-}
-
-.codex-stage--chat {
-  grid-template-columns: 280px minmax(0, 1fr);
-}
-
-.codex-stage--chat .codex-workspace {
-  display: contents;
-}
-
-.codex-stage--chat .codex-workspace .assistant-conversations {
-  grid-column: 1;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  border-right: 1px solid #ececf1;
-  background: #fbfbfc;
-  color: #374151;
-}
-
-.codex-workspace .assistant-sidebar-footer {
-  border-top-color: #ececf1;
-}
-
-.codex-workspace .assistant-sidebar-footer .codex-identity {
-  margin-top: 0;
-  padding: 0 4px;
-}
-
-.codex-stage--chat .codex-workspace .assistant-chat {
-  grid-column: 2;
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-  background: #fff;
-}
-
-.codex-list-pane {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  min-height: 0;
-  padding: 16px 14px;
-  overflow: hidden auto;
-  border-right: 1px solid #ececf1;
-  background: #fbfbfc;
-}
-
-.codex-list-head {
-  padding: 0 4px;
-}
-
-.codex-app-title {
-  border: 0;
-  background: transparent;
-  color: #111827;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.codex-new-chat {
-  justify-content: flex-start;
-  height: 40px;
-  border-radius: 10px;
-}
-
-.codex-list-section {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.codex-list-label {
-  padding: 0 6px;
-  color: #9ca3af;
-  font-size: 12px;
-}
-
-.codex-list-item {
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: #374151;
-  text-align: left;
-  cursor: pointer;
-}
-
-.codex-list-item strong {
-  display: block;
-  font-size: 13px;
-}
-
-.codex-list-item small {
-  display: block;
-  margin-top: 2px;
-  color: #9ca3af;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, #1677ff, #0958d9);
+  color: #fff;
   font-size: 11px;
+  font-weight: 700;
 }
 
-.codex-list-item:hover,
-.codex-list-item.active {
-  background: #eef2ff;
-  color: #1d4ed8;
+.assistant-web-layout.ant-pro-layout {
+  min-height: 100%;
 }
 
-.codex-identity {
+.assistant-web-layout--chat .ant-pro-page-container-children-content {
+  padding: 0;
+}
+
+.assistant-web-identity {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: auto;
-  padding: 0 4px;
-  color: #6b7280;
+  align-items: center;
+  gap: 8px;
+  margin-right: 8px;
+  color: rgba(0, 0, 0, 0.65);
   font-size: 12px;
 }
 
-.codex-identity .ant-select {
-  width: 100%;
+.assistant-web-identity .ant-select {
+  min-width: 140px;
 }
 
-.codex-admin-page {
+.assistant-web-chat-host {
   height: 100%;
   min-height: 0;
-  padding: 28px 32px 48px;
-  overflow: hidden auto;
-  overscroll-behavior: contain;
+  overflow: hidden;
 }
 
-.codex-admin-heading h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  font-weight: 600;
-}
-
-.codex-admin-heading p {
-  margin: 0 0 24px;
-  color: #6b7280;
-}
-
-.status-grid {
+.assistant-web-status-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-.status-grid .ant-card:last-child {
+.assistant-web-status-grid .ant-pro-card:last-child {
   grid-column: 1 / -1;
 }
 
 .codex-workspace.assistant-workspace {
+  height: 100%;
+  min-height: 0;
   border: 0;
   border-radius: 0;
   box-shadow: none;
   background: transparent;
+}
+
+.codex-workspace .assistant-conversations {
+  border-right: 1px solid #ececf1;
+  background: #fbfbfc;
+  color: #374151;
 }
 
 .codex-workspace .assistant-conversations .ant-conversations-item,
@@ -255,35 +111,11 @@ select {
   color: #374151;
 }
 
-.codex-workspace .assistant-chat-header {
-  position: relative;
-  flex-shrink: 0;
-  justify-content: center;
-  padding: 20px 28px 8px;
-  border-bottom: 0;
-  background: transparent;
-  text-align: center;
+.codex-workspace .assistant-chat-header--session {
+  background: #fff;
 }
 
-.codex-workspace .assistant-heading-mark,
-.codex-workspace .assistant-eyebrow,
-.codex-workspace .assistant-heading small {
-  display: none;
-}
-
-.codex-workspace .assistant-chat-header h1 {
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.codex-workspace .assistant-heading {
-  justify-content: center;
-}
-
-.codex-workspace .assistant-context-chip {
-  position: absolute;
-  top: 20px;
-  right: 28px;
+.codex-workspace .assistant-context-chip--welcome {
   border-color: #dbeafe;
   background: #f8fafc;
 }
@@ -326,54 +158,23 @@ select {
 }
 
 @media (max-width: 760px) {
-  .codex-shell {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
-  }
-
-  .codex-rail {
-    flex-direction: row;
-    justify-content: space-around;
-    padding: 6px 8px;
-    border-right: 0;
-    border-bottom: 1px solid #ececf1;
-  }
-
-  .codex-rail-spacer {
+  .assistant-web-identity span {
     display: none;
   }
 
-  .codex-workspace .assistant-sidebar-footer {
-    display: none;
-  }
-
-  .codex-stage,
-  .codex-stage--chat {
-    grid-template-columns: 1fr;
-  }
-
-  .codex-list-pane {
-    display: none;
+  .assistant-web-identity .ant-select {
+    min-width: 120px;
   }
 
   .codex-workspace .assistant-conversations {
     display: none;
   }
 
-  .codex-workspace .assistant-chat {
-    grid-column: 1;
-    height: 100%;
-  }
-
-  .codex-admin-page {
-    padding: 16px;
-  }
-
-  .status-grid {
+  .assistant-web-status-grid {
     grid-template-columns: 1fr;
   }
 
-  .status-grid .ant-card:last-child {
+  .assistant-web-status-grid .ant-pro-card:last-child {
     grid-column: auto;
   }
 }

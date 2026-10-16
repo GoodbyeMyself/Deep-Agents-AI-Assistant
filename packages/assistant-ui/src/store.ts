@@ -8,10 +8,22 @@ function eventString(value: unknown, fallback: string): string {
 
 export const initialChatState: ChatState = {
   messages: [],
-  steps: [],
   seenEventIds: new Set(),
   activeRunId: undefined,
 };
+
+const publicToolLabels: Readonly<Record<string, string>> = {
+  data_map_search_objects: "搜索业务数据对象",
+  data_quality_get_trend: "查询数据质量趋势",
+};
+
+function publicToolStep(value: unknown): Pick<PublicExecutionStep, "title" | "detail"> {
+  const toolName = eventString(value, "");
+  return {
+    title: publicToolLabels[toolName] ?? "调用受控业务能力",
+    ...(toolName ? { detail: `业务能力 · ${toolName}` } : {}),
+  };
+}
 
 function updateLastAssistant(
   state: ChatState,
@@ -36,8 +48,14 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   if (action.type === "reset") return { ...initialChatState, messages: action.messages };
   if (action.type === "submit")
     return {
-      messages: [...state.messages, action.user, action.assistant],
-      steps: [{ key: "run", title: "正在分析请求", status: "loading" }],
+      messages: [
+        ...state.messages,
+        action.user,
+        {
+          ...action.assistant,
+          executionSteps: [{ key: "run", title: "正在分析请求", status: "loading" }],
+        },
+      ],
       seenEventIds: new Set(),
       activeRunId: action.runId,
     };
@@ -50,27 +68,33 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...message,
         content: message.content || action.message,
         status: "error",
+        executionSteps: upsertStep(message.executionSteps, {
+          key: "run",
+          title: "执行失败",
+          detail: action.message,
+          status: "error",
+        }),
       })),
-      steps: upsertStep(state.steps, {
-        key: "run",
-        title: "执行失败",
-        detail: action.message,
-        status: "error",
-      }),
     };
   if (action.type === "cancelled")
     return {
       ...state,
       activeRunId: undefined,
-      messages: updateLastAssistant(state, (message) => ({ ...message, status: "abort" })),
-      steps: upsertStep(state.steps, { key: "run", title: "已取消", status: "error" }),
+      messages: updateLastAssistant(state, (message) => ({
+        ...message,
+        status: "abort",
+        executionSteps: upsertStep(message.executionSteps, {
+          key: "run",
+          title: "已取消",
+          status: "error",
+        }),
+      })),
     };
 
   const { event } = action;
   if (state.seenEventIds.has(event.eventId)) return state;
   const seenEventIds = new Set(state.seenEventIds).add(event.eventId);
   let messages = state.messages;
-  let steps = state.steps;
   let activeRunId = state.activeRunId;
   if (event.type === "message.delta") {
     const delta = typeof event.data["delta"] === "string" ? event.data["delta"] : "";
@@ -81,28 +105,37 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   }
   if (event.type === "tool.started") {
     const callId = eventString(event.data["toolCallId"], String(event.sequence));
-    steps = upsertStep(steps, {
-      key: `tool:${callId}`,
-      title: `调用业务能力：${eventString(event.data["toolName"], "unknown")}`,
-      status: "loading",
-    });
+    messages = updateLastAssistant({ ...state, messages }, (message) => ({
+      ...message,
+      executionSteps: upsertStep(message.executionSteps, {
+        key: `tool:${callId}`,
+        ...publicToolStep(event.data["toolName"]),
+        status: "loading",
+      }),
+    }));
   }
   if (event.type === "tool.completed" || event.type === "tool.failed") {
     const callId = eventString(event.data["toolCallId"], String(event.sequence));
-    steps = upsertStep(steps, {
-      key: `tool:${callId}`,
-      title: `业务能力：${eventString(event.data["toolName"], "unknown")}`,
-      status: event.type === "tool.completed" ? "success" : "error",
-    });
+    messages = updateLastAssistant({ ...state, messages }, (message) => ({
+      ...message,
+      executionSteps: upsertStep(message.executionSteps, {
+        key: `tool:${callId}`,
+        ...publicToolStep(event.data["toolName"]),
+        status: event.type === "tool.completed" ? "success" : "error",
+      }),
+    }));
   }
   if (event.type === "subagent.started" || event.type === "subagent.completed") {
     const namespace = eventString(event.data["namespace"], "subagent");
-    steps = upsertStep(steps, {
-      key: `subagent:${namespace}`,
-      title: "协作智能体",
-      detail: namespace,
-      status: event.type === "subagent.completed" ? "success" : "loading",
-    });
+    messages = updateLastAssistant({ ...state, messages }, (message) => ({
+      ...message,
+      executionSteps: upsertStep(message.executionSteps, {
+        key: `subagent:${namespace}`,
+        title: "协作智能体处理",
+        detail: namespace,
+        status: event.type === "subagent.completed" ? "success" : "loading",
+      }),
+    }));
   }
   if (event.type === "evidence.added") {
     const referenceId = event.data["referenceId"];
@@ -129,18 +162,21 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         : event.type === "run.cancelled"
           ? "abort"
           : "error";
-    messages = updateLastAssistant({ ...state, messages }, (message) => ({ ...message, status }));
-    steps = upsertStep(steps, {
-      key: "run",
-      title:
-        event.type === "run.completed"
-          ? "分析完成"
-          : event.type === "run.cancelled"
-            ? "已取消"
-            : "执行失败",
-      status: event.type === "run.completed" ? "success" : "error",
-    });
+    messages = updateLastAssistant({ ...state, messages }, (message) => ({
+      ...message,
+      status,
+      executionSteps: upsertStep(message.executionSteps, {
+        key: "run",
+        title:
+          event.type === "run.completed"
+            ? "分析完成"
+            : event.type === "run.cancelled"
+              ? "已取消"
+              : "执行失败",
+        status: event.type === "run.completed" ? "success" : "error",
+      }),
+    }));
     activeRunId = undefined;
   }
-  return { messages, steps, seenEventIds, activeRunId };
+  return { messages, seenEventIds, activeRunId };
 }
