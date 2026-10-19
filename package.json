@@ -28,6 +28,8 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
+    "test": "pnpm test:e0",
+    "test:e0": "pnpm --filter @assistant/agent-runtime... --filter @assistant/plugin-runtime... --filter @assistant/demo-product-a... --filter @assistant/demo-product-b... build && node --test tests/e0-regression/baseline.test.mjs",
     "typecheck": "pnpm build && pnpm -r --if-present typecheck"
   },
   "devDependencies": {

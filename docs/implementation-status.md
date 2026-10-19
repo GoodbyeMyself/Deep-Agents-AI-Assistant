@@ -1,6 +1,6 @@
 # 实施状态
 
-更新日期：2026-10-16
+更新日期：2026-10-19
 
 ## M0：工程初始化与框架验证
 
@@ -157,3 +157,14 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 一个 Compose 项目通过 `PLUGIN_ID` 把一个插件打进 Agent Server 镜像；A/B 使用不同项目名、端口和批准插件。
 - 容器内 `PLUGINS_DIR=/opt/assistant/plugins`。`ASSISTANT_REQUIRE_READY_PLUGINS=1` 时，批准插件未进入 `ready` 会拒绝启动。
 - 不恢复跨进程会话，也不把容器启动等同于生产上线。
+
+## E0：插件化能力扩展决策与回归基线
+
+状态：完成并通过退出门禁，详细证据见 `e0-acceptance-report.md`。
+
+- 新增 ADR-022，确定“稳定 Core + 可信动态 Capability Contract 注册”的混合模型；平台标准能力与部署私有能力分层治理。
+- 标准命名空间由平台保留；私有能力使用 `<organization>.<domain>.<action>`，组织前缀需要部署批准。
+- 首个动态契约版本只允许可信 Local Plugin Bundle 和 `read` 风险能力；HTTP Provider 只能实现已注册契约，不允许远端临时定义 Tool Schema。
+- Manifest V1 至少保留一个迁移周期；Contract、Provider 和 Skill 后续必须 staging 校验并原子提交，冲突失败关闭。
+- 恢复根 `pnpm test`，使用 Node 22 内置测试运行器固定当前 Catalog、A/B Adapter、Manifest V1、Tool Factory、权限与插件安全行为，无新增测试框架依赖。
+- E0 未修改运行时契约、Plugin SDK、Manifest Schema、Agent Runtime 或 Deep Agents 装配；动态注册从 E1 开始实施。
