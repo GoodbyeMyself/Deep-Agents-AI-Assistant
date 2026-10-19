@@ -23,8 +23,18 @@ export default defineConfig(() => {
   if (!Number.isInteger(port) || port < 1 || port > 65_535) {
     throw new Error("ASSISTANT_EMBED_PORT must be a valid TCP port.");
   }
+  const iframeBridgeSrc = fileURLToPath(
+    new URL("../../packages/iframe-bridge/src/index.ts", import.meta.url),
+  );
+
   return {
     plugins: [react(), assistantLoaderAlias()],
+    resolve: {
+      alias: {
+        // Dev 默认读 dist，改 src 后不 build 会看不到 loader 样式等行为变更。
+        "@assistant/iframe-bridge": iframeBridgeSrc,
+      },
+    },
     server: {
       port,
       strictPort: true,

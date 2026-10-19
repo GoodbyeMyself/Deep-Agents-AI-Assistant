@@ -16,7 +16,7 @@
 
 - Product A：`deployments/product-a/.env.example`，只批准 `demo-product-a`，默认端口 3101。
 - Product B：`deployments/product-b/.env.example`，只批准 `demo-product-b`，默认端口 3102。
-- 两者复用 `apps/agent-server/src/m2-server-main.ts`、标准契约、Tool Factory、Shared Chat Core 和 SDK；Agent 与 Tool Factory 中没有 A/B 分支。
+- 两者复用 `apps/agent-server/src/server-main.ts`、标准契约、Tool Factory、Shared Chat Core 和 SDK；Agent 与 Tool Factory 中没有 A/B 分支。
 - 每个进程创建自己的 `InMemoryAgentStore` 与官方 LangGraph `MemorySaver`。系统测试证明 A 创建的 Session 在 B 中返回 404。
 - 配置样例不包含真实密钥。生产必须由各实例分别注入模型/业务凭证，并使用独立持久化 Repository 和 Checkpointer；当前内存实现的重启不恢复已被测试固定，不被误报为生产能力。
 

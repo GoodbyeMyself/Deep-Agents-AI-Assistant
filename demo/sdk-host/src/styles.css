@@ -1,92 +1,17 @@
-:root {
-  color: #102a2c;
-  background: #eef3f0;
-  font-family: Inter, system-ui, sans-serif;
-}
-body {
-  margin: 0;
-}
-button {
-  font: inherit;
-}
-.demo-shell {
-  width: min(1440px, calc(100% - 32px));
-  margin: 0 auto;
-  padding: 28px 0 48px;
-}
-.demo-shell header {
-  padding: 24px 30px;
-  border-radius: 18px 18px 0 0;
-  color: #ecfffa;
-  background: #102a2c;
-}
-.demo-shell header span {
-  color: #6ee7d8;
-  font:
-    700 11px/1 ui-monospace,
-    monospace;
-  letter-spacing: 0.15em;
-}
-.demo-shell h1 {
-  margin: 8px 0;
-  font:
-    650 clamp(28px, 4vw, 48px)/1.1 Georgia,
-    serif;
-}
-.demo-shell p {
-  margin: 0;
-  color: #bdd2cd;
-}
-.demo-shell nav,
-.context-bar {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex-wrap: wrap;
-  padding: 12px 18px;
-  border-bottom: 1px solid #d5dfdb;
-  background: #fff;
-}
-.demo-shell button {
-  padding: 8px 13px;
-  border: 1px solid #bdcbc7;
-  border-radius: 9px;
-  color: #173c3d;
-  background: #fff;
-  cursor: pointer;
-}
-.demo-shell button.active {
-  border-color: #087f76;
-  color: #fff;
-  background: #087f76;
-}
-.context-bar code {
-  margin-left: auto;
-  color: #526965;
-}
-.demo-shell main {
-  min-height: 650px;
-  padding: 18px;
-  background: #f8faf8;
-}
-.demo-shell iframe {
-  display: block;
+html,
+body,
+#root,
+.demo-shell,
+.demo-shell > .assistant-sdk-inline {
   width: 100%;
-  min-height: 650px;
-  border: 1px solid #d5dfdb;
-  border-radius: 18px;
+  height: 100%;
+  margin: 0;
+}
+
+body {
   background: #fff;
 }
-@media (max-width: 700px) {
-  .demo-shell {
-    width: 100%;
-    padding: 0;
-  }
-  .demo-shell main {
-    padding: 0;
-  }
-  .context-bar code {
-    width: 100%;
-    margin-left: 0;
-  }
+
+.demo-shell {
+  min-height: 100dvh;
 }

@@ -4,9 +4,9 @@
 
 ## 主要内容
 
-- `src/m1-bootstrap.ts`：可信插件发现、注册与 Tool 装配入口。
-- `src/m2/`：API、服务、Runner、存储、身份、上下文和 iframe 票据实现。
-- `src/m2-server-main.ts`：可运行服务入口。
+- `src/plugin-bootstrap.ts`：可信插件发现、注册与 Tool 装配入口。
+- `src/application/`：API、服务、Runner、存储、身份、上下文和 iframe 票据实现。
+- `src/server-main.ts`：可运行服务入口。
 - `migrations/`：持久化模型的参考迁移脚本。
 
 ## 安全边界
@@ -19,7 +19,7 @@
 ## 运行与验证
 
 ```bash
-pnpm --filter @assistant/agent-server serve:m2
+pnpm --filter @assistant/agent-server serve
 pnpm --filter @assistant/agent-server typecheck
 pnpm --filter @assistant/agent-server test
 pnpm --filter @assistant/agent-server build

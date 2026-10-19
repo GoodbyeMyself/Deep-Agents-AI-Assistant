@@ -4,8 +4,8 @@ import { fileURLToPath } from "node:url";
 import type { BaseLanguageModel } from "@langchain/core/language_models/base";
 import { ChatOpenAI } from "@langchain/openai";
 
-import { createM2Application } from "../../../apps/agent-server/src/m2/bootstrap.js";
-import { createNodeHttpServer } from "../../../apps/agent-server/src/m2/node-http.js";
+import { createAgentApplication } from "../../../apps/agent-server/src/application/bootstrap.js";
+import { createNodeHttpServer } from "../../../apps/agent-server/src/application/node-http.js";
 
 export interface DemoProductServerOptions {
   readonly pluginId: "demo-product-a" | "demo-product-b";
@@ -65,7 +65,7 @@ export async function startDemoProductServer(
   );
   const { model, modelConfig } = modelOverride ?? configuredModel(options);
 
-  const application = await createM2Application({
+  const application = await createAgentApplication({
     model,
     installDir,
     approvedPluginIds: new Set([options.pluginId]),

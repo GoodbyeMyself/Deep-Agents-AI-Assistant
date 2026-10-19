@@ -1,5 +1,5 @@
 export { createApiHandler, FixedWindowRateLimiter } from "./api.js";
-export { createM2Application } from "./bootstrap.js";
+export { createAgentApplication } from "./bootstrap.js";
 export { ContextService, MockContextAuthorizer } from "./context-service.js";
 export { MockIdentityProvider } from "./identity.js";
 export { EmbedTicketService } from "./embed-ticket.js";

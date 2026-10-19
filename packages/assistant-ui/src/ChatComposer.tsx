@@ -98,12 +98,14 @@ export function ChatComposer({
   loading,
   disabled,
   objectName,
+  placeholder,
   onSubmit,
   onCancel,
 }: {
   loading: boolean;
   disabled?: boolean;
   objectName: string;
+  placeholder?: string;
   onSubmit: (value: string) => void;
   onCancel: () => void;
 }) {
@@ -148,7 +150,7 @@ export function ChatComposer({
             ? "请先选择业务对象"
             : activeMode
               ? ""
-              : `询问 ${objectName} 的数据情况`
+              : (placeholder ?? `询问 ${objectName} 的数据情况`)
         }
         onChange={setValue}
         onCancel={onCancel}

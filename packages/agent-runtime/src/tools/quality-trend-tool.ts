@@ -6,7 +6,7 @@ import {
 } from "@assistant/capability-contracts";
 import { tool, type ToolRuntime } from "langchain";
 
-import type { RunContext } from "./context.js";
+import type { RunContext } from "../context/run-context.js";
 
 export interface QualityTrendExecutor {
   execute: (input: QualityTrendInput, context: RunContext) => Promise<QualityTrendResult>;

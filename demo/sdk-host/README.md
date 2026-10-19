@@ -1,6 +1,6 @@
 # SDK Host Demo
 
-M4 接入实验宿主，在同一业务场景中验证 React SDK、Vanilla JavaScript SDK 和跨 Origin iframe 三种接入方式。
+接入实验宿主，在同一业务场景中验证 React SDK、Vanilla JavaScript SDK 和跨 Origin iframe 三种接入方式。
 
 ## 验证内容
 

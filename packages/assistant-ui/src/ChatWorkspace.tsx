@@ -7,7 +7,7 @@ import {
   UnorderedListOutlined,
 } from "@ant-design/icons";
 import { Conversations } from "@ant-design/x";
-import { Alert, Button, Divider, Spin } from "antd";
+import { Alert, Button, Divider, Popover, Spin } from "antd";
 import { useCallback, useEffect, useReducer, useState, type ReactNode } from "react";
 
 import { ChatComposer } from "./ChatComposer.js";
@@ -39,6 +39,7 @@ export function ChatWorkspace({
   headingTitle,
   workspaceClassName,
   sidebarFooter,
+  layout = "default",
 }: {
   transport: AssistantApiTransport;
   selectedObject?: SelectedBusinessObject;
@@ -47,11 +48,13 @@ export function ChatWorkspace({
   headingTitle?: string;
   workspaceClassName?: string;
   sidebarFooter?: ReactNode;
+  layout?: "default" | "panel";
 }) {
   const resolvedHeading =
     headingTitle ?? (mode === "standalone" ? "数据证据工作台" : "业务智能助手");
   const [sessions, setSessions] = useState<SessionDto[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>();
+  const [sessionListOpen, setSessionListOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
@@ -163,42 +166,58 @@ export function ChatWorkspace({
   };
 
   const useSessionHeader = workspaceClassName?.includes("codex-workspace") ?? false;
+  const panelLayout = layout === "panel";
+  const prompts = [
+    selectedObject === undefined
+      ? "看看当前对象最近的质量趋势"
+      : `看看${selectedObject.name}最近的质量趋势`,
+    "有哪些异常需要优先处理？",
+    "根据已授权数据说明当前质量情况",
+  ];
   const activeSessionTitle =
     sessions.find((session) => session.id === activeSessionId)?.title ?? "新会话";
 
   return (
     <div
-      className={
-        workspaceClassName ? `assistant-workspace ${workspaceClassName}` : "assistant-workspace"
-      }
+      className={[
+        "assistant-workspace",
+        panelLayout ? "assistant-workspace--panel" : "",
+        workspaceClassName ?? "",
+      ]
+        .filter((name) => name.length > 0)
+        .join(" ")}
     >
-      <aside className="assistant-conversations" aria-label="会话列表">
-        <div className="assistant-sidebar-heading">
-          <span>分析会话</span>
-          <Button
-            type="text"
-            icon={<PlusOutlined />}
-            aria-label="新建会话"
-            onClick={() => void createSession()}
-          />
-        </div>
-        <div className="assistant-conversations-body">
-          <Conversations
-            {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
-            items={sessions.map((session) => ({ key: session.id, label: session.title }))}
-            onActiveChange={setActiveSessionId}
-          />
-        </div>
-        {sidebarFooter !== undefined ? (
-          <div className="assistant-sidebar-footer">{sidebarFooter}</div>
-        ) : null}
-      </aside>
+      {panelLayout ? null : (
+        <aside className="assistant-conversations" aria-label="会话列表">
+          <div className="assistant-sidebar-heading">
+            <span>分析会话</span>
+            <Button
+              type="text"
+              icon={<PlusOutlined />}
+              aria-label="新建会话"
+              onClick={() => void createSession()}
+            />
+          </div>
+          <div className="assistant-conversations-body">
+            <Conversations
+              {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
+              items={sessions.map((session) => ({ key: session.id, label: session.title }))}
+              onActiveChange={setActiveSessionId}
+            />
+          </div>
+          {sidebarFooter !== undefined ? (
+            <div className="assistant-sidebar-footer">{sidebarFooter}</div>
+          ) : null}
+        </aside>
+      )}
       <section className="assistant-chat" aria-label="智能助手对话">
         <header
           className={
-            useSessionHeader
-              ? "assistant-chat-header assistant-chat-header--session"
-              : "assistant-chat-header"
+            panelLayout
+              ? "assistant-chat-header assistant-chat-header--panel"
+              : useSessionHeader
+                ? "assistant-chat-header assistant-chat-header--session"
+                : "assistant-chat-header"
           }
         >
           {useSessionHeader ? (
@@ -220,6 +239,56 @@ export function ChatWorkspace({
                   aria-label="新建会话"
                   onClick={() => void createSession()}
                 />
+              </div>
+            </>
+          ) : panelLayout ? (
+            <>
+              <h1 className="assistant-sr-only">{resolvedHeading}</h1>
+              <span className="assistant-heading-mark" aria-hidden="true">
+                AI
+              </span>
+              <div className="assistant-header-actions">
+                <Button
+                  type="text"
+                  className="assistant-header-icon"
+                  icon={<PlusOutlined />}
+                  aria-label="新建会话"
+                  onClick={() => void createSession()}
+                />
+                <Popover
+                  trigger="click"
+                  placement="bottomRight"
+                  open={sessionListOpen}
+                  onOpenChange={setSessionListOpen}
+                  classNames={{ root: "assistant-session-popover" }}
+                  content={
+                    <div className="assistant-session-menu">
+                      {sessions.length === 0 ? (
+                        <p className="assistant-session-menu-empty">还没有会话</p>
+                      ) : (
+                        <Conversations
+                          {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
+                          items={sessions.map((session) => ({
+                            key: session.id,
+                            label: session.title,
+                          }))}
+                          onActiveChange={(key) => {
+                            setActiveSessionId(key);
+                            setSessionListOpen(false);
+                          }}
+                        />
+                      )}
+                    </div>
+                  }
+                >
+                  <Button
+                    type="text"
+                    className="assistant-header-icon"
+                    icon={<UnorderedListOutlined />}
+                    aria-label="会话列表"
+                    aria-expanded={sessionListOpen}
+                  />
+                </Popover>
               </div>
             </>
           ) : (
@@ -249,6 +318,7 @@ export function ChatWorkspace({
               messages={state.messages}
               transport={transport}
               {...(selectedObject?.name ? { objectName: selectedObject.name } : {})}
+              {...(panelLayout ? { prompts, onPrompt: (value) => void submit(value) } : {})}
             />
           )}
         </div>
@@ -256,6 +326,7 @@ export function ChatWorkspace({
           loading={state.activeRunId !== undefined}
           disabled={selectedObject === undefined}
           objectName={selectedObject?.name ?? "业务对象"}
+          {...(panelLayout ? { placeholder: "发消息..." } : {})}
           onSubmit={(value) => void submit(value)}
           onCancel={cancel}
         />

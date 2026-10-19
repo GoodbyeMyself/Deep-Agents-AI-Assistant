@@ -3,8 +3,8 @@ import type { StructuredToolInterface } from "@langchain/core/tools";
 import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
 import { createDeepAgent, FilesystemBackend, type AnySubAgent } from "deepagents";
 
-import { runContextSchema } from "./context.js";
-import { createQualityTrendTool, type QualityTrendExecutor } from "./quality-trend-tool.js";
+import { runContextSchema } from "../context/run-context.js";
+import { createQualityTrendTool, type QualityTrendExecutor } from "../tools/quality-trend-tool.js";
 
 export interface AgentRuntimeOptions {
   model: BaseLanguageModel;

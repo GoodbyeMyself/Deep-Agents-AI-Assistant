@@ -322,8 +322,10 @@ function AppLayout() {
       }
       layout="mix"
       fixSiderbar
+      defaultCollapsed
       collapsed={collapsed}
       onCollapse={setCollapsed}
+      breakpoint={false}
       location={{ pathname }}
       route={shellRoute}
       menuItemRender={(item, dom) => {

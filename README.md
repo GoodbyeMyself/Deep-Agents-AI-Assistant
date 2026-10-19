@@ -36,7 +36,9 @@ Deep-Agents-AI-Assistant/
 ├─ apps/
 │  ├─ agent-server/                  # Agent Server、REST/SSE、会话、Context、Evidence
 │  │  ├─ migrations/                 # 持久化模型参考迁移
-│  │  └─ src/m2/                     # 企业可信执行闭环
+│  │  ├─ src/application/            # 身份、会话、上下文、Runner 与 HTTP
+│  │  ├─ src/plugin-bootstrap.ts     # 插件发现与 Tool 装配
+│  │  └─ src/server-main.ts          # 服务进程入口
 │  ├─ assistant-web/                 # 独立 React Web
 │  └─ assistant-embed/               # iframe 内运行的助手页面
 ├─ core/
@@ -58,7 +60,7 @@ Deep-Agents-AI-Assistant/
 │  ├─ product-b/                     # Vue 3 + Element Plus 数据资产接入演示
 │  ├─ product-shell/                 # Product A React 业务壳和助手接入层
 │  ├─ sdk-host/                      # React/JS/iframe 三种接入方式演示宿主
-│  ├─ server/                        # M3/M4/A/B 离线 Demo Server 入口
+│  ├─ server/                        # 独立 Web、嵌入和 A/B 演示的服务入口
 │  ├─ scripts/                       # 双产品一键启动与进程清理
 │  └─ README.md                      # 演示目录边界和运行说明
 ├─ deployments/
@@ -95,7 +97,7 @@ Deep-Agents-AI-Assistant/
 | REST / SSE 客户端 | `packages/assistant-transport/src/index.ts` | 所有前端共用的 Session、Run、ContextSnapshot、Evidence 和 SSE 事件客户端 |
 | Product A 页面 | `demo/product-a/index.html`、`src/main.tsx`；共享业务壳位于 `demo/product-shell/src/index.tsx`、`styles.css` | React + Ant Design 数据治理宿主页；入口 HTML 只声明 Loader、iframe 地址和初始 Context，不包含助手按钮、浮窗或 iframe 模板 |
 | Product B 页面 | `demo/product-b/index.html`、`src/App.vue`、`main.ts`、`styles.css` | Vue 3 + Element Plus 数据资产宿主页；同样只在入口 HTML 声明 Loader 配置，不独立实现助手 UI |
-| SDK 三方式实验页 | `demo/sdk-host/src/main.tsx`、`styles.css` | 对比 React SDK、JavaScript SDK、跨域 iframe 三种挂载方式，主要用于 M4 回归验证 |
+| SDK 三方式实验页 | `demo/sdk-host/src/main.tsx`、`styles.css` | 对比 React SDK、JavaScript SDK、跨域 iframe 三种挂载方式 |
 
 两条主要渲染链路如下：
 
@@ -216,6 +218,10 @@ pnpm --filter @assistant/agent-server smoke:deepseek
 ```bash
 pnpm dev:server
 ```
+
+## 容器部署
+
+源码目录不能直接当作容器运行目录。在仓库根目录执行 `pnpm pack:deploy` 后，构建产物位于 `deploy/out/`：Agent Server、独立 Web、iframe 助手，以及每个适配器的 `plugin.json` 和 `dist/`。然后用 Docker Compose 按一个 `PLUGIN_ID` 启动一套实例。操作步骤见 [deploy/README.md](deploy/README.md)。
 
 ## 插件与独立部署
 

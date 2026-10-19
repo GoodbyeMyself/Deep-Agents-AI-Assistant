@@ -23,11 +23,11 @@
 - `packages/assistant-ui/src/styles.css`：共享聊天视觉与响应式样式。
 - `apps/assistant-web/src/`：独立 Web Shell、Mock 身份切换、业务对象语义、会话管理和运行状态页。
 - `apps/assistant-web/tests/`：本地服务生命周期和 Playwright 端到端验收。
-- `demo/server/src/m3-demo-server-main.ts`：只用于离线浏览器验收的官方 LangChain
+- `demo/server/src/web-offline-server-main.ts`：只用于离线浏览器验收的官方 LangChain
   `fakeModel()` 启动入口，不替代真实模型验证。
 - `packages/contracts/src/index.ts`：Assistant View V1 扩展为 text、metric、table、chart.line、
   references 的封闭判别联合。
-- `apps/agent-server/src/m2/node-http.ts`：修复 Web `ReadableStream` 到 Node Response 的逐块转发，
+- `apps/agent-server/src/application/node-http.ts`：修复 Web `ReadableStream` 到 Node Response 的逐块转发，
   SSE 不再等待完整响应缓冲。
 - `docs/m3-preview.png`：端到端运行后的桌面页面快照。
 

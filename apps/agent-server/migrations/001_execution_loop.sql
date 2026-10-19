@@ -1,4 +1,4 @@
--- PostgreSQL reference migration for the M2 deployment store.
+-- PostgreSQL reference migration for the execution-loop deployment store.
 -- Runtime tests use InMemoryAgentStore; production must bind the same repository contract to these tables.
 CREATE TABLE assistant_sessions (
   id uuid PRIMARY KEY, owner_id text NOT NULL, tenant_id text NOT NULL, thread_id uuid NOT NULL UNIQUE,

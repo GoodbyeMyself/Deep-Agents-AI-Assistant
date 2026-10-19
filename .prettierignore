@@ -4,6 +4,8 @@ dist-types
 coverage
 test-results
 deepagentsjs
+deploy/out
+deploy/.pack-tmp
 pnpm-lock.yaml
 AGENTS.md
 README.md

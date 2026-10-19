@@ -19,7 +19,7 @@
   Schema 校验。
 - `apps/assistant-embed`：独立 iframe Shell，不从 URL 接收凭证。
 - `demo/sdk-host`：React、原生 JavaScript、跨域 iframe 三种集成方式和页面上下文切换。
-- `apps/agent-server/src/m2/embed-ticket.ts`：60 秒一次性票据和 5 分钟临时凭证交换。
+- `apps/agent-server/src/application/embed-ticket.ts`：60 秒一次性票据和 5 分钟临时凭证交换。
 - `packages/assistant-ui/src/ChatWorkspace.tsx`：支持由宿主提供 Context Provider，并在每次
   Run 创建前固定捕获上下文。
 - `demo/sdk-host/tests`：真实浏览器集成与安全回归测试。

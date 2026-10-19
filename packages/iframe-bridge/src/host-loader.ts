@@ -82,12 +82,16 @@ function stylesheet(accent: string, zIndex: number): string {
     }
     .assistant-loader-frame { width: 100%; height: 100%; border: 0; background: #f8fbfa; }
     .assistant-loader-close {
-      position: absolute; top: 13px; right: 13px; z-index: 3; display: grid; place-items: center;
-      width: 34px; height: 34px; border: 1px solid rgb(20 87 70 / 14%); border-radius: 12px;
-      color: #34554c; background: rgb(255 255 255 / 88%); backdrop-filter: blur(10px);
-      cursor: pointer; font: 500 22px/1 sans-serif; transition: background 160ms ease, transform 160ms ease;
+      position: absolute; top: 8px; right: 8px; z-index: 3; display: grid; place-items: center;
+      width: 36px; height: 36px; padding: 0; border: 0; border-radius: 6px;
+      color: #1f1f1f; background: transparent; cursor: pointer;
+      font: 400 18px/1 "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      transition: background 160ms ease, color 160ms ease;
     }
-    .assistant-loader-close:hover { background: white; transform: rotate(4deg); }
+    .assistant-loader-close:hover { color: #1f1f1f; background: #f3f3f3; }
+    .assistant-loader-close:focus-visible {
+      outline: 3px solid #f0b429; outline-offset: 2px;
+    }
     .assistant-loader-status {
       position: absolute; inset: 0; z-index: 2; display: grid; place-items: center;
       color: #3b5c53; background: #f8fbfa; font: 600 14px/1.5 "Microsoft YaHei", sans-serif;

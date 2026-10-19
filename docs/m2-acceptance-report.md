@@ -22,11 +22,11 @@
 - `core/policy`：能力 scope、目标对象和当前页面对象的组合授权策略。
 - `core/evidence`：Evidence 持久化记录与不暴露所有权内部字段的安全解析模型。
 - `packages/contracts`：HTTP 输入、统一错误、SSE Event、受控 `chart.line` View 和 OpenAPI 描述。
-- `apps/agent-server/src/m2/`：Mock IdP、Context 服务、Session/Run/Event/Evidence/Audit Store、
+- `apps/agent-server/src/application/`：Mock IdP、Context 服务、Session/Run/Event/Evidence/Audit Store、
   Agent Runner、Event Bridge、API handler 和 Node HTTP adapter。
-- `apps/agent-server/src/m2-server-main.ts`：从环境变量解析当前实例模型/插件并启动服务；不向 API
+- `apps/agent-server/src/server-main.ts`：从环境变量解析当前实例模型/插件并启动服务；不向 API
   返回凭证。
-- `apps/agent-server/migrations/001_m2_execution_loop.sql`：生产 PostgreSQL 逻辑表、所有权索引、
+- `apps/agent-server/migrations/001_execution_loop.sql`：生产 PostgreSQL 逻辑表、所有权索引、
   Run 幂等/串行约束和保留策略说明。
 - A/B Demo Adapter：在模拟原业务 API 边界再次检查已验证主体和对象范围，Evidence 引用绑定
   `executionContextId`。

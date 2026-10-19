@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import { AIMessage } from "@langchain/core/messages";
 import { fakeModel } from "@langchain/core/testing";
 
-import { createM2Application } from "../../../apps/agent-server/src/m2/bootstrap.js";
-import { createNodeHttpServer } from "../../../apps/agent-server/src/m2/node-http.js";
+import { createAgentApplication } from "../../../apps/agent-server/src/application/bootstrap.js";
+import { createNodeHttpServer } from "../../../apps/agent-server/src/application/node-http.js";
 
 const pluginId = "demo-product-a";
 const installDir = fileURLToPath(new URL(`../../../adapters/${pluginId}/`, import.meta.url));
@@ -12,7 +12,7 @@ const model = fakeModel()
   .respondWithTools([
     {
       name: "data_quality_get_trend",
-      id: "m3-quality-1",
+      id: "web-offline-quality-1",
       args: {
         tableId: "orders",
         startTime: "2026-10-07T00:00:00+08:00",
@@ -26,14 +26,14 @@ const model = fakeModel()
     ),
   );
 
-const application = await createM2Application({
+const application = await createAgentApplication({
   model,
   installDir,
   approvedPluginIds: new Set([pluginId]),
-  modelConfig: { id: "m3-demo", provider: "offline", model: "fake-model", version: "1" },
+  modelConfig: { id: "web-offline", provider: "offline", model: "fake-model", version: "1" },
 });
 const server = createNodeHttpServer(application.handler);
 const port = Number(process.env["SERVER_PORT"] ?? "3000");
 server.listen(port, "127.0.0.1", () =>
-  console.log(`M3 demo Agent Server listening on http://127.0.0.1:${port}`),
+  console.log(`Web offline Agent Server listening on http://127.0.0.1:${port}`),
 );

@@ -1,5 +1,7 @@
 # 独立部署、升级与回滚
 
+容器运行目录见 [deploy/README.md](../deploy/README.md)。`pnpm pack:deploy` 生成 `deploy/out/`，每个 Compose 项目只装一个已批准插件。下面的环境变量边界对容器和进程部署同样有效。
+
 `product-a` 与 `product-b` 使用同一构建产物，但各自在独立进程和独立配置中运行。每个实例只批准自己的插件 ID，并使用自己的插件安装目录、模型密钥注入、Session Repository 与 LangGraph Checkpointer。当前仓库的可运行服务器仍使用内存 Store/Checkpointer，因此只适合本地验收；生产部署必须注入独立的持久化实现后才具备重启恢复能力。
 
 ## 启动
@@ -7,7 +9,7 @@
 1. 先执行 `pnpm install --frozen-lockfile`、`pnpm build` 和四项质量门禁。
 2. 从对应目录复制 `.env.example` 到不受版本控制的密钥环境；填入该实例自己的 `DEEPSEEK_API_KEY`，不要复用业务系统长期 Token。
 3. 将 `PLUGINS_DIR` 指向已审批、只读的插件发布目录，并核验 `plugin.json` 和入口文件哈希。
-4. 在仓库根目录执行 `node --env-file=<实例环境文件> --import tsx apps/agent-server/src/m2-server-main.ts`。
+4. 在仓库根目录执行 `node --env-file=<实例环境文件> --import tsx apps/agent-server/src/server-main.ts`。
 5. 通过 `/api/v1/openapi.json`、管理员插件状态和一次受权能力调用完成启动探针。A/B 必须使用不同端口、密钥环境、存储和 Checkpointer 命名空间。
 
 反向代理负责 TLS、请求体上限和生产 CSP。服务默认仅绑定 `127.0.0.1`；只有在受控网络和反向代理配置完成后才设置其他 `SERVER_HOST`。

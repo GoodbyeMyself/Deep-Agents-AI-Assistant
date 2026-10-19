@@ -19,6 +19,8 @@ package-lock.json
 
 cache
 .temp
+deploy/out/
+deploy/.pack-tmp/
 
 # Editor directories and files
 .vscode/*

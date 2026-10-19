@@ -24,7 +24,7 @@
 - `adapters/demo-product-a`：映射 `qualityScore/statDate/tableCode` 等 Product A 字段。
 - `adapters/demo-product-b`：映射 `qualityRate/date/assetId` 等 Product B 字段，并将比率转百分比。
 - `tests/capability-contract-testkit`：A/B 共用的标准契约测试套件。
-- `apps/agent-server/src/m1-bootstrap.ts`：唯一 Composition Root 的启动自动装配函数。
+- `apps/agent-server/src/plugin-bootstrap.ts`：唯一 Composition Root 的启动自动装配函数。
 
 ## 自动挂载与契约验证
 

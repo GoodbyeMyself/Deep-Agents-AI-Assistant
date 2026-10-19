@@ -12,6 +12,7 @@ export interface AssistantSdkOptions {
   initialContext?: RawHostContext;
   initiallyOpen?: boolean;
   title?: string;
+  layout?: "default" | "panel";
 }
 
 export interface AssistantSdkState {

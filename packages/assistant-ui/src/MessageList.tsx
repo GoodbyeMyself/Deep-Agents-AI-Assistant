@@ -13,11 +13,30 @@ export function MessageList({
   messages,
   transport,
   objectName,
+  prompts,
+  onPrompt,
 }: {
   messages: ChatMessage[];
   transport: AssistantApiTransport;
   objectName?: string;
+  prompts?: readonly string[];
+  onPrompt?: (value: string) => void;
 }) {
+  if (messages.length === 0 && prompts !== undefined && onPrompt !== undefined)
+    return (
+      <div className="assistant-panel-welcome">
+        <h2>有什么我能帮你的吗？</h2>
+        {objectName ? <p className="assistant-panel-object">当前对象 · {objectName}</p> : null}
+        <div className="assistant-suggest">
+          <span>为你推荐</span>
+          {prompts.map((prompt) => (
+            <button key={prompt} type="button" onClick={() => onPrompt(prompt)}>
+              {prompt}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   if (messages.length === 0)
     return (
       <div className="assistant-welcome">

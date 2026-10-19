@@ -51,6 +51,7 @@ function EmbedApp() {
           getAccessCredential: () => credential,
           initialContext: context,
           title: "业务智能助手",
+          layout: "panel",
         }}
       />
     </div>

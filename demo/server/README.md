@@ -1,11 +1,11 @@
 # Demo Server
 
-演示场景使用的 Agent Server 启动入口，复用正式 `apps/agent-server`，并为不同阶段和产品装配模型与批准插件。
+演示场景使用的 Agent Server 启动入口，复用正式 `apps/agent-server`，并为独立 Web、嵌入和具体产品装配模型与批准插件。
 
 ## 入口
 
 - `demo-product-a-server-main.ts`、`demo-product-b-server-main.ts`：真实 DeepSeek A/B 演示。
-- `m3-demo-server-main.ts`、`m4-demo-server-main.ts`：历史阶段回归入口。
+- `web-offline-server-main.ts`、`embed-offline-server-main.ts`：独立 Web 与嵌入场景的离线回归入口。
 - `demo-product-server.ts`：A/B 共用服务装配。
 
 ## 模型边界

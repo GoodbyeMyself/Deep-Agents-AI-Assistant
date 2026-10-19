@@ -2,7 +2,7 @@ import { enterpriseCapabilityPolicy } from "@assistant/policy";
 import type { BaseLanguageModel } from "@langchain/core/language_models/base";
 import { MemorySaver } from "@langchain/langgraph";
 
-import { createAgentFromInstalledPlugins } from "../m1-bootstrap.js";
+import { createAgentFromInstalledPlugins } from "../plugin-bootstrap.js";
 import { createApiHandler } from "./api.js";
 import { ContextService, MockContextAuthorizer } from "./context-service.js";
 import { EmbedTicketService } from "./embed-ticket.js";
@@ -11,7 +11,7 @@ import { AgentRunner, type StreamingAgent } from "./runner.js";
 import { AgentService } from "./service.js";
 import { InMemoryAgentStore } from "./store.js";
 
-export async function createM2Application(options: {
+export async function createAgentApplication(options: {
   model: BaseLanguageModel;
   installDir: string;
   approvedPluginIds: ReadonlySet<string>;

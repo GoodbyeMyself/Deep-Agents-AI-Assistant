@@ -1,6 +1,6 @@
 # 实施状态
 
-更新日期：2026-10-15
+更新日期：2026-10-16
 
 ## M0：工程初始化与框架验证
 
@@ -146,3 +146,12 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 完整操作流程与边界见 `dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换
 企业 IdP、业务 API、模型与持久化驱动，并完成目标环境的安全配置和联调。
+
+## 容器部署目录
+
+状态：已提供 `deploy/` 打包与 Compose 运行方式。身份、业务数据和会话存储仍是 Mock/内存实现。
+
+- `pnpm pack:deploy` 构建 Server、独立 Web、iframe Embed，以及 `adapters/` 中每个带 `plugin.json` 的适配器，产物写入 `deploy/out/`。
+- 一个 Compose 项目通过 `PLUGIN_ID` 把一个插件打进 Agent Server 镜像；A/B 使用不同项目名、端口和批准插件。
+- 容器内 `PLUGINS_DIR=/opt/assistant/plugins`。`ASSISTANT_REQUIRE_READY_PLUGINS=1` 时，批准插件未进入 `ready` 会拒绝启动。
+- 不恢复跨进程会话，也不把容器启动等同于生产上线。

@@ -73,6 +73,10 @@ function AssistantSurfaceContent() {
       transport={controller.transport}
       mode="assistant"
       getContext={() => controller.getContext()}
+      {...(controller.options.layout === undefined ? {} : { layout: controller.options.layout })}
+      {...(controller.options.title === undefined
+        ? {}
+        : { headingTitle: controller.options.title })}
       {...(selected?.rawId === undefined || selected.type === undefined
         ? {}
         : {

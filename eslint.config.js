@@ -6,7 +6,14 @@ import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   {
-    ignores: ["**/dist/**", "**/dist-types/**", "**/coverage/**", "deepagentsjs/**"],
+    ignores: [
+      "**/dist/**",
+      "**/dist-types/**",
+      "**/coverage/**",
+      "deepagentsjs/**",
+      "deploy/out/**",
+      "deploy/.pack-tmp/**",
+    ],
   },
   eslint.configs.recommended,
   ...vue.configs["flat/essential"],
@@ -50,7 +57,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["demo/scripts/**/*.mjs"],
+    files: ["demo/scripts/**/*.mjs", "deploy/**/*.mjs"],
     languageOptions: { globals: globals.node },
   },
   eslintConfigPrettier,
