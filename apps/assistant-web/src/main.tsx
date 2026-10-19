@@ -2,8 +2,10 @@ import "antd/dist/reset.css";
 import "@assistant/assistant-ui/styles.css";
 import "./app.css";
 
+import { DEFAULT_ASSISTANT_COLOR_PRIMARY } from "@assistant/assistant-ui";
 import { XProvider } from "@ant-design/x";
 import { ConfigProvider } from "antd";
+import type { CSSProperties } from "react";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
@@ -15,18 +17,23 @@ createRoot(document.getElementById("root")!).render(
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: "#1677ff",
+          colorPrimary: DEFAULT_ASSISTANT_COLOR_PRIMARY,
           colorText: "#1f2937",
           borderRadius: 6,
           fontFamily: '"Microsoft YaHei", "PingFang SC", sans-serif',
         },
       }}
     >
-      <XProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </XProvider>
+      <div
+        className="assistant-web-root"
+        style={{ "--assistant-brand": DEFAULT_ASSISTANT_COLOR_PRIMARY } as CSSProperties}
+      >
+        <XProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </XProvider>
+      </div>
     </ConfigProvider>
   </StrictMode>,
 );

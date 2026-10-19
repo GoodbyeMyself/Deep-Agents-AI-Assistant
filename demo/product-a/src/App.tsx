@@ -5,7 +5,6 @@ import {
   BellOutlined,
   CheckCircleFilled,
   DatabaseOutlined,
-  FileSearchOutlined,
   LineChartOutlined,
   SafetyCertificateOutlined,
   SettingOutlined,
@@ -163,14 +162,6 @@ export function App() {
                 <Text>{productConfig.description}</Text>
               </div>
             ),
-            extra: [
-              <Button key="export" icon={<FileSearchOutlined />}>
-                导出治理报告
-              </Button>,
-              <Button key="rule" type="primary" icon={<SafetyCertificateOutlined />}>
-                新建质量规则
-              </Button>,
-            ],
             breadcrumb: {
               items: [
                 { title: "数据治理中心" },

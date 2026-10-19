@@ -1,4 +1,4 @@
-import { ChatWorkspace } from "@assistant/assistant-ui";
+import { ChatWorkspace, resolveAssistantColorPrimary } from "@assistant/assistant-ui";
 import { ConfigProvider } from "antd";
 import {
   createContext,
@@ -6,6 +6,7 @@ import {
   useEffect,
   useMemo,
   useSyncExternalStore,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 
@@ -125,19 +126,36 @@ function AssistantSurfaceContent() {
   );
 }
 
-export function AssistantSurface() {
+function AssistantSurfaceTheme({ children }: { children: ReactNode }) {
+  const { controller } = useAssistant();
+  const colorPrimary = resolveAssistantColorPrimary(controller.options.theme);
+  const brandStyle = {
+    "--assistant-brand": colorPrimary,
+    "--assistant-sdk-color-primary": colorPrimary,
+  } as CSSProperties;
+
   return (
     <ConfigProvider
       theme={{
         token: {
-          colorPrimary: "#087f76",
+          colorPrimary,
           borderRadius: 10,
           fontFamily: "Inter, system-ui, sans-serif",
         },
       }}
     >
-      <AssistantSurfaceContent />
+      <div className="assistant-sdk-theme" style={brandStyle}>
+        {children}
+      </div>
     </ConfigProvider>
+  );
+}
+
+export function AssistantSurface() {
+  return (
+    <AssistantSurfaceTheme>
+      <AssistantSurfaceContent />
+    </AssistantSurfaceTheme>
   );
 }
 

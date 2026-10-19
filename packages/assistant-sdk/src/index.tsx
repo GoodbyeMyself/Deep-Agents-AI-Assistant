@@ -4,6 +4,11 @@ import { AssistantController, type AssistantSdkOptions } from "./controller.js";
 import { AssistantProvider, AssistantReact, AssistantSurface, useAssistant } from "./react.js";
 
 export * from "./controller.js";
+export {
+  DEFAULT_ASSISTANT_COLOR_PRIMARY,
+  resolveAssistantColorPrimary,
+  type AssistantColorTheme,
+} from "@assistant/assistant-ui";
 export { AssistantProvider, AssistantReact, AssistantSurface, useAssistant };
 
 export interface AssistantInstance {

@@ -89,6 +89,8 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
 
 - 已实现 `assistant-sdk` 的 React 组件/Hook 与原生 JavaScript API，统一支持
   `mount/open/close/updateContext/getState/destroy` 以及 floating/drawer/inline 展示模式。
+- 嵌入与独立 Web 默认主色 `#1677ff`（`DEFAULT_ASSISTANT_COLOR_PRIMARY`）；SDK 可通过
+  `theme.colorPrimary` 覆盖，并同步 Ant Design `ConfigProvider` 与 `--assistant-brand` CSS 变量。
 - React、原生 JavaScript 和跨域 iframe 三种宿主复用 M3 Chat Core、Transport 与同一
   Agent Server；SDK 不暴露 Deep Agents/LangGraph 内部对象。
 - Host Context 使用既有 `RawHostContext` 白名单；每次提交前捕获一次服务端 Snapshot，

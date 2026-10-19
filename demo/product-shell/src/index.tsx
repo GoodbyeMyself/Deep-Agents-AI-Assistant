@@ -5,7 +5,6 @@ import {
   BellOutlined,
   CheckCircleFilled,
   DatabaseOutlined,
-  FileSearchOutlined,
   LineChartOutlined,
   MoreOutlined,
   SafetyCertificateOutlined,
@@ -232,12 +231,6 @@ export function DemoProductShell({ config }: { config: DemoProductConfig }) {
                 <Title level={1}>{config.title}</Title>
                 <Text>{config.description}</Text>
               </div>
-              <Space>
-                <Button icon={<FileSearchOutlined />}>导出治理报告</Button>
-                <Button type="primary" icon={<SafetyCertificateOutlined />}>
-                  新建质量规则
-                </Button>
-              </Space>
             </section>
 
             <div className="workspace-grid">

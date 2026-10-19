@@ -3,7 +3,7 @@
   --assistant-muted: #667674;
   --assistant-paper: #fbfaf6;
   --assistant-line: #dfe6e2;
-  --assistant-teal: #087f76;
+  --assistant-brand: #1677ff;
 }
 
 .assistant-workspace {
@@ -150,7 +150,7 @@
   height: 42px;
   border-radius: 14px;
   color: #fff;
-  background: linear-gradient(145deg, #102a2c, #087f76);
+  background: linear-gradient(145deg, #102a2c, var(--assistant-brand));
   box-shadow: 0 9px 22px rgb(8 127 118 / 24%);
   font:
     750 12px/1 ui-monospace,
@@ -264,7 +264,7 @@
   padding: 8px;
 }
 .assistant-eyebrow {
-  color: var(--assistant-teal);
+  color: var(--assistant-brand);
   font:
     700 10px/1.4 ui-monospace,
     monospace;
@@ -293,16 +293,30 @@
   flex-direction: column;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 24px clamp(18px, 4vw, 54px);
+  padding: 16px clamp(16px, 4vw, 48px);
+  background: #f5f5f5;
 }
 .assistant-message-list {
   flex: 1;
   min-height: 0;
   width: 100%;
 }
+.assistant-message-list .ant-bubble {
+  align-items: flex-start;
+}
+.assistant-message-list .ant-bubble-end .ant-bubble-content-filled {
+  background-color: #e6f4ff;
+  color: rgb(0 0 0 / 88%);
+}
+.assistant-message-list .ant-bubble-start .ant-bubble-content-shadow {
+  background-color: #fff;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 3%), 0 1px 6px -1px rgb(0 0 0 / 2%),
+    0 2px 4px 0 rgb(0 0 0 / 2%);
+}
 .assistant-message-content {
-  width: min(100%, 720px);
-  color: #274846;
+  width: min(100%, 680px);
+  color: rgb(0 0 0 / 88%);
+  text-align: left;
 }
 .assistant-safe-content p {
   margin: 0 0 8px;
@@ -327,7 +341,7 @@
 .assistant-line-chart {
   margin: 0;
   padding: 16px;
-  color: var(--assistant-teal);
+  color: var(--assistant-brand);
 }
 .assistant-line-chart figcaption {
   margin-bottom: 10px;
@@ -347,9 +361,9 @@
   width: 100%;
   margin: 0 0 2px;
   padding: 10px 12px;
-  border: 1px solid #dceae6;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #f6faf8 0%, #f1f7f4 100%);
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  background: #fafafa;
 }
 .assistant-execution-toggle {
   display: grid;
@@ -366,7 +380,7 @@
   cursor: pointer;
 }
 .assistant-execution-toggle:focus-visible {
-  outline: 2px solid var(--assistant-teal);
+  outline: 2px solid var(--assistant-brand);
   outline-offset: 4px;
   border-radius: 6px;
 }
@@ -381,7 +395,7 @@
   color: #52c41a;
 }
 .assistant-execution-status.is-loading {
-  color: var(--assistant-teal);
+  color: var(--assistant-brand);
 }
 .assistant-execution-status.is-error,
 .assistant-execution-status.is-abort {

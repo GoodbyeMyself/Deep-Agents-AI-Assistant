@@ -7,3 +7,8 @@ export { MessageList } from "./MessageList.js";
 export { SafeContent } from "./SafeContent.js";
 export { chatReducer, initialChatState } from "./store.js";
 export type { ChatMessage, ChatState, PublicExecutionStep } from "./types.js";
+export {
+  DEFAULT_ASSISTANT_COLOR_PRIMARY,
+  resolveAssistantColorPrimary,
+  type AssistantColorTheme,
+} from "./theme.js";

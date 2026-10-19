@@ -126,6 +126,7 @@ select {
   padding: 12px clamp(20px, 5vw, 48px);
   overflow: hidden auto;
   overscroll-behavior: contain;
+  background: #f7f7f8;
 }
 
 .codex-workspace .assistant-empty .ant-empty-description {

@@ -9,6 +9,58 @@ import { ExecutionTimeline } from "./ExecutionTimeline.js";
 import { SafeContent } from "./SafeContent.js";
 import type { ChatMessage } from "./types.js";
 
+const bubbleRoles = {
+  user: {
+    placement: "end" as const,
+    variant: "filled" as const,
+    shape: "corner" as const,
+    avatar: <Avatar style={{ backgroundColor: "#91caff", color: "#0958d9" }} icon={<UserOutlined />} />,
+    styles: {
+      content: {
+        backgroundColor: "#e6f4ff",
+        color: "rgba(0, 0, 0, 0.88)",
+      },
+    },
+  },
+  ai: {
+    placement: "start" as const,
+    variant: "shadow" as const,
+    shape: "corner" as const,
+    avatar: (
+      <Avatar style={{ backgroundColor: "#fde3cf", color: "#f56a00" }} icon={<RobotOutlined />} />
+    ),
+    styles: {
+      content: {
+        backgroundColor: "#ffffff",
+      },
+    },
+  },
+};
+
+function AssistantMessageBody({
+  message,
+  transport,
+}: {
+  message: ChatMessage;
+  transport: AssistantApiTransport;
+}) {
+  return (
+    <Space orientation="vertical" size={12} className="assistant-message-content">
+      <ExecutionTimeline steps={message.executionSteps} status={message.status} />
+      <SafeContent
+        streaming={message.status === "loading"}
+        content={
+          message.content || (message.status === "loading" ? "正在连接可信业务能力…" : "")
+        }
+      />
+      {message.views.map((view) => (
+        <AssistantViewRenderer key={view.viewId} value={view} />
+      ))}
+      <EvidencePanel referenceIds={message.evidenceIds} transport={transport} />
+    </Space>
+  );
+}
+
 export function MessageList({
   messages,
   transport,
@@ -56,37 +108,23 @@ export function MessageList({
     <Bubble.List
       className="assistant-message-list"
       autoScroll
-      role={{
-        user: { placement: "end", variant: "filled", avatar: <Avatar icon={<UserOutlined />} /> },
-        ai: {
-          placement: "start",
-          variant: "borderless",
-          avatar: <Avatar icon={<RobotOutlined />} />,
-        },
-      }}
-      items={messages.map((message) => ({
-        key: message.id,
-        role: message.role === "assistant" ? "ai" : "user",
-        status: message.status,
-        streaming: message.status === "loading",
-        content: (
-          <Space orientation="vertical" size={12} className="assistant-message-content">
-            {message.role === "assistant" ? (
-              <ExecutionTimeline steps={message.executionSteps} status={message.status} />
-            ) : null}
-            <SafeContent
-              streaming={message.status === "loading"}
-              content={
-                message.content || (message.status === "loading" ? "正在连接可信业务能力…" : "")
-              }
-            />
-            {message.views.map((view) => (
-              <AssistantViewRenderer key={view.viewId} value={view} />
-            ))}
-            <EvidencePanel referenceIds={message.evidenceIds} transport={transport} />
-          </Space>
-        ),
-      }))}
+      role={bubbleRoles}
+      items={messages.map((message) => {
+        const isAssistant = message.role === "assistant";
+        const waitingForContent = isAssistant && message.status === "loading" && !message.content;
+        return {
+          key: message.id,
+          role: isAssistant ? "ai" : "user",
+          status: message.status,
+          streaming: message.status === "loading",
+          loading: waitingForContent,
+          content: isAssistant ? (
+            <AssistantMessageBody message={message} transport={transport} />
+          ) : (
+            message.content
+          ),
+        };
+      })}
     />
   );
 }

@@ -1,3 +1,4 @@
+import type { AssistantColorTheme } from "@assistant/assistant-ui";
 import { AssistantApiTransport } from "@assistant/assistant-transport";
 import { rawHostContextSchema, type RawHostContext } from "@assistant/context";
 
@@ -13,6 +14,8 @@ export interface AssistantSdkOptions {
   initiallyOpen?: boolean;
   title?: string;
   layout?: "default" | "panel";
+  /** 主色（Ant Design `colorPrimary` 与聊天强调色）。默认 `#1677ff`。 */
+  theme?: AssistantColorTheme;
 }
 
 export interface AssistantSdkState {
