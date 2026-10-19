@@ -7,12 +7,29 @@
 - `data_map.search_objects@1.0.0`
 - `data_quality.get_trend@1.0.0`
 
-## 主要模块
+## 目录结构（`src/`）
 
-- `contracts.ts`：Zod 输入、输出、Evidence、错误和警告结构。
-- `catalog.ts`：标准能力目录。
-- `registry.ts`：Capability Provider 注册与绑定。
-- `executor.ts`：输入输出校验、Policy 执行和审计。
+```text
+src/
+├── index.ts                 # 包公共导出（@assistant/capability-contracts）
+├── contracts/               # Zod 契约与标准能力定义
+│   ├── common.ts              # Evidence、错误、Result 工厂、CapabilityContract
+│   ├── standard/              # 各标准能力契约（一能力一文件）
+│   │   ├── data-map-search-objects.ts
+│   │   ├── quality-trend.ts
+│   │   └── index.ts           # standardCapabilityContracts 聚合
+│   └── index.ts               # 包内 contracts 公共入口
+├── catalog/                   # 标准能力目录
+│   └── catalog.ts
+├── registry/                  # Provider 绑定注册
+│   └── registry.ts
+└── executor/                  # 校验、Policy、审计与执行
+    ├── policy.ts
+    ├── executor.ts
+    └── index.ts
+```
+
+新增标准能力时：在 `contracts/standard/` 增加独立文件并在 `contracts/standard/index.ts` 注册到 `standardCapabilityContracts`。
 
 ## 依赖边界
 

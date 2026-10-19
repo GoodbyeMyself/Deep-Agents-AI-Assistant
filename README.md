@@ -36,8 +36,9 @@ Deep-Agents-AI-Assistant/
 ├─ apps/
 │  ├─ agent-server/                  # Agent Server、REST/SSE、会话、Context、Evidence
 │  │  ├─ migrations/                 # 持久化模型参考迁移
-│  │  ├─ src/application/            # 身份、会话、上下文、Runner 与 HTTP
-│  │  ├─ src/plugin-bootstrap.ts     # 插件发现与 Tool 装配
+│  │  ├─ src/composition/            # 插件装配与应用 wiring
+│  │  ├─ src/http/                   # REST/SSE Handler 与 Node 适配
+│  │  ├─ src/modules/                # session、context、identity、embed
 │  │  └─ src/server-main.ts          # 服务进程入口
 │  ├─ assistant-web/                 # 独立 React Web
 │  └─ assistant-embed/               # iframe 内运行的助手页面
@@ -58,15 +59,14 @@ Deep-Agents-AI-Assistant/
 ├─ demo/                             # 所有可执行演示工程，和正式模块隔离
 │  ├─ product-a/                     # React + Ant Design 数据治理接入演示
 │  ├─ product-b/                     # Vue 3 + Element Plus 数据资产接入演示
-│  ├─ product-shell/                 # Product A React 业务壳和助手接入层
-│  ├─ sdk-host/                      # React/JS/iframe 三种接入方式演示宿主
+│  ├─ sdk-host/                      # React SDK 内联挂载轻量实验宿主
 │  ├─ server/                        # 独立 Web、嵌入和 A/B 演示的服务入口
 │  ├─ scripts/                       # 双产品一键启动与进程清理
 │  └─ README.md                      # 演示目录边界和运行说明
-├─ deployments/
-│  ├─ product-a/.env.example         # A 实例独立部署样例
-│  ├─ product-b/.env.example         # B 实例独立部署样例
-│  └─ README.md                      # 部署、升级、回滚和可观测性说明
+├─ deploy/                           # 容器打包、裸进程 A/B 环境样例与运维说明
+│  ├─ env/                           # Docker 与 process-product-a/b 环境样例
+│  ├─ docker-compose.yml
+│  └─ README.md                      # 双 Agent Server、Compose、升级/回滚
 ├─ docs/
 │  ├─ architecture-v2.0/             # 唯一架构设计基线和 M0～M5 阶段规范
 │  ├─ implementation-status.md       # 当前真实实施状态与生产边界
@@ -90,14 +90,14 @@ Deep-Agents-AI-Assistant/
 | --- | --- | --- |
 | 独立 Web | `apps/assistant-web/src/main.tsx`、`App.tsx`、`app.css` | 完整的独立访问页面，包含助手、会话管理、运行状态和本地模拟身份切换；开发入口为 `http://127.0.0.1:5173` |
 | iframe 助手页面 | `apps/assistant-embed/src/main.tsx`、`styles.css` | 真正运行在 iframe 内的 Assistant Shell；负责一次性票据交换、短期凭证和宿主 Context 接收，不包含 Product A/B 业务页面 |
-| 声明式 iframe Loader | `apps/assistant-embed/src/host-loader.ts`、`packages/iframe-bridge/src/host-loader.ts` | 生成稳定的 `assistant-loader.js`；在 Shadow DOM 中统一创建右下角按钮、固定浮窗和 iframe，业务工程不再实现助手容器或样式 |
+| 声明式 iframe Loader | `apps/assistant-embed/src/host-loader.ts`、`packages/iframe-bridge/src/host/` | 生成稳定的 `assistant-loader.js`；在 Shadow DOM 中统一创建右下角按钮、固定浮窗和 iframe，业务工程不再实现助手容器或样式 |
 | Shared Chat Core | `packages/assistant-ui/src/ChatWorkspace.tsx`、`MessageList.tsx`、`ChatComposer.tsx`、`ExecutionTimeline.tsx`、`EvidencePanel.tsx`、`styles.css` | 独立 Web、React/JavaScript SDK 和 iframe 共用的聊天、流式进度、受控 View 与 Evidence UI；通用对话样式优先在这里修改 |
 | React / JavaScript SDK | `packages/assistant-sdk/src/index.tsx`、`react.tsx`、`controller.ts`、`styles.css` | 提供 `AssistantReact`、React Provider/Hook 和 `createAssistant()`；控制 inline、floating、modal 等挂载形式与打开/关闭状态 |
 | iframe 通信 | `packages/iframe-bridge/src/index.ts` | 校验 Origin、Window Source 和 channelId，传递一次性 Ticket 与页面 Context；与 Loader 共同维护安全宿主边界 |
 | REST / SSE 客户端 | `packages/assistant-transport/src/index.ts` | 所有前端共用的 Session、Run、ContextSnapshot、Evidence 和 SSE 事件客户端 |
-| Product A 页面 | `demo/product-a/index.html`、`src/main.tsx`；共享业务壳位于 `demo/product-shell/src/index.tsx`、`styles.css` | React + Ant Design 数据治理宿主页；入口 HTML 只声明 Loader、iframe 地址和初始 Context，不包含助手按钮、浮窗或 iframe 模板 |
+| Product A 页面 | `demo/product-a/index.html`、`src/App.tsx`、`src/config.ts`、`src/app.css` | React + Ant Design Pro 数据治理宿主页；入口 HTML 只声明 Loader、iframe 地址和初始 Context，不包含助手按钮、浮窗或 iframe 模板 |
 | Product B 页面 | `demo/product-b/index.html`、`src/App.vue`、`main.ts`、`styles.css` | Vue 3 + Element Plus 数据资产宿主页；同样只在入口 HTML 声明 Loader 配置，不独立实现助手 UI |
-| SDK 三方式实验页 | `demo/sdk-host/src/main.tsx`、`styles.css` | 对比 React SDK、JavaScript SDK、跨域 iframe 三种挂载方式 |
+| React SDK 实验宿主 | `demo/sdk-host/src/main.tsx`、`styles.css` | 最小页验证 React SDK 内联 panel；JS / iframe 见 product-a/b 与 `assistant-embed` |
 
 两条主要渲染链路如下：
 
@@ -123,8 +123,8 @@ demo/product-a 或 demo/product-b 的 index.html（声明 iframe 地址）
 
 - 修改聊天消息、输入框、执行进度或 Evidence 展示：改 `packages/assistant-ui/src/`。
 - 修改通用 SDK 浮窗、启动按钮和挂载行为：改 `packages/assistant-sdk/src/`。
-- 修改统一的 iframe 启动按钮、固定浮窗、初始化或短期凭证交换：改 `packages/iframe-bridge/src/host-loader.ts` 和 `apps/assistant-embed/src/host-loader.ts`，不要在产品工程中复制。
-- 修改 Product A 的业务页面：改 `demo/product-shell/src/`；品牌和业务样例配置在 `demo/product-a/src/main.tsx`，助手接入配置在 `demo/product-a/index.html`。
+- 修改统一的 iframe 启动按钮、固定浮窗、初始化或短期凭证交换：改 `packages/iframe-bridge/src/host/`（样式见 `loader-styles.ts`）和 `apps/assistant-embed/src/host-loader.ts`，不要在产品工程中复制。
+- 修改 Product A 的业务页面：改 `demo/product-a/src/App.tsx` 和 `app.css`；品牌与业务样例配置在 `demo/product-a/src/config.ts`，助手接入配置在 `demo/product-a/index.html`。
 - 修改 Product B 的业务页面：改 `demo/product-b/src/App.vue` 和 `styles.css`，助手接入配置在 `demo/product-b/index.html`。
 - 修改独立访问页面的导航、会话页或运行状态页：改 `apps/assistant-web/src/App.tsx` 和 `app.css`。
 
@@ -227,7 +227,7 @@ pnpm dev:server
 
 插件入口只允许从已批准的安装目录加载，并校验 Manifest、入口路径、协议版本、Capability 声明和构建产物哈希。开发样例位于 `adapters/demo-product-a` 与 `adapters/demo-product-b`。
 
-A/B 独立部署样例、密钥边界、启动探针、升级和回滚步骤见 [deployments/README.md](deployments/README.md)。生产环境必须替换 Mock Identity、模拟业务 API、内存 Repository 和 `MemorySaver`，并配置独立密钥、持久化 Checkpointer、TLS、严格 CSP、Origin 白名单、指标告警与灾备恢复。
+A/B 独立部署（含本地同时起两个 Agent Server）、密钥边界、启动探针、升级和回滚见 [deploy/README.md](deploy/README.md) 中「裸进程 A/B」与运维章节。生产环境必须替换 Mock Identity、模拟业务 API、内存 Repository 和 `MemorySaver`，并配置独立密钥、持久化 Checkpointer、TLS、严格 CSP、Origin 白名单、指标告警与灾备恢复。
 
 ## 文档入口
 

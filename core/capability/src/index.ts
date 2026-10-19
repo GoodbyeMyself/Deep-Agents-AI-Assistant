@@ -1,4 +1,4 @@
-export { CapabilityCatalog, createStandardCapabilityCatalog } from "./catalog.js";
+export { CapabilityCatalog, createStandardCapabilityCatalog } from "./catalog/catalog.js";
 export {
   CAPABILITY_CONTRACT_VERSION,
   capabilityErrorCodeSchema,
@@ -27,17 +27,17 @@ export {
   type QualityTrendData,
   type QualityTrendInput,
   type QualityTrendResult,
-} from "./contracts.js";
+} from "./contracts/index.js";
 export {
   CapabilityExecutor,
   scopeCapabilityPolicy,
   type CapabilityAuditRecord,
   type CapabilityAuditSink,
   type CapabilityPolicy,
-} from "./executor.js";
+} from "./executor/index.js";
 export {
   CapabilityRegistry,
   type CapabilityBinding,
   type CapabilityExecutionContext,
   type CapabilityProvider,
-} from "./registry.js";
+} from "./registry/registry.js";

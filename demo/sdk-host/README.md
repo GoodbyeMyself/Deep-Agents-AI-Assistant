@@ -1,21 +1,26 @@
 # SDK Host Demo
 
-接入实验宿主，在同一业务场景中验证 React SDK、Vanilla JavaScript SDK 和跨 Origin iframe 三种接入方式。
+轻量接入实验宿主，用于在最小业务页中验证 **React SDK（内联 panel）** 与 Shared Chat Core、Agent Server 的联调。
 
-## 验证内容
+本目录**不包含**原生 JavaScript SDK（`createAssistant`）或跨 Origin iframe（Loader / 票据）的对比页；后者见 `demo/product-a`、`demo/product-b` 与 `apps/assistant-embed`。
 
-- 三种接入方式复用同一个 Chat Core 和 Agent Server。
-- 宿主对象从订单切换到客户时更新后续请求上下文。
-- iframe 票据交换、Origin 校验和无凭证 URL。
-- SDK 的 mount、open、close、updateContext 和 destroy 生命周期。
+## 当前实现
 
-## 运行与验证
+- `src/main.tsx`：`AssistantController` + `AssistantProvider` + `AssistantSurface`，`presentation: "inline"`。
+- 固定 Mock `RawHostContext` 与 `getAccessCredential`（`mock-token-admin`），无业务台 UI、无宿主对象切换演示。
+
+## 运行
 
 ```bash
 pnpm --filter @assistant/demo-host dev
+# 或仓库根目录：pnpm dev:sdk-host
+
 pnpm --filter @assistant/demo-host build
 pnpm --filter @assistant/demo-host typecheck
-pnpm --filter @assistant/demo-host e2e
 ```
 
-此目录是集成验证工程，不是产品 A/B 的推荐演示入口。
+本地开发需已启动 Agent Server（与独立 Web / 嵌入演示相同的后端约定）。
+
+## 边界
+
+集成验证用薄宿主，**不是** Product A/B 的推荐演示入口；完整 iframe 接入与 Host Context 同步请使用 `pnpm demo` 打开的双产品演示。

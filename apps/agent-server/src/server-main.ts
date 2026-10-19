@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 import { ChatOpenAI } from "@langchain/openai";
 import type { PluginRuntimeRecord } from "@assistant/plugin-runtime";
 
-import { createAgentApplication } from "./application/bootstrap.js";
-import { createNodeHttpServer } from "./application/node-http.js";
+import { createAgentApplication } from "./composition/create-application.js";
+import { createNodeHttpServer } from "./http/node-http.js";
 
 function envValue(name: string): string | undefined {
   const value = process.env[name]?.trim();

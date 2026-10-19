@@ -1,5 +1,12 @@
+/**
+ * 前后端共享的 Assistant API 请求、SSE 事件与受控 View 的 Zod 契约。
+ * 仅描述传输层协议；业务 Capability 输入/输出见 `core/capability`。
+ */
 import { z } from "zod";
 
+// --- HTTP API：统一错误与写操作请求体 ---
+
+/** Agent Server 标准错误响应（与 HTTP 状态码配套）。 */
 export const apiErrorSchema = z.object({
   code: z.string().min(1),
   message: z.string().min(1),
@@ -7,21 +14,30 @@ export const apiErrorSchema = z.object({
   details: z.record(z.string(), z.unknown()).optional(),
 });
 
+/** `POST /api/v1/sessions` */
 export const createSessionRequestSchema = z.object({
   title: z.string().trim().min(1).max(200).optional(),
   mode: z.enum(["assistant", "standalone"]),
 });
 
+/** `PATCH /api/v1/sessions/{id}`；至少提供 title 或 archived 之一。 */
 export const patchSessionRequestSchema = z
   .object({ title: z.string().trim().min(1).max(200).optional(), archived: z.boolean().optional() })
   .refine((value) => value.title !== undefined || value.archived !== undefined);
 
+/**
+ * `POST /api/v1/sessions/{id}/runs`。
+ * `clientRequestId` 用于幂等；`contextSnapshotId` 须为服务端已授权的快照。
+ */
 export const createRunRequestSchema = z.object({
   message: z.string().trim().min(1).max(10_000),
   contextSnapshotId: z.string().uuid(),
   clientRequestId: z.string().trim().min(1).max(200),
 });
 
+// --- SSE：`GET /api/v1/runs/{id}/events` 流式事件信封 ---
+
+/** 单条 SSE 事件的 `type` 字段；新增类型须保持 schemaVersion 兼容策略。 */
 export const assistantEventTypeSchema = z.enum([
   "run.started",
   "message.delta",
@@ -37,6 +53,10 @@ export const assistantEventTypeSchema = z.enum([
   "run.cancelled",
 ]);
 
+/**
+ * 版本化事件信封。`data` 按 `type` 携带载荷，由消费方（如 assistant-ui store）解析。
+ * `eventId` + `sequence` 供客户端去重与断线重连游标。
+ */
 export const assistantEventSchema = z.object({
   schemaVersion: z.literal("1"),
   eventId: z.string().min(1),
@@ -48,6 +68,8 @@ export const assistantEventSchema = z.object({
   data: z.record(z.string(), z.unknown()),
 });
 
+// --- 受控 ViewModel：UI 白名单渲染，禁止任意 HTML/脚本 ---
+
 const viewBaseSchema = z.object({
   viewId: z.string().uuid(),
   schemaVersion: z.literal("1"),
@@ -55,8 +77,13 @@ const viewBaseSchema = z.object({
   evidenceIds: z.array(z.string()),
 });
 
+/** 表格/指标等字段允许的标量类型。 */
 const scalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 
+/**
+ * `view.created` 事件与消息附件中的结构化视图。
+ * `viewType` 为判别字段；仅列出的类型可由 AssistantViewRenderer 安全展示。
+ */
 export const assistantViewSchema = z.discriminatedUnion("viewType", [
   viewBaseSchema.extend({
     viewType: z.literal("text"),
@@ -78,6 +105,7 @@ export const assistantViewSchema = z.discriminatedUnion("viewType", [
       rows: z.array(z.record(z.string(), scalarSchema)),
     }),
   }),
+  // chart.line 要求必填 title，与 viewBase 的 optional title 不一致，故单独定义。
   z.object({
     viewId: z.string().uuid(),
     viewType: z.literal("chart.line"),
@@ -102,6 +130,9 @@ export type AssistantEvent = z.infer<typeof assistantEventSchema>;
 export type AssistantEventType = z.infer<typeof assistantEventTypeSchema>;
 export type AssistantView = z.infer<typeof assistantViewSchema>;
 
+// --- OpenAPI：路径索引（详述由 agent-server 与文档同步维护） ---
+
+/** 当前 M3 阶段 API 面的轻量 OpenAPI 骨架，供工具链与契约测试引用。 */
 export const openApiDocument = {
   openapi: "3.1.0",
   info: { title: "Enterprise AI Assistant API", version: "1.0.0-m3" },

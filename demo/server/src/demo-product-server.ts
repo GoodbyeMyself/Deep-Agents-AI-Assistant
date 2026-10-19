@@ -4,8 +4,10 @@ import { fileURLToPath } from "node:url";
 import type { BaseLanguageModel } from "@langchain/core/language_models/base";
 import { ChatOpenAI } from "@langchain/openai";
 
-import { createAgentApplication } from "../../../apps/agent-server/src/application/bootstrap.js";
-import { createNodeHttpServer } from "../../../apps/agent-server/src/application/node-http.js";
+import {
+  createAgentApplication,
+  createNodeHttpServer,
+} from "../../../apps/agent-server/src/index.js";
 
 export interface DemoProductServerOptions {
   readonly pluginId: "demo-product-a" | "demo-product-b";

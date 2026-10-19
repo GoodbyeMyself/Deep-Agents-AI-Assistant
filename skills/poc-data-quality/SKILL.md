@@ -1,9 +1,13 @@
 ---
 name: poc-data-quality
-description: Analyze quality trends using verified tool results and evidence references.
+description: 基于已验证的工具结果与 Evidence 引用分析数据质量趋势。
 ---
 
-# Data quality analysis
+# 数据质量分析
 
-Call the quality trend tool before stating measurements. Distinguish observed values from
-inferences, preserve warnings, and include the returned evidence reference.
+在陈述任何指标或结论之前，必须先调用数据质量趋势相关工具。
+
+- 区分**观测值**与**推断**，不要把模型猜测写成事实。
+- 保留工具返回的**警告**信息，不要静默丢弃。
+- 回答中应包含工具返回的 **Evidence 引用**（referenceId），便于追溯。
+- 向用户展示的分析说明、结论与警告均使用**简体中文**。

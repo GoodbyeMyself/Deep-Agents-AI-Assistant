@@ -2,13 +2,13 @@ export {
   HttpCapabilityDriver,
   HttpCapabilityProvider,
   type HttpCapabilityDriverOptions,
-} from "./http-driver.js";
-export { pluginManifestSchema, type PluginManifest } from "./manifest.js";
-export {
-  PluginRegistry,
-  PluginRuntime,
-  type PluginLifecycleEvent,
-  type PluginLifecycleStatus,
-  type PluginRuntimeOptions,
-  type PluginRuntimeRecord,
-} from "./runtime.js";
+} from "./driver/http-capability.js";
+export { pluginManifestSchema, type PluginManifest } from "./manifest/schema.js";
+export type {
+  PluginLifecycleEvent,
+  PluginLifecycleStatus,
+  PluginRuntimeOptions,
+  PluginRuntimeRecord,
+} from "./lifecycle/types.js";
+export { PluginRegistry } from "./registry/plugin-registry.js";
+export { PluginRuntime } from "./runtime/plugin-runtime.js";

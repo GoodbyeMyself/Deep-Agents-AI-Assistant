@@ -4,10 +4,9 @@
 
 ## 目录
 
-- `product-a/`：React + Ant Design 的 Product A 数据质量运营台。
+- `product-a/`：React + Ant Design Pro 的 Product A 数据质量运营台（含业务页与 Host Context 同步）。
 - `product-b/`：Vue 3 + Element Plus + Vite 的 Product B 数据资产驾驶舱。
-- `product-shell/`：Product A 的 React 业务页面壳和安全 iframe 助手接入层。
-- `sdk-host/`：React SDK、JavaScript SDK 与 iframe 接入宿主。
+- `sdk-host/`：React SDK 内联挂载的轻量实验宿主（JS / iframe 接入见 product-a、product-b）。
 - `server/`：独立 Web、嵌入和 A/B 使用的 Demo Server 入口；A/B 交互演示强制使用真实 DeepSeek。
 - `scripts/`：双产品一键启动及跨平台子进程清理。
 

@@ -1,0 +1,9 @@
+# Product A — bare Agent Server process (local A/B). Copy to a secret-managed file; never commit real values.
+DEPLOYMENT_ID=product-a
+SERVER_HOST=127.0.0.1
+SERVER_PORT=3101
+PLUGIN_ID=demo-product-a
+PLUGINS_DIR=./adapters/demo-product-a
+MODEL_NAME=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+DEEPSEEK_API_KEY=

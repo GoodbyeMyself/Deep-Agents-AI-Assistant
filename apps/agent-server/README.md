@@ -2,12 +2,31 @@
 
 企业助手的 Node.js 服务端入口，负责身份认证、Session、Run、ContextSnapshot、SSE、Evidence 二次鉴权和 Deep Agents 执行编排。
 
-## 主要内容
+## 目录结构（`src/`）
 
-- `src/plugin-bootstrap.ts`：可信插件发现、注册与 Tool 装配入口。
-- `src/application/`：API、服务、Runner、存储、身份、上下文和 iframe 票据实现。
-- `src/server-main.ts`：可运行服务入口。
-- `migrations/`：持久化模型的参考迁移脚本。
+```text
+src/
+├── main.ts                      # M0 真实模型烟测入口
+├── server-main.ts               # 可部署 HTTP 服务入口
+├── index.ts                     # 对外导出（演示与集成测试可引用）
+├── composition/                 # Composition Root：插件装配与应用 wiring
+│   ├── plugin-bootstrap.ts      # 可信插件发现、Capability 注册与 Agent 创建
+│   └── create-application.ts    # 组装 Store、Runner、HTTP Handler
+├── http/                        # 传输层：Fetch API Handler 与 Node HTTP 适配
+│   ├── api.ts
+│   └── node-http.ts
+├── modules/                     # 按领域划分的应用模块（未来可抽到 platform/*）
+│   ├── session/                 # Session、Run、消息、事件、Evidence 与审计存储
+│   ├── context/                 # 页面上下文规范化与快照
+│   ├── identity/                # 主体认证（当前为 Mock IdP）
+│   └── embed/                   # iframe 一次性票据与短期凭证
+├── shared/                      # 模块内共享类型与错误
+│   └── errors.ts
+```
+
+包根目录 `migrations/` 为持久化参考脚本。
+
+与 `docs/architecture-v2.0/03-工程结构与依赖规则.md` 一致：`modules/*` 对应后续可抽离的 `platform/session-service` 等；`composition/` 保持唯一装配点，不写产品名分支。
 
 ## 安全边界
 
