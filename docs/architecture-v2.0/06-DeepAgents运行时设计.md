@@ -102,6 +102,12 @@ const agent = createDeepAgent({ tools, contextSchema: runContextSchema });
 
 M0 实测：Skills 能被读取；Tool/Subagent Stream 能被监听；Checkpointer 同一 threadId 能继续；重启后持久化根据 M2 驱动验证。
 
+### E3 Plugin Skill 启动快照
+
+Agent Server 在 Plugin Runtime 完成 Contract、Provider、Skill 校验后，把可用 Skill 目录复制到仅包含 Skill 资产的临时启动快照，并在复制后复核目录树哈希；随后以 `FilesystemBackend({ virtualMode: true })` 和官方 `skills` 参数装配 Deep Agents。文件权限只允许读取 `/skills/**`，拒绝写入和读取快照外路径。Agent 创建后固定 Tool 与 Skill 集合，不刷新安装目录；插件新增、删除、禁用或内容更新均需重启。官方线程级 Skill 缓存继续保留，但平台不调用刷新入口实现热加载。
+
+Skill 指令、描述及其外部引用不构成事实、Evidence、身份、权限或凭证。系统 Prompt 明确要求业务事实来自受控 Tool 和服务端验证的 Evidence；所有 Tool 调用仍经过 Capability Executor。
+
 ## 8. Subagents 策略
 
 - 简单查数优先主 Agent 直接调用 Tool；多步专业分析按需委派。

@@ -29,6 +29,7 @@ export class AgentService {
       readonly models: readonly Record<string, unknown>[];
       readonly plugins: readonly Record<string, unknown>[];
       readonly capabilities: readonly Record<string, unknown>[];
+      readonly skills?: readonly Record<string, unknown>[];
     } = { models: [], plugins: [], capabilities: [] },
   ) {}
 

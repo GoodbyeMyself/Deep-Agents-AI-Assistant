@@ -1,4 +1,8 @@
-import { createAgentRuntime, createCapabilityTools } from "@assistant/agent-runtime";
+import {
+  createAgentRuntime,
+  createCapabilityTools,
+  createSkillSnapshot,
+} from "@assistant/agent-runtime";
 import {
   CapabilityExecutor,
   CapabilityRegistry,
@@ -18,6 +22,9 @@ export async function createAgentFromInstalledPlugins(options: {
   checkpointer?: BaseCheckpointSaver;
   policy?: CapabilityPolicy;
   audit?: CapabilityAuditSink;
+  pluginConfigs?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+  hasCredential?: (pluginId: string, reference: string) => Promise<boolean>;
+  approvedSkillDependencies?: ReadonlySet<string>;
 }) {
   const catalog = createStandardCapabilityCatalog();
   const registry = new CapabilityRegistry();
@@ -32,6 +39,11 @@ export async function createAgentFromInstalledPlugins(options: {
       : { approvedPermissions: options.approvedPermissions }),
     catalog,
     capabilityRegistry: registry,
+    ...(options.pluginConfigs === undefined ? {} : { pluginConfigs: options.pluginConfigs }),
+    ...(options.hasCredential === undefined ? {} : { hasCredential: options.hasCredential }),
+    ...(options.approvedSkillDependencies === undefined
+      ? {}
+      : { approvedSkillDependencies: options.approvedSkillDependencies }),
   });
   const pluginRecords = await pluginRuntime.start();
   const executor = new CapabilityExecutor({
@@ -41,11 +53,32 @@ export async function createAgentFromInstalledPlugins(options: {
     ...(options.audit === undefined ? {} : { audit: options.audit }),
   });
   const tools = createCapabilityTools({ catalog, registry, executor });
+  const skillSnapshot = await createSkillSnapshot(pluginRuntime.skillRegistry.list());
   const agent = createAgentRuntime({
     model: options.model,
     tools,
+    ...(skillSnapshot.workspaceRoot === undefined
+      ? {}
+      : {
+          workspaceRoot: skillSnapshot.workspaceRoot,
+          skills: [...skillSnapshot.skillPaths],
+          permissions: [
+            { operations: ["read"], paths: ["/skills/**"], mode: "allow" },
+            { operations: ["write"], paths: ["/**"], mode: "deny" },
+            { operations: ["read"], paths: ["/**"], mode: "deny" },
+          ],
+        }),
     ...(options.checkpointer === undefined ? {} : { checkpointer: options.checkpointer }),
   });
 
-  return { agent, catalog, executor, pluginRecords, registry, tools };
+  return {
+    agent,
+    catalog,
+    executor,
+    pluginRecords,
+    registry,
+    skillSnapshot,
+    skills: pluginRuntime.skillRegistry.list(),
+    tools,
+  };
 }

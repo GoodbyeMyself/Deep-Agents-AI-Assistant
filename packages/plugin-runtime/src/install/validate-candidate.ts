@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { lstat, readFile, realpath } from "node:fs/promises";
-import { isAbsolute, relative, resolve } from "node:path";
+import { lstat, readFile, readdir, realpath } from "node:fs/promises";
+import { isAbsolute, join, relative, resolve } from "node:path";
 
 import { SUPPORTED_PLUGIN_API_VERSIONS } from "@assistant/plugin-sdk";
 
@@ -18,9 +18,70 @@ export interface ValidatedCandidate {
   readonly pluginPath: string;
   readonly manifest: PluginManifest;
   readonly entryPath?: string;
-  readonly skillPaths: readonly string[];
+  readonly skills: readonly ValidatedSkillCandidate[];
   readonly artifactHash: string;
   readonly events: readonly PluginLifecycleEvent[];
+}
+
+export interface ValidatedSkillCandidate {
+  readonly name: string;
+  readonly description: string;
+  readonly sourcePath: string;
+  readonly absolutePath: string;
+  readonly artifactHash: string;
+  readonly requiredCapabilities: readonly {
+    readonly id: string;
+    readonly contractVersion: string;
+  }[];
+  readonly requiredToolNames: readonly string[];
+  readonly requiredConfig: readonly string[];
+  readonly requiredCredentials: readonly string[];
+}
+
+function manifestSkillPaths(manifest: PluginManifest): readonly string[] {
+  if (manifest.manifestVersion !== "2") return [];
+  return (manifest.skills ?? []).map((skill) =>
+    typeof skill === "string" ? skill : skill.path,
+  );
+}
+
+function capabilityToolName(capabilityId: string): string {
+  return capabilityId.replaceAll(/[^a-zA-Z0-9_]/g, "_");
+}
+
+function parseSkillFrontmatter(content: string, directoryName: string) {
+  const match = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u.exec(content);
+  if (!match) return undefined;
+  const values = new Map<string, string>();
+  for (const line of match[1]?.split(/\r?\n/u) ?? []) {
+    if (line.trim().length === 0) continue;
+    const separator = line.indexOf(":");
+    if (separator < 1) return undefined;
+    const key = line.slice(0, separator).trim();
+    let value = line.slice(separator + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (values.has(key)) return undefined;
+    values.set(key, value);
+  }
+  const name = values.get("name");
+  const description = values.get("description");
+  if (
+    name === undefined ||
+    description === undefined ||
+    name !== directoryName ||
+    !/^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(name) ||
+    name.length > 64 ||
+    description.length < 1 ||
+    description.length > 1024
+  ) {
+    return undefined;
+  }
+  return { name, description, allowedTools: values.get("allowed-tools") };
 }
 
 export function capabilityDiagnostics(
@@ -64,7 +125,7 @@ function candidateFailure(
           manifestVersion: manifest.manifestVersion,
           capabilities: capabilityDiagnostics(manifest),
           ...(manifest.manifestVersion === "2"
-            ? { namespace: manifest.namespace, skillPaths: manifest.skills ?? [] }
+            ? { namespace: manifest.namespace, skillPaths: manifestSkillPaths(manifest) }
             : {}),
         }),
     ...(artifactHash === undefined ? {} : { artifactHash }),
@@ -92,6 +153,35 @@ async function sha256(path: string): Promise<string> {
   return `sha256-${createHash("sha256")
     .update(await readFile(path))
     .digest("base64")}`;
+}
+
+async function hashAndVerifySkillTree(root: string): Promise<string> {
+  const hash = createHash("sha256");
+  let totalBytes = 0;
+  async function visit(directory: string): Promise<void> {
+    const entries = await readdir(directory, { withFileTypes: true });
+    entries.sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      const path = join(directory, entry.name);
+      const stat = await lstat(path);
+      if (stat.isSymbolicLink()) throw new Error("symlink");
+      const relativePath = relative(root, path).replaceAll("\\", "/");
+      hash.update(relativePath);
+      if (stat.isDirectory()) {
+        await visit(path);
+      } else if (stat.isFile()) {
+        totalBytes += stat.size;
+        if (stat.size > 512 * 1024 || totalBytes > 2 * 1024 * 1024) {
+          throw new Error("size");
+        }
+        hash.update(await readFile(path));
+      } else {
+        throw new Error("type");
+      }
+    }
+  }
+  await visit(root);
+  return `sha256-${hash.digest("base64")}`;
 }
 
 export async function validateCandidate(
@@ -229,7 +319,7 @@ export async function validateCandidate(
     return {
       pluginPath,
       manifest,
-      skillPaths: [],
+      skills: [],
       artifactHash,
       events: [...events, lifecycle("validated", "Manifest and approval policy validated.")],
     };
@@ -293,10 +383,12 @@ export async function validateCandidate(
     );
   }
 
-  const skillPaths: string[] = [];
+  const skills: ValidatedSkillCandidate[] = [];
   if (manifest.manifestVersion === "2") {
     for (const skillDeclaration of manifest.skills ?? []) {
-      if (!skillDeclaration.startsWith("./") || isAbsolute(skillDeclaration)) {
+      const sourcePath =
+        typeof skillDeclaration === "string" ? skillDeclaration : skillDeclaration.path;
+      if (!sourcePath.startsWith("./") || isAbsolute(sourcePath)) {
         return candidateFailure(
           pluginPath,
           events,
@@ -308,20 +400,71 @@ export async function validateCandidate(
         );
       }
       try {
-        const unresolvedSkill = resolve(approvedRoot, skillDeclaration);
+        const unresolvedSkill = resolve(approvedRoot, sourcePath);
         await assertNoSymlinkSegments(approvedRoot, unresolvedSkill);
         const skillPath = await realpath(unresolvedSkill);
         if (!isInside(approvedRoot, skillPath) || !(await lstat(skillPath)).isDirectory()) {
           throw new Error("outside root");
         }
-        skillPaths.push(skillPath);
-      } catch {
+        const metadata = parseSkillFrontmatter(
+          await readFile(resolve(skillPath, "SKILL.md"), "utf8"),
+          skillPath.split(/[\\/]/u).at(-1) ?? "",
+        );
+        if (!metadata) throw new Error("metadata");
+        const requiredCapabilities =
+          typeof skillDeclaration === "string"
+            ? []
+            : (skillDeclaration.requiredCapabilities ?? []);
+        const requiredToolNames = requiredCapabilities.map((requirement) =>
+          capabilityToolName(requirement.id),
+        );
+        const declaredTools = metadata.allowedTools?.split(/\s+/u).filter(Boolean) ?? [];
+        if (
+          declaredTools.some((toolName) => !requiredToolNames.includes(toolName)) ||
+          new Set(requiredToolNames).size !== requiredToolNames.length
+        ) {
+          throw new Error("tools");
+        }
+        for (const requirement of requiredCapabilities) {
+          const ownCapability = manifest.capabilities.some(
+            (capability) =>
+              capability.id === requirement.id &&
+              capability.contractVersion === requirement.contractVersion,
+          );
+          const dependencyKey = `${manifest.id}->${requirement.id}@${requirement.contractVersion}`;
+          if (!ownCapability && !options.approvedSkillDependencies?.has(dependencyKey)) {
+            throw new Error("dependency");
+          }
+        }
+        skills.push({
+          name: metadata.name,
+          description: metadata.description,
+          sourcePath,
+          absolutePath: skillPath,
+          artifactHash: await hashAndVerifySkillTree(skillPath),
+          requiredCapabilities,
+          requiredToolNames,
+          requiredConfig:
+            typeof skillDeclaration === "string" ? [] : (skillDeclaration.requiredConfig ?? []),
+          requiredCredentials:
+            typeof skillDeclaration === "string"
+              ? []
+              : (skillDeclaration.requiredCredentials ?? []),
+        });
+      } catch (error) {
+        const code = error instanceof Error ? error.message : "invalid";
         return candidateFailure(
           pluginPath,
           events,
           "artifact",
-          "SKILL_PATH_INVALID",
-          "Plugin Skill path could not be verified inside the plugin root.",
+          code === "metadata" || code === "tools" || code === "dependency"
+            ? "SKILL_DECLARATION_INVALID"
+            : code === "symlink"
+              ? "SKILL_SYMLINK_REJECTED"
+              : code === "size"
+                ? "SKILL_SIZE_INVALID"
+                : "SKILL_PATH_INVALID",
+          "Plugin Skill path, metadata, content, or Tool association is invalid.",
           manifest,
           artifactHash,
         );
@@ -332,7 +475,7 @@ export async function validateCandidate(
     pluginPath,
     manifest,
     entryPath,
-    skillPaths,
+    skills,
     artifactHash,
     events: [...events, lifecycle("validated", "Manifest, entry path, and artifact validated.")],
   };

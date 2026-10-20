@@ -33,6 +33,35 @@ export interface PluginCapabilityDiagnostic {
   readonly riskLevel?: "read" | "write" | "high";
 }
 
+export interface SkillCapabilityRequirement {
+  readonly id: string;
+  readonly contractVersion: string;
+}
+
+export type PluginSkillStatus = "available" | "excluded";
+
+export interface VerifiedPluginSkill {
+  readonly name: string;
+  readonly description: string;
+  readonly sourcePath: string;
+  readonly absolutePath: string;
+  readonly artifactHash: string;
+  readonly pluginId: string;
+  readonly pluginVersion: string;
+  readonly requiredCapabilities: readonly SkillCapabilityRequirement[];
+  readonly requiredToolNames: readonly string[];
+  readonly requiredConfig: readonly string[];
+  readonly requiredCredentials: readonly string[];
+  readonly status: PluginSkillStatus;
+  readonly exclusionReason?:
+    | "TOOL_UNAVAILABLE"
+    | "CONFIG_UNAVAILABLE"
+    | "CREDENTIAL_UNAVAILABLE"
+    | "NAME_CONFLICT"
+    | "PLUGIN_UNAVAILABLE";
+  readonly overridePolicy: "deny";
+}
+
 export interface PluginRuntimeRecord {
   readonly pluginPath: string;
   readonly pluginId?: string;
@@ -42,6 +71,7 @@ export interface PluginRuntimeRecord {
   readonly namespace?: string;
   readonly capabilities?: readonly PluginCapabilityDiagnostic[];
   readonly skillPaths?: readonly string[];
+  readonly skills?: readonly VerifiedPluginSkill[];
   readonly failureStage?: PluginFailureStage;
   readonly status: PluginLifecycleStatus;
   readonly errorCode?: string;
@@ -59,4 +89,6 @@ export interface PluginRuntimeOptions {
   readonly allowedHttpOrigins?: ReadonlySet<string>;
   readonly pluginConfigs?: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
   readonly getSecret?: (pluginId: string, reference: string) => Promise<string>;
+  readonly hasCredential?: (pluginId: string, reference: string) => Promise<boolean>;
+  readonly approvedSkillDependencies?: ReadonlySet<string>;
 }

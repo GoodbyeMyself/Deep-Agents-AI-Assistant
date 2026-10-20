@@ -53,6 +53,20 @@ export async function createAgentApplication(options: {
       status: record.status,
       ...(record.namespace === undefined ? {} : { namespace: record.namespace }),
       ...(record.capabilities === undefined ? {} : { capabilities: record.capabilities }),
+      ...(record.skills === undefined
+        ? {}
+        : {
+            skills: record.skills.map((skill) => ({
+              name: skill.name,
+              status: skill.status,
+              ...(skill.exclusionReason === undefined
+                ? {}
+                : { exclusionReason: skill.exclusionReason }),
+              artifactHash: skill.artifactHash,
+              requiredToolNames: skill.requiredToolNames,
+              overridePolicy: skill.overridePolicy,
+            })),
+          }),
       ...(record.failureStage === undefined ? {} : { failureStage: record.failureStage }),
       ...(record.errorCode === undefined ? {} : { errorCode: record.errorCode }),
     })),
@@ -61,9 +75,27 @@ export async function createAgentApplication(options: {
       version: binding.contractVersion,
       pluginId: binding.pluginId,
     })),
+    skills: boot.skills.map((skill) => ({
+      name: skill.name,
+      pluginId: skill.pluginId,
+      pluginVersion: skill.pluginVersion,
+      artifactHash: skill.artifactHash,
+      requiredToolNames: skill.requiredToolNames,
+      overridePolicy: skill.overridePolicy,
+    })),
   });
   const identity = new MockIdentityProvider();
   const embedTickets = new EmbedTicketService(identity);
   const handler = createApiHandler({ identity, service, embedTickets });
-  return { ...boot, checkpointer, embedTickets, handler, identity, runner, service, store };
+  return {
+    ...boot,
+    checkpointer,
+    dispose: () => boot.skillSnapshot.dispose(),
+    embedTickets,
+    handler,
+    identity,
+    runner,
+    service,
+    store,
+  };
 }

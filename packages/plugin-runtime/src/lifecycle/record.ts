@@ -4,6 +4,7 @@ import type {
   PluginLifecycleEvent,
   PluginLifecycleStatus,
   PluginRuntimeRecord,
+  VerifiedPluginSkill,
 } from "./types.js";
 
 export function lifecycle(status: PluginLifecycleStatus, message: string): PluginLifecycleEvent {
@@ -19,6 +20,7 @@ export function failedRecord(options: {
   namespace?: string;
   capabilities?: readonly PluginCapabilityDiagnostic[];
   skillPaths?: readonly string[];
+  skills?: readonly VerifiedPluginSkill[];
   failureStage?: PluginFailureStage;
   errorCode: string;
   events: readonly PluginLifecycleEvent[];
@@ -35,6 +37,7 @@ export function failedRecord(options: {
     ...(options.namespace === undefined ? {} : { namespace: options.namespace }),
     ...(options.capabilities === undefined ? {} : { capabilities: options.capabilities }),
     ...(options.skillPaths === undefined ? {} : { skillPaths: options.skillPaths }),
+    ...(options.skills === undefined ? {} : { skills: options.skills }),
     ...(options.failureStage === undefined ? {} : { failureStage: options.failureStage }),
     status: "failed",
     errorCode: options.errorCode,

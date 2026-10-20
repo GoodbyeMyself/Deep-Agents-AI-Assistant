@@ -72,6 +72,7 @@ if (envValue("ASSISTANT_REQUIRE_READY_PLUGINS") === "1") {
   assertApprovedPluginsReady(application.pluginRecords);
 }
 const server = createNodeHttpServer(application.handler);
+server.once("close", () => void application.dispose());
 const port = Number(process.env["SERVER_PORT"] ?? "3000");
 const host = process.env["SERVER_HOST"] ?? "127.0.0.1";
 if (!Number.isInteger(port) || port < 1 || port > 65_535) {

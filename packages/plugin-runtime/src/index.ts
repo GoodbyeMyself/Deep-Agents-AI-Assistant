@@ -18,6 +18,10 @@ export type {
   PluginLifecycleStatus,
   PluginRuntimeOptions,
   PluginRuntimeRecord,
+  PluginSkillStatus,
+  SkillCapabilityRequirement,
+  VerifiedPluginSkill,
 } from "./lifecycle/types.js";
 export { PluginRegistry } from "./registry/plugin-registry.js";
+export { PluginSkillRegistry, type PluginSkillLease } from "./registry/skill-registry.js";
 export { PluginRuntime } from "./runtime/plugin-runtime.js";

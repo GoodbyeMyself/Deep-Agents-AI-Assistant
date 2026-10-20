@@ -30,6 +30,20 @@ const capabilityDeclarationV2Schema = capabilityDeclarationV1Schema.extend({
   riskLevel: z.enum(["read", "write", "high"]),
 });
 
+const skillCapabilityRequirementSchema = capabilityDeclarationV1Schema;
+
+const skillDeclarationSchema = z.union([
+  z.string().min(1).max(300),
+  z
+    .object({
+      path: z.string().min(1).max(300),
+      requiredCapabilities: z.array(skillCapabilityRequirementSchema).max(20).optional(),
+      requiredConfig: z.array(identifierSchema).max(20).optional(),
+      requiredCredentials: z.array(identifierSchema).max(20).optional(),
+    })
+    .strict(),
+]);
+
 const manifestBase = {
   id: identifierSchema,
   name: z.string().trim().min(1).max(120),
@@ -58,7 +72,7 @@ export const pluginManifestV2Schema = z
     namespace: z.string().regex(/^[a-z][a-z0-9_]*$/),
     runtime: localRuntimeSchema,
     capabilities: z.array(capabilityDeclarationV2Schema).min(1),
-    skills: z.array(z.string().min(1).max(300)).max(20).optional(),
+    skills: z.array(skillDeclarationSchema).max(20).optional(),
   })
   .strict();
 

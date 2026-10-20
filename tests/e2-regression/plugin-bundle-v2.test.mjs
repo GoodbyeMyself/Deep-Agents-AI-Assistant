@@ -82,7 +82,7 @@ async function createBundle(options = {}) {
     await mkdir(join(pluginRoot, "skills", "metadata-query"), { recursive: true });
     await writeFile(
       join(pluginRoot, "skills", "metadata-query", "SKILL.md"),
-      "# Metadata Query\n",
+      "---\nname: metadata-query\ndescription: Query authorized metadata with the plugin Tool.\n---\n\n# Metadata Query\n",
       "utf8",
     );
   }

@@ -1,6 +1,6 @@
 # 实施状态
 
-更新日期：2026-10-19
+更新日期：2026-10-20
 
 ## M0：工程初始化与框架验证
 
@@ -191,3 +191,14 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 入口和 Skill 目录必须位于插件真实根目录内，拒绝绝对路径、路径逃逸和符号链接；Skill 本阶段只验证并记录，不装配给 Agent。
 - 插件状态诊断增加 Manifest 版本、命名空间、Contract 来源、权限、风险、失败阶段和错误码。
 - E2 集成测试覆盖安装/移除、动态 Tool 执行、权限拒绝、事务回滚、批准策略、Skill 路径和声明不一致；E0/E1 回归保持通过。
+
+## E3：Plugin Skill 自动发现与 Tool 关联
+
+状态：完成并通过退出门禁，详细证据见 `e3-acceptance-report.md`。
+
+- Manifest V2 Skill 支持声明所需 Capability、配置和凭证；路径字符串保持兼容。Skill frontmatter、目录名、整个目录树、内容大小、符号链接和内容哈希均在插件代码装配前验证。
+- Plugin Skill Registry 只收录依赖满足的 Skill；缺 Tool/配置/凭证时记录排除原因。同名 Skill 固定拒绝覆盖，冲突 Bundle 的 Contract、Provider 与 Skill 一并回滚。
+- 跨插件 Tool 依赖必须由部署显式批准；`SKILL.md allowed-tools` 不能超出 Manifest 关联。凭证门禁仅检查引用是否可用，不读取或记录密钥。
+- Agent Server 将可用 Skill 复制为隔离的只读启动快照，并通过 `deepagents@1.14.2` 官方 `skills` 与 `FilesystemBackend` 参数装配；当前 Agent/Run 不受安装目录后续变化影响，仍要求重启生效。
+- Skill 文本和外部引用被明确视为不可信；Skill 不授予权限，也不是 Evidence。E3 回归验证无权限调用仍由 Capability Executor 返回 `FORBIDDEN`。
+- E3 使用临时本地 Bundle、Mock Provider 和存在性回调验证机制，未连接真实业务 API、企业凭证库或真实模型；不宣称生产集成完成。
