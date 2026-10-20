@@ -103,6 +103,31 @@ export interface CapabilityContract<
   readonly riskLevel: "read" | "write" | "high";
 }
 
+export function defineCapability<
+  const Id extends string,
+  const Version extends string,
+  InputSchema extends z.ZodType,
+  DataSchema extends z.ZodType,
+>(definition: {
+  readonly id: Id;
+  readonly version: Version;
+  readonly description: string;
+  readonly inputSchema: InputSchema;
+  readonly dataSchema: DataSchema;
+  readonly requiredPermission: string;
+  readonly riskLevel: "read" | "write" | "high";
+}) {
+  return {
+    id: definition.id,
+    version: definition.version,
+    description: definition.description,
+    inputSchema: definition.inputSchema,
+    outputSchema: createCapabilityResultSchema(definition.dataSchema),
+    requiredPermission: definition.requiredPermission,
+    riskLevel: definition.riskLevel,
+  } as const satisfies CapabilityContract;
+}
+
 export function capabilityKey(id: string, version: string): string {
   return `${id}@${version}`;
 }

@@ -1,9 +1,11 @@
 import type {
+  CapabilityContract,
   CapabilityExecutionContext,
   CapabilityProvider,
-  KnownCapabilityContract,
 } from "@assistant/capability-contracts";
 import type { z } from "zod";
+
+export { defineCapability } from "@assistant/capability-contracts";
 
 export const PLUGIN_API_VERSION = "1";
 
@@ -22,7 +24,7 @@ export interface PluginHostServices {
 }
 
 export interface TypedCapabilityImplementation<
-  Contract extends KnownCapabilityContract,
+  Contract extends CapabilityContract,
 > extends CapabilityProvider {
   readonly id: Contract["id"];
   readonly contractVersion: Contract["version"];
@@ -47,7 +49,7 @@ export function definePlugin(factory: PluginFactory): PluginFactory {
   return factory;
 }
 
-export function implementCapability<Contract extends KnownCapabilityContract>(options: {
+export function implementCapability<Contract extends CapabilityContract>(options: {
   readonly contract: Contract;
   readonly execute: (
     input: z.output<Contract["inputSchema"]>,

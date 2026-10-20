@@ -1,4 +1,13 @@
-export { CapabilityCatalog, createStandardCapabilityCatalog } from "./catalog/catalog.js";
+export {
+  CapabilityCatalog,
+  RESERVED_CAPABILITY_NAMESPACES,
+  STANDARD_CAPABILITY_SOURCE,
+  createStandardCapabilityCatalog,
+  type CapabilityContractRegistration,
+  type CapabilityContractSource,
+  type PlatformCapabilitySource,
+  type PluginCapabilitySource,
+} from "./catalog/catalog.js";
 export {
   CAPABILITY_CONTRACT_VERSION,
   capabilityErrorCodeSchema,
@@ -11,6 +20,7 @@ export {
   dataMapSearchObjectsInputSchema,
   dataMapSearchObjectsResultSchema,
   dataMapSearchObjectsV1,
+  defineCapability,
   evidenceSchema,
   qualityTrendDataSchema,
   qualityTrendInputSchema,

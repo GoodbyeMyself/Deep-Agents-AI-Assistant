@@ -168,3 +168,14 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - Manifest V1 至少保留一个迁移周期；Contract、Provider 和 Skill 后续必须 staging 校验并原子提交，冲突失败关闭。
 - 恢复根 `pnpm test`，使用 Node 22 内置测试运行器固定当前 Catalog、A/B Adapter、Manifest V1、Tool Factory、权限与插件安全行为，无新增测试框架依赖。
 - E0 未修改运行时契约、Plugin SDK、Manifest Schema、Agent Runtime 或 Deep Agents 装配；动态注册从 E1 开始实施。
+
+## E1：开放 Capability SDK 与动态 Catalog
+
+状态：完成并通过退出门禁，详细证据见 `e1-acceptance-report.md`。
+
+- Core 与 Plugin SDK 公开通用 `defineCapability()`；`implementCapability()` 改为接受任意满足 `CapabilityContract` 的契约，同时由具体 Zod Schema 保留输入、输出类型推导。
+- `CapabilityCatalog` 增加带来源信息的 `register/registerMany`；批量注册先完整校验后提交，重复 `id + version` 不覆盖且不留下部分注册。
+- 动态私有契约校验 ID、SemVer、描述、Zod Schema、权限名、风险、来源 ID 和批准命名空间；平台保留命名空间拒绝私有注册，E1 仅允许 `read` 风险。
+- 现有 `standardCapabilityContracts` 仍以平台来源注入，Manifest V1、A/B Adapter、Capability Executor 与 Tool Factory 的既有路径保持兼容。
+- 新增编译期类型推导探针和 6 项运行时回归，覆盖未知新能力、原子冲突回滚、非法来源/命名空间/风险/Schema、孤立 Provider 失败关闭和 Tool 名冲突。
+- E1 不加载 Plugin Bundle 自带契约，不修改 Manifest 协议或 Deep Agents Agent Loop；Bundle 事务式装载属于 E2。

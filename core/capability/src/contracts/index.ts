@@ -5,6 +5,7 @@ export {
   capabilityKey,
   capabilityWarningSchema,
   createCapabilityResultSchema,
+  defineCapability,
   evidenceSchema,
   type CapabilityContract,
   type CapabilityErrorCode,
