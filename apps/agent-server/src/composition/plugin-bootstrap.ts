@@ -13,6 +13,8 @@ export async function createAgentFromInstalledPlugins(options: {
   model: BaseLanguageModel;
   installDir: string;
   approvedPluginIds: ReadonlySet<string>;
+  approvedNamespaces?: ReadonlySet<string>;
+  approvedPermissions?: ReadonlySet<string>;
   checkpointer?: BaseCheckpointSaver;
   policy?: CapabilityPolicy;
   audit?: CapabilityAuditSink;
@@ -22,6 +24,12 @@ export async function createAgentFromInstalledPlugins(options: {
   const pluginRuntime = new PluginRuntime({
     installDir: options.installDir,
     approvedPluginIds: options.approvedPluginIds,
+    ...(options.approvedNamespaces === undefined
+      ? {}
+      : { approvedNamespaces: options.approvedNamespaces }),
+    ...(options.approvedPermissions === undefined
+      ? {}
+      : { approvedPermissions: options.approvedPermissions }),
     catalog,
     capabilityRegistry: registry,
   });

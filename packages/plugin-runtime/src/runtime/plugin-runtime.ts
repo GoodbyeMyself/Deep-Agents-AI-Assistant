@@ -1,12 +1,23 @@
 import { pathToFileURL } from "node:url";
 
-import type { CapabilityBinding, CapabilityProvider } from "@assistant/capability-contracts";
+import type {
+  CapabilityBinding,
+  CapabilityBindingLease,
+  CapabilityContract,
+  CapabilityProvider,
+  CapabilityRegistrationLease,
+} from "@assistant/capability-contracts";
 import type { AssistantPlugin, PluginFactory } from "@assistant/plugin-sdk";
 
 import { HttpCapabilityDriver, HttpCapabilityProvider } from "../driver/http-capability.js";
 import { discoverPluginPaths } from "../install/discover.js";
-import { capabilitySetsMatch, isAssistantPlugin } from "../install/plugin-shape.js";
 import {
+  capabilitySetsMatch,
+  inspectV2Contracts,
+  isAssistantPlugin,
+} from "../install/plugin-shape.js";
+import {
+  capabilityDiagnostics,
   validateCandidate,
   type ValidatedCandidate,
 } from "../install/validate-candidate.js";
@@ -70,6 +81,7 @@ export class PluginRuntime {
     const { manifest } = candidate;
     let plugin: AssistantPlugin | undefined;
     let providers: readonly CapabilityProvider[];
+    let dynamicContracts: readonly CapabilityContract[] = [];
     try {
       if (manifest.runtime.type === "local") {
         const imported = (await import(pathToFileURL(candidate.entryPath!).href)) as {
@@ -79,7 +91,6 @@ export class PluginRuntime {
         const factory = imported.default as PluginFactory;
         plugin = await factory(createPluginHostServices(manifest.id, this.#options));
         if (!isAssistantPlugin(plugin)) throw new Error("plugin shape invalid");
-        await plugin.initialize?.();
         providers = plugin.capabilities;
       } else {
         const driver = new HttpCapabilityDriver({
@@ -96,45 +107,45 @@ export class PluginRuntime {
         );
       }
     } catch {
-      return failedRecord({
-        pluginPath: candidate.pluginPath,
-        pluginId: manifest.id,
-        pluginVersion: manifest.version,
-        artifactHash: candidate.artifactHash,
-        errorCode: "PLUGIN_LOAD_FAILED",
-        events: candidate.events,
-        message: "Plugin module failed to load or initialize.",
-      });
+      return this.#failed(candidate, "load", "PLUGIN_LOAD_FAILED", "Plugin module failed to load.");
     }
 
-    const initializedEvents = [
+    const inspectedEvents = [
       ...candidate.events,
-      lifecycle("initialized", "Plugin initialized without exposing capabilities."),
+      lifecycle("validated", "Plugin runtime exports loaded for inspection."),
     ];
     if (!capabilitySetsMatch(manifest, providers)) {
-      await plugin?.dispose?.();
-      return failedRecord({
-        pluginPath: candidate.pluginPath,
-        pluginId: manifest.id,
-        pluginVersion: manifest.version,
-        artifactHash: candidate.artifactHash,
-        errorCode: "CAPABILITY_DECLARATION_MISMATCH",
-        events: initializedEvents,
-        message: "Manifest capability declarations do not match plugin implementations.",
-      });
+      await this.#dispose(plugin);
+      return this.#failed(
+        candidate,
+        "inspect",
+        "CAPABILITY_DECLARATION_MISMATCH",
+        "Manifest capability declarations do not match plugin implementations.",
+        inspectedEvents,
+      );
     }
-
-    const health = await plugin?.healthCheck?.();
-    if (health && !health.ok) {
-      await plugin?.dispose?.();
-      return {
-        pluginPath: candidate.pluginPath,
-        pluginId: manifest.id,
-        pluginVersion: manifest.version,
-        artifactHash: candidate.artifactHash,
-        status: "degraded",
-        events: [...initializedEvents, lifecycle("degraded", "Plugin health check failed.")],
-      };
+    if (manifest.manifestVersion === "2") {
+      if (!plugin) {
+        return this.#failed(
+          candidate,
+          "inspect",
+          "V2_LOCAL_PLUGIN_REQUIRED",
+          "Manifest V2 requires a trusted local plugin module.",
+          inspectedEvents,
+        );
+      }
+      try {
+        dynamicContracts = inspectV2Contracts(manifest, plugin, this.#options.catalog).dynamicContracts;
+      } catch {
+        await this.#dispose(plugin);
+        return this.#failed(
+          candidate,
+          "inspect",
+          "CONTRACT_DECLARATION_MISMATCH",
+          "Manifest contract declarations do not match plugin exports or catalog sources.",
+          inspectedEvents,
+        );
+      }
     }
 
     const bindings: CapabilityBinding[] = providers.map((provider) => ({
@@ -145,27 +156,128 @@ export class PluginRuntime {
       driver: manifest.runtime.type,
       provider,
     }));
+    let contractLease: CapabilityRegistrationLease = { rollback: () => undefined };
     try {
-      this.#options.capabilityRegistry.registerMany(bindings);
+      if (dynamicContracts.length > 0 && manifest.manifestVersion === "2") {
+        contractLease = this.#options.catalog.registerMany(dynamicContracts, {
+          type: "plugin",
+          id: manifest.id,
+          namespace: manifest.namespace,
+        });
+      }
     } catch {
-      await plugin?.dispose?.();
-      return failedRecord({
-        pluginPath: candidate.pluginPath,
-        pluginId: manifest.id,
-        pluginVersion: manifest.version,
-        artifactHash: candidate.artifactHash,
-        errorCode: "CAPABILITY_PROVIDER_CONFLICT",
-        events: initializedEvents,
-        message: "A capability provider is already registered for this contract.",
-      });
+      await this.#dispose(plugin);
+      return this.#failed(
+        candidate,
+        "register",
+        "CAPABILITY_CONTRACT_CONFLICT",
+        "A dynamic capability contract could not be registered.",
+        inspectedEvents,
+      );
     }
+    let bindingLease: CapabilityBindingLease;
+    try {
+      bindingLease = this.#options.capabilityRegistry.registerMany(bindings);
+    } catch {
+      contractLease.rollback();
+      await this.#dispose(plugin);
+      return this.#failed(
+        candidate,
+        "register",
+        "CAPABILITY_PROVIDER_CONFLICT",
+        "A capability provider is already registered for this contract.",
+        inspectedEvents,
+      );
+    }
+
+    try {
+      await plugin?.initialize?.();
+    } catch {
+      bindingLease.rollback();
+      contractLease.rollback();
+      await this.#dispose(plugin);
+      return this.#failed(
+        candidate,
+        "initialize",
+        "PLUGIN_INITIALIZE_FAILED",
+        "Plugin initialization failed; staged registrations were rolled back.",
+        inspectedEvents,
+      );
+    }
+    const initializedEvents = [
+      ...inspectedEvents,
+      lifecycle("initialized", "Plugin initialized with staged registrations."),
+    ];
+
+    let health;
+    try {
+      health = await plugin?.healthCheck?.();
+    } catch {
+      bindingLease.rollback();
+      contractLease.rollback();
+      await this.#dispose(plugin);
+      return this.#failed(
+        candidate,
+        "health",
+        "PLUGIN_HEALTH_FAILED",
+        "Plugin health check failed; staged registrations were rolled back.",
+        initializedEvents,
+      );
+    }
+    if (health && !health.ok) {
+      bindingLease.rollback();
+      contractLease.rollback();
+      await this.#dispose(plugin);
+      return {
+        ...this.#metadata(candidate),
+        status: "degraded",
+        failureStage: "health",
+        events: [...initializedEvents, lifecycle("degraded", "Plugin health check failed.")],
+      };
+    }
+    return {
+      ...this.#metadata(candidate),
+      status: "ready",
+      events: [...initializedEvents, lifecycle("ready", "Capabilities verified and registered.")],
+    };
+  }
+
+  #metadata(candidate: ValidatedCandidate) {
+    const { manifest } = candidate;
     return {
       pluginPath: candidate.pluginPath,
       pluginId: manifest.id,
       pluginVersion: manifest.version,
       artifactHash: candidate.artifactHash,
-      status: "ready",
-      events: [...initializedEvents, lifecycle("ready", "Capabilities verified and registered.")],
-    };
+      manifestVersion: manifest.manifestVersion,
+      capabilities: capabilityDiagnostics(manifest),
+      ...(manifest.manifestVersion === "2"
+        ? { namespace: manifest.namespace, skillPaths: manifest.skills ?? [] }
+        : {}),
+    } as const;
+  }
+
+  #failed(
+    candidate: ValidatedCandidate,
+    failureStage: NonNullable<PluginRuntimeRecord["failureStage"]>,
+    errorCode: string,
+    message: string,
+    events = candidate.events,
+  ): PluginRuntimeRecord {
+    return failedRecord({
+      ...this.#metadata(candidate),
+      failureStage,
+      errorCode,
+      events,
+      message,
+    });
+  }
+
+  async #dispose(plugin: AssistantPlugin | undefined): Promise<void> {
+    try {
+      await plugin?.dispose?.();
+    } catch {
+      // Disposal is best-effort after the registries have already failed closed.
+    }
   }
 }

@@ -29,10 +29,14 @@ export interface CapabilityBinding {
   readonly provider: CapabilityProvider;
 }
 
+export interface CapabilityBindingLease {
+  rollback(): void;
+}
+
 export class CapabilityRegistry {
   readonly #bindings = new Map<string, CapabilityBinding>();
 
-  registerMany(bindings: readonly CapabilityBinding[]): void {
+  registerMany(bindings: readonly CapabilityBinding[]): CapabilityBindingLease {
     const incoming = new Set<string>();
     for (const binding of bindings) {
       const key = capabilityKey(binding.capabilityId, binding.contractVersion);
@@ -44,6 +48,17 @@ export class CapabilityRegistry {
     for (const binding of bindings) {
       this.#bindings.set(capabilityKey(binding.capabilityId, binding.contractVersion), binding);
     }
+    let active = true;
+    return {
+      rollback: () => {
+        if (!active) return;
+        active = false;
+        for (const binding of bindings) {
+          const key = capabilityKey(binding.capabilityId, binding.contractVersion);
+          if (this.#bindings.get(key) === binding) this.#bindings.delete(key);
+        }
+      },
+    };
   }
 
   resolve(id: string, version: string): CapabilityBinding | undefined {

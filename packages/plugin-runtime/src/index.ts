@@ -3,8 +3,17 @@ export {
   HttpCapabilityProvider,
   type HttpCapabilityDriverOptions,
 } from "./driver/http-capability.js";
-export { pluginManifestSchema, type PluginManifest } from "./manifest/schema.js";
+export {
+  pluginManifestSchema,
+  pluginManifestV1Schema,
+  pluginManifestV2Schema,
+  type PluginManifest,
+  type PluginManifestV1,
+  type PluginManifestV2,
+} from "./manifest/schema.js";
 export type {
+  PluginCapabilityDiagnostic,
+  PluginFailureStage,
   PluginLifecycleEvent,
   PluginLifecycleStatus,
   PluginRuntimeOptions,

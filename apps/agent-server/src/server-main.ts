@@ -11,6 +11,15 @@ function envValue(name: string): string | undefined {
   return value === undefined || value.length === 0 ? undefined : value;
 }
 
+function envSet(name: string): ReadonlySet<string> {
+  return new Set(
+    (envValue(name) ?? "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0),
+  );
+}
+
 function assertApprovedPluginsReady(records: readonly PluginRuntimeRecord[]): void {
   const failed = records.filter((record) => record.status !== "ready");
   if (records.length === 0 || failed.length > 0) {
@@ -50,6 +59,8 @@ const application = await createAgentApplication({
   model,
   installDir,
   approvedPluginIds: new Set([pluginId]),
+  approvedNamespaces: envSet("APPROVED_PLUGIN_NAMESPACES"),
+  approvedPermissions: envSet("APPROVED_PLUGIN_PERMISSIONS"),
   modelConfig: {
     id: "default",
     provider: deepSeekKey === undefined ? "openai" : "deepseek",

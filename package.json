@@ -28,9 +28,10 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
-    "test": "pnpm test:e0 && pnpm test:e1",
+    "test": "pnpm test:e0 && pnpm test:e1 && pnpm test:e2",
     "test:e0": "pnpm --filter @assistant/agent-runtime... --filter @assistant/plugin-runtime... --filter @assistant/demo-product-a... --filter @assistant/demo-product-b... build && node --test tests/e0-regression/baseline.test.mjs",
     "test:e1": "pnpm --filter @assistant/agent-runtime... --filter @assistant/plugin-sdk... build && pnpm --filter @assistant/plugin-sdk typecheck && node --test tests/e1-regression/dynamic-catalog.test.mjs",
+    "test:e2": "pnpm --filter @assistant/agent-runtime... --filter @assistant/plugin-runtime... build && node --test tests/e2-regression/plugin-bundle-v2.test.mjs",
     "typecheck": "pnpm build && pnpm -r --if-present typecheck"
   },
   "devDependencies": {

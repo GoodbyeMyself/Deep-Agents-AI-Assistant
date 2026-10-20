@@ -179,3 +179,15 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 现有 `standardCapabilityContracts` 仍以平台来源注入，Manifest V1、A/B Adapter、Capability Executor 与 Tool Factory 的既有路径保持兼容。
 - 新增编译期类型推导探针和 6 项运行时回归，覆盖未知新能力、原子冲突回滚、非法来源/命名空间/风险/Schema、孤立 Provider 失败关闭和 Tool 名冲突。
 - E1 不加载 Plugin Bundle 自带契约，不修改 Manifest 协议或 Deep Agents Agent Loop；Bundle 事务式装载属于 E2。
+
+## E2：Plugin Bundle V2 与事务式装载
+
+状态：完成并通过退出门禁，详细证据见 `e2-acceptance-report.md`。
+
+- 新增 Manifest V2：可信 Local Bundle 可声明私有命名空间、Contract 来源、权限、风险和可选 Skill 目录；Manifest V1 Local/HTTP 继续兼容。
+- Plugin SDK 的 `AssistantPlugin` 可导出 `contracts`；Runtime 对 Manifest、运行时 Contract 和 Provider 集合执行一致性检查后再装载。
+- 部署必须显式批准插件 ID、命名空间和权限；V2 动态私有能力仅允许 `read`，平台 Contract 引用必须匹配 Catalog 来源和元数据。
+- Catalog 与 Capability Registry 注册均返回可回滚租约。Provider 冲突、初始化失败或健康失败会撤销本 Bundle 的 Contract/Provider，不留下半注册状态。
+- 入口和 Skill 目录必须位于插件真实根目录内，拒绝绝对路径、路径逃逸和符号链接；Skill 本阶段只验证并记录，不装配给 Agent。
+- 插件状态诊断增加 Manifest 版本、命名空间、Contract 来源、权限、风险、失败阶段和错误码。
+- E2 集成测试覆盖安装/移除、动态 Tool 执行、权限拒绝、事务回滚、批准策略、Skill 路径和声明不一致；E0/E1 回归保持通过。

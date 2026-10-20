@@ -7,7 +7,7 @@
 - `definePlugin`：声明插件工厂。
 - `implementCapability`：绑定标准契约并校验输入。
 - `PluginHostServices`：日志、配置和凭证引用服务。
-- `AssistantPlugin`：能力、初始化、健康检查和释放生命周期。
+- `AssistantPlugin`：V2 可导出的 Contract、能力、初始化、健康检查和释放生命周期。
 
 ## 边界
 

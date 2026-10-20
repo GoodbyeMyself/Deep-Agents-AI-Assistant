@@ -15,6 +15,8 @@ export async function createAgentApplication(options: {
   model: BaseLanguageModel;
   installDir: string;
   approvedPluginIds: ReadonlySet<string>;
+  approvedNamespaces?: ReadonlySet<string>;
+  approvedPermissions?: ReadonlySet<string>;
   modelConfig?: {
     readonly id: string;
     readonly provider: string;
@@ -47,7 +49,12 @@ export async function createAgentApplication(options: {
     plugins: boot.pluginRecords.map((record) => ({
       pluginId: record.pluginId,
       pluginVersion: record.pluginVersion,
+      manifestVersion: record.manifestVersion,
       status: record.status,
+      ...(record.namespace === undefined ? {} : { namespace: record.namespace }),
+      ...(record.capabilities === undefined ? {} : { capabilities: record.capabilities }),
+      ...(record.failureStage === undefined ? {} : { failureStage: record.failureStage }),
+      ...(record.errorCode === undefined ? {} : { errorCode: record.errorCode }),
     })),
     capabilities: boot.registry.list().map((binding) => ({
       id: binding.capabilityId,

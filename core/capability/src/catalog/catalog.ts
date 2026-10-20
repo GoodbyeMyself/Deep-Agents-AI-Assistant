@@ -31,6 +31,10 @@ export interface CapabilityContractRegistration {
   readonly source: CapabilityContractSource;
 }
 
+export interface CapabilityRegistrationLease {
+  rollback(): void;
+}
+
 export const STANDARD_CAPABILITY_SOURCE = {
   type: "platform",
   id: "@assistant/capability-contracts",
@@ -98,14 +102,17 @@ export class CapabilityCatalog {
     this.registerMany(contracts, STANDARD_CAPABILITY_SOURCE);
   }
 
-  register(contract: CapabilityContract, source: CapabilityContractSource): void {
-    this.registerMany([contract], source);
+  register(
+    contract: CapabilityContract,
+    source: CapabilityContractSource,
+  ): CapabilityRegistrationLease {
+    return this.registerMany([contract], source);
   }
 
   registerMany(
     contracts: readonly CapabilityContract[],
     source: CapabilityContractSource,
-  ): void {
+  ): CapabilityRegistrationLease {
     const parsedSource = capabilitySourceSchema.parse(source) as CapabilityContractSource;
     const staged = new Map<string, CapabilityContractRegistration>();
     for (const contract of contracts) {
@@ -120,6 +127,16 @@ export class CapabilityCatalog {
       });
     }
     for (const [key, registration] of staged) this.#registrations.set(key, registration);
+    let active = true;
+    return {
+      rollback: () => {
+        if (!active) return;
+        active = false;
+        for (const [key, registration] of staged) {
+          if (this.#registrations.get(key) === registration) this.#registrations.delete(key);
+        }
+      },
+    };
   }
 
   get(id: string, version: string): CapabilityContract | undefined {

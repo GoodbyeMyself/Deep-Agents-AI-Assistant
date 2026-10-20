@@ -8,6 +8,7 @@ import type { z } from "zod";
 export { defineCapability } from "@assistant/capability-contracts";
 
 export const PLUGIN_API_VERSION = "1";
+export const SUPPORTED_PLUGIN_API_VERSIONS = ["1", "2"] as const;
 
 export interface PluginLogger {
   info(message: string, metadata?: Readonly<Record<string, unknown>>): void;
@@ -35,6 +36,8 @@ export interface TypedCapabilityImplementation<
 }
 
 export interface AssistantPlugin {
+  /** Manifest V2 private contracts contributed by this trusted local bundle. */
+  readonly contracts?: readonly CapabilityContract[];
   readonly capabilities: readonly CapabilityProvider[];
   initialize?(): Promise<void>;
   healthCheck?(): Promise<{ readonly ok: boolean; readonly details?: string }>;
