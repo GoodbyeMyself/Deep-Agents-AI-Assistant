@@ -151,7 +151,7 @@ function AppLayout() {
         isAdmin: profile === "admin",
         selectedObject: current.object,
     }), [transport, profile, current.object]);
-    return (_jsx(ProLayout, { className: isChatPage ? "assistant-web-layout assistant-web-layout--chat" : "assistant-web-layout", title: "Enterprise Assistant", logo: _jsx("div", { className: "assistant-web-logo", "aria-hidden": true, children: "EA" }), layout: "mix", fixSiderbar: true, collapsed: collapsed, onCollapse: setCollapsed, location: { pathname }, route: shellRoute, menuItemRender: (item, dom) => {
+    return (_jsx(ProLayout, { className: isChatPage ? "assistant-web-layout assistant-web-layout--chat" : "assistant-web-layout", title: "Enterprise Assistant", logo: _jsx("div", { className: "assistant-web-logo", "aria-hidden": true, children: "EA" }), layout: "mix", fixSiderbar: true, defaultCollapsed: true, collapsed: collapsed, onCollapse: setCollapsed, breakpoint: false, location: { pathname }, route: shellRoute, menuItemRender: (item, dom) => {
             const target = typeof item.path === "string" ? item.path : "/assistant";
             return _jsx(Link, { to: target, children: dom });
         }, siderWidth: 220, contentStyle: isChatPage

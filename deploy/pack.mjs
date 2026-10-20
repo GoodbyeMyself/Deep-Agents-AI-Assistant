@@ -16,6 +16,8 @@ import {
 import { dirname, isAbsolute, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
+import { stampLocalPluginIntegrity } from "./plugin-release.mjs";
+
 const repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 const stagingDir = resolve(repoRoot, "deploy/.pack-tmp");
 const outDir = resolve(repoRoot, "deploy/out");
@@ -196,6 +198,7 @@ for (const plugin of plugins) {
   }
   requireFile(resolve(target, "dist/index.js"));
   requireFile(resolve(target, "plugin.json"));
+  await stampLocalPluginIntegrity(target);
 }
 
 cpSync(resolve(repoRoot, "apps/assistant-web/dist"), resolve(stagingDir, "web"), {

@@ -1,0 +1,26 @@
+{
+  "manifestVersion": "2",
+  "id": "__PLUGIN_ID__",
+  "name": "__PLUGIN_ID__ private capability",
+  "version": "1.0.0",
+  "apiVersion": "2",
+  "namespace": "__NAMESPACE__",
+  "runtime": { "type": "local", "entry": "./dist/index.js" },
+  "capabilities": [
+    {
+      "id": "__NAMESPACE__.metadata.lookup",
+      "contractVersion": "1.0.0",
+      "contractSource": "__PLUGIN_ID__",
+      "requiredPermission": "metadata:read",
+      "riskLevel": "read"
+    }
+  ],
+  "skills": [
+    {
+      "path": "./skills/__SKILL_NAME__",
+      "requiredCapabilities": [
+        { "id": "__NAMESPACE__.metadata.lookup", "contractVersion": "1.0.0" }
+      ]
+    }
+  ]
+}

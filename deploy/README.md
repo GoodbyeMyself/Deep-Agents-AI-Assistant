@@ -84,6 +84,11 @@ docker compose --env-file deploy/.env.product-b -p assistant-b -f deploy/docker-
 
 以 `adapters/demo-product-a` 或 `adapters/demo-product-b` 为样例：通过 `plugin-sdk` 的 `definePlugin` / `implementCapability` 只映射标准 Capability 输入输出；Adapter 与原业务 API 再次执行对象、行列与脱敏授权。构建后生成 manifest 完整性值，将插件放入实例安装目录并加入批准列表。Agent、Tool Factory 与 Shared Chat Core 不得增加产品名分支。
 
+Manifest V2 私有能力从 `templates/plugin-bundle-v2` 创建，完整开发与发布流程见
+[`docs/plugin-development-guide.md`](../docs/plugin-development-guide.md)。`deploy/plugin-release.mjs`
+提供 scaffold/hash/verify/install/disable/rollback/diagnose；发布目录中的 `active/` 才配置为
+`PLUGINS_DIR`。操作前停止接收新 Run，完成后重启，当前不支持热加载。
+
 ## 升级
 
 1. 在隔离环境对新构建执行契约测试、安全测试、A/B 系统测试和浏览器 E2E。

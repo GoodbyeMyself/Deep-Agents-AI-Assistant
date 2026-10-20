@@ -13,6 +13,7 @@ export default tseslint.config(
       "deepagentsjs/**",
       "deploy/out/**",
       "deploy/.pack-tmp/**",
+      "templates/plugin-bundle-v2/**",
     ],
   },
   eslint.configs.recommended,

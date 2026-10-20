@@ -214,3 +214,18 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 两个标准能力包各自提供共享 Provider 契约套件；E4 专项测试验证 A/B 标准输出一致、未绑定 Provider 返回 `UNSUPPORTED`、同版本冲突和单位冲突失败关闭。
 - E0～E4 共 30 项测试以及 `lint`、`typecheck`、`build` 均已通过；命令均按用户要求由用户逐条手动执行。
 - E4 仍使用 Mock 业务数据与授权引用，未连接真实产品字段权限 API、生产 IdP 或真实 Evidence Repository。
+
+## E5：系统验收、发布流程与文档收口
+
+状态：完成并通过工程阶段退出门禁，详细记录见 `e5-acceptance-report.md`。
+
+- 新增可生成的 Manifest V2 模板，包含私有 Contract、Provider、Skill、发布元数据、README 和
+  契约测试入口；普通私有能力无需修改 Core、Agent Server、Agent Runtime 或 UI。
+- 新增可信本地发布工具，对插件 ID、命名空间、权限、入口 SHA-256 和配置版本执行批准校验，
+  支持版本化安装、兼容升级、禁用、回滚与非敏感诊断；不提供远程下载、市场或热加载。
+- 升级默认保留旧 `id@version`，配置迁移由安装前受审查步骤完成；兼容或哈希校验失败时不会
+  切换 active 版本，工具不会执行 Bundle 自带迁移代码或读取密钥。
+- E5 回归使用真实临时发布目录验证 A/B 独立安装相同标准能力与不同私有能力；Provider、身份、
+  业务数据和 Evidence Repository 仍为 Mock，不冒充生产集成。
+- `test:e5`、E0～E5 全量回归、lint、typecheck 和 build 均已由用户在仓库根目录逐条执行并
+  确认通过；首次 lint 暴露的未实例化模板依赖解析问题已修复并复验。
