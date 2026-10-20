@@ -2,10 +2,10 @@ import type {
   CapabilityContract,
   CapabilityExecutionContext,
   CapabilityProvider,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
 import type { z } from "zod";
 
-export { defineCapability } from "@assistant/capability-contracts";
+export { defineCapability } from "@assistant/capability-core";
 
 export const PLUGIN_API_VERSION = "1";
 export const SUPPORTED_PLUGIN_API_VERSIONS = ["1", "2"] as const;

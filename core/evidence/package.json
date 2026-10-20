@@ -12,7 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@assistant/capability-contracts": "workspace:*",
+    "@assistant/capability-core": "workspace:*",
     "zod": "catalog:"
   }
 }

@@ -5,14 +5,15 @@ Product B 的可信本地 Adapter 样例。它演示不同产品原始模型如�
 ## 提供的能力
 
 - `data_map.search_objects@1.0.0`
+- `data_map.get_object_metadata@1.0.0`
 - `data_quality.get_trend@1.0.0`
-- 对象级授权校验、缺失日期告警和 Evidence 生成
+- 对象/字段级授权、敏感字段过滤、缺失日期告警和 Evidence 生成
 
 ## 主要文件
 
 - `plugin.json`：插件身份、入口和能力声明。
 - `src/index.ts`：Product B 字段到标准契约的映射。
-- `src/contract.test.ts`：与 Product A 共用的契约一致性测试。
+- `packages/capability-*/contract-tests/`：与 Product A 共用的契约一致性测试。
 
 ## 边界
 

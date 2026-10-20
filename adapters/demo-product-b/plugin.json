@@ -7,6 +7,7 @@
   "runtime": { "type": "local", "entry": "./dist/index.js" },
   "capabilities": [
     { "id": "data_map.search_objects", "contractVersion": "1.0.0" },
+    { "id": "data_map.get_object_metadata", "contractVersion": "1.0.0" },
     { "id": "data_quality.get_trend", "contractVersion": "1.0.0" }
   ]
 }

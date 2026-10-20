@@ -1,7 +1,7 @@
 import type {
   CapabilityExecutionContext,
   CapabilityProvider,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
 
 const MAX_RESPONSE_BYTES = 1_048_576;
 

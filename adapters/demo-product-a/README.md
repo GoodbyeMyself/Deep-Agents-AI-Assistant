@@ -5,14 +5,15 @@ Product A 的可信本地 Adapter 样例。它把 Product A 的资源编码、�
 ## 提供的能力
 
 - `data_map.search_objects@1.0.0`
+- `data_map.get_object_metadata@1.0.0`
 - `data_quality.get_trend@1.0.0`
-- 对象级授权校验、缺失日期告警和 Evidence 生成
+- 对象/字段级授权、敏感字段过滤、缺失日期告警和 Evidence 生成
 
 ## 主要文件
 
 - `plugin.json`：插件身份、入口和能力声明。
 - `src/index.ts`：字段映射、权限检查和标准结果构造。
-- `src/contract.test.ts`：复用契约测试套件验证标准语义。
+- `packages/capability-*/contract-tests/`：A/B 共用的标准 Provider 契约套件。
 
 ## 边界
 

@@ -2,7 +2,7 @@ import type {
   CapabilityAuditRecord,
   CapabilityAuditSink,
   Evidence,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
 import type { AssistantEvent, AssistantEventType } from "@assistant/contracts";
 import { resolveEvidence, type EvidenceRecord } from "@assistant/evidence";

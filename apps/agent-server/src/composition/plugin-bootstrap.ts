@@ -4,14 +4,22 @@ import {
   createSkillSnapshot,
 } from "@assistant/agent-runtime";
 import {
+  CapabilityCatalog,
   CapabilityExecutor,
   CapabilityRegistry,
-  createStandardCapabilityCatalog,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
+import type { CapabilityAuditSink, CapabilityPolicy } from "@assistant/capability-core";
+import {
+  DATA_MAP_CAPABILITY_SOURCE,
+  dataMapCapabilityContracts,
+} from "@assistant/capability-data-map";
+import {
+  DATA_QUALITY_CAPABILITY_SOURCE,
+  dataQualityCapabilityContracts,
+} from "@assistant/capability-data-quality";
 import { PluginRuntime } from "@assistant/plugin-runtime";
 import type { BaseLanguageModel } from "@langchain/core/language_models/base";
 import type { BaseCheckpointSaver } from "@langchain/langgraph-checkpoint";
-import type { CapabilityAuditSink, CapabilityPolicy } from "@assistant/capability-contracts";
 
 export async function createAgentFromInstalledPlugins(options: {
   model: BaseLanguageModel;
@@ -26,7 +34,9 @@ export async function createAgentFromInstalledPlugins(options: {
   hasCredential?: (pluginId: string, reference: string) => Promise<boolean>;
   approvedSkillDependencies?: ReadonlySet<string>;
 }) {
-  const catalog = createStandardCapabilityCatalog();
+  const catalog = new CapabilityCatalog();
+  catalog.registerMany(dataMapCapabilityContracts, DATA_MAP_CAPABILITY_SOURCE);
+  catalog.registerMany(dataQualityCapabilityContracts, DATA_QUALITY_CAPABILITY_SOURCE);
   const registry = new CapabilityRegistry();
   const pluginRuntime = new PluginRuntime({
     installDir: options.installDir,

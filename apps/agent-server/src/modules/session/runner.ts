@@ -1,4 +1,4 @@
-import type { Evidence } from "@assistant/capability-contracts";
+import type { Evidence } from "@assistant/capability-core";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
 import { assistantViewSchema } from "@assistant/contracts";
 import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";

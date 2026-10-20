@@ -3,7 +3,7 @@ import {
   qualityTrendResultSchema,
   type QualityTrendInput,
   type QualityTrendResult,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-data-quality";
 import { tool, type ToolRuntime } from "langchain";
 
 import type { RunContext } from "../context/run-context.js";

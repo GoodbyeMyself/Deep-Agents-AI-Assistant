@@ -1,4 +1,4 @@
-import type { CapabilityPolicy } from "@assistant/capability-contracts";
+import type { CapabilityPolicy } from "@assistant/capability-core";
 
 function targetObjectId(input: unknown): string | undefined {
   if (typeof input !== "object" || input === null) return undefined;

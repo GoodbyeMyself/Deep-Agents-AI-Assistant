@@ -3,7 +3,7 @@ import {
   type CapabilityExecutionContext,
   type CapabilityExecutor,
   type CapabilityRegistry,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
 import { tool, type ToolRuntime } from "langchain";
 
 import type { RunContext } from "../context/run-context.js";

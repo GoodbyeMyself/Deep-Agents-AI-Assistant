@@ -1,8 +1,4 @@
-import {
-  capabilityKey,
-  standardCapabilityContracts,
-  type CapabilityContract,
-} from "../contracts/index.js";
+import { capabilityKey, type CapabilityContract } from "../contracts/index.js";
 import { z } from "zod";
 
 const capabilityIdPattern = /^[a-z][a-z0-9_]*(?:[.][a-z][a-z0-9_]*)+$/;
@@ -34,11 +30,6 @@ export interface CapabilityContractRegistration {
 export interface CapabilityRegistrationLease {
   rollback(): void;
 }
-
-export const STANDARD_CAPABILITY_SOURCE = {
-  type: "platform",
-  id: "@assistant/capability-contracts",
-} as const satisfies PlatformCapabilitySource;
 
 const capabilitySourceSchema = z.discriminatedUnion("type", [
   z
@@ -98,8 +89,10 @@ function validateContract(contract: CapabilityContract, source: CapabilityContra
 export class CapabilityCatalog {
   readonly #registrations = new Map<string, CapabilityContractRegistration>();
 
-  constructor(contracts: readonly CapabilityContract[] = standardCapabilityContracts) {
-    this.registerMany(contracts, STANDARD_CAPABILITY_SOURCE);
+  constructor(contracts: readonly CapabilityContract[] = []) {
+    if (contracts.length > 0) {
+      this.registerMany(contracts, { type: "platform", id: "@assistant/capability-core" });
+    }
   }
 
   register(
@@ -160,8 +153,4 @@ export class CapabilityCatalog {
   listRegistrations(): readonly CapabilityContractRegistration[] {
     return [...this.#registrations.values()];
   }
-}
-
-export function createStandardCapabilityCatalog(): CapabilityCatalog {
-  return new CapabilityCatalog();
 }

@@ -9,13 +9,21 @@ import { createCapabilityTools } from "../../packages/agent-runtime/dist/index.j
 import {
   CapabilityExecutor,
   CapabilityRegistry,
-  createStandardCapabilityCatalog,
 } from "../../core/capability/dist/index.js";
+import { createStandardCapabilityCatalog } from "../../packages/capability-contracts/dist/index.js";
 import { PluginRuntime, pluginManifestSchema } from "../../packages/plugin-runtime/dist/index.js";
 
 const repositoryRoot = resolve(fileURLToPath(new URL("../../", import.meta.url)));
-const expectedCapabilities = ["data_map.search_objects", "data_quality.get_trend"];
-const expectedToolNames = ["data_map_search_objects", "data_quality_get_trend"];
+const legacyCapabilities = ["data_map.search_objects", "data_quality.get_trend"];
+const expectedCapabilities = [
+  "data_map.get_object_metadata",
+  ...legacyCapabilities,
+];
+const expectedToolNames = [
+  "data_map_get_object_metadata",
+  "data_map_search_objects",
+  "data_quality_get_trend",
+];
 
 function executionContext(permissionScopes) {
   return {
@@ -158,7 +166,7 @@ test("A and B providers preserve equivalent standard data and traceable evidence
     assert.equal(JSON.stringify({ search, trend }).includes("mock-auth:user-a"), false);
     assert.deepEqual(
       loaded.auditRecords.map((record) => record.capabilityId),
-      expectedCapabilities,
+      legacyCapabilities,
     );
     outputs.push({ search, trend });
   }

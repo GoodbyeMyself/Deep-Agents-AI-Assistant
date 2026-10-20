@@ -14,7 +14,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@assistant/capability-contracts": "workspace:*",
+    "@assistant/capability-core": "workspace:*",
+    "@assistant/capability-data-map": "workspace:*",
+    "@assistant/capability-data-quality": "workspace:*",
     "@assistant/plugin-sdk": "workspace:*"
   }
 }

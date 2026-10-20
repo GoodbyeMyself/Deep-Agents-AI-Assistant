@@ -1,12 +1,17 @@
 import {
+  dataMapGetObjectMetadataV1,
   dataMapSearchObjectsV1,
-  qualityTrendV1,
+  type DataMapGetObjectMetadataInput,
+  type DataMapGetObjectMetadataResult,
   type DataMapSearchObjectsInput,
   type DataMapSearchObjectsResult,
+} from "@assistant/capability-data-map";
+import {
+  qualityTrendV1,
   type QualityTrendInput,
   type QualityTrendResult,
-  type CapabilityExecutionContext,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-data-quality";
+import type { CapabilityExecutionContext } from "@assistant/capability-core";
 import { definePlugin, implementCapability } from "@assistant/plugin-sdk";
 
 interface ProductAObject {
@@ -20,6 +25,15 @@ interface ProductAQualityPoint {
   tableCode: string;
   statDate: string;
   qualityScore: number;
+}
+
+interface ProductAColumnDefinition {
+  columnCode: string;
+  label: string;
+  storageType: "VARCHAR" | "BIGINT";
+  required: boolean;
+  comment: string;
+  sensitivity: "INTERNAL" | "RESTRICTED";
 }
 
 function listMissingDates(startTime: string, endTime: string): string[] {
@@ -47,6 +61,28 @@ function queryObjects(input: DataMapSearchObjectsInput): ProductAObject[] {
 
 function getQualityPoint(input: QualityTrendInput): ProductAQualityPoint {
   return { tableCode: input.tableId, statDate: input.endTime.slice(0, 10), qualityScore: 96 };
+}
+
+function describeColumns(objectId: string): ProductAColumnDefinition[] {
+  if (objectId !== "orders") return [];
+  return [
+    {
+      columnCode: "order_id",
+      label: "Order ID",
+      storageType: "BIGINT",
+      required: true,
+      comment: "Stable order identifier.",
+      sensitivity: "INTERNAL",
+    },
+    {
+      columnCode: "customer_ssn",
+      label: "Customer SSN",
+      storageType: "VARCHAR",
+      required: true,
+      comment: "Restricted customer identifier.",
+      sensitivity: "RESTRICTED",
+    },
+  ];
 }
 
 function authorized(context: CapabilityExecutionContext, objectId?: string): boolean {
@@ -102,6 +138,61 @@ function searchObjects(
   });
 }
 
+function getObjectMetadata(
+  input: DataMapGetObjectMetadataInput,
+  context: CapabilityExecutionContext,
+): Promise<DataMapGetObjectMetadataResult> {
+  if (!authorized(context, input.objectId) || input.objectType !== "data_table") {
+    return Promise.resolve(forbiddenResult());
+  }
+  const requested = input.fieldNames === undefined ? undefined : new Set(input.fieldNames);
+  const candidates = describeColumns(input.objectId).filter(
+    (field) => requested === undefined || requested.has(field.columnCode),
+  );
+  const canReadRestricted = context.permissionScopes.includes("data_map:sensitive_read");
+  const visible = candidates.filter(
+    (field) => field.sensitivity !== "RESTRICTED" || canReadRestricted,
+  );
+  const withheld = candidates.length - visible.length;
+  return Promise.resolve({
+    status: withheld > 0 ? "partial" : "success",
+    data: {
+      object: {
+        type: "data_table",
+        id: input.objectId,
+        name: "Orders",
+        description: "Authorized order records.",
+      },
+      fields: visible.map((field) => ({
+        name: field.columnCode,
+        displayName: field.label,
+        dataType: field.storageType === "BIGINT" ? "number" : "string",
+        nullable: !field.required,
+        description: field.comment,
+        classification: field.sensitivity === "RESTRICTED" ? "restricted" : "internal",
+      })),
+    },
+    evidence: [
+      {
+        id: "product-a-metadata-evidence",
+        source: { type: "table", id: input.objectId, title: "Orders" },
+        collectedAt: "2026-10-20T00:00:00+08:00",
+        methodology: "Product A object and field authorization applied before standard mapping.",
+        referenceId: `product-a:${context.executionContextId}:metadata:${input.objectId}`,
+      },
+    ],
+    warnings:
+      withheld > 0
+        ? [
+            {
+              code: "FIELD_ACCESS_RESTRICTED",
+              message: `${withheld} requested field(s) were omitted by field-level authorization.`,
+            },
+          ]
+        : [],
+  });
+}
+
 function getTrend(
   input: QualityTrendInput,
   context: CapabilityExecutionContext,
@@ -145,6 +236,7 @@ function getTrend(
 export default definePlugin((host) => ({
   capabilities: [
     implementCapability({ contract: dataMapSearchObjectsV1, execute: searchObjects }),
+    implementCapability({ contract: dataMapGetObjectMetadataV1, execute: getObjectMetadata }),
     implementCapability({ contract: qualityTrendV1, execute: getTrend }),
   ],
   initialize: () => {

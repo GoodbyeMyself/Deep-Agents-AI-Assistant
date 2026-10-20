@@ -202,3 +202,15 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - Agent Server 将可用 Skill 复制为隔离的只读启动快照，并通过 `deepagents@1.14.2` 官方 `skills` 与 `FilesystemBackend` 参数装配；当前 Agent/Run 不受安装目录后续变化影响，仍要求重启生效。
 - Skill 文本和外部引用被明确视为不可信；Skill 不授予权限，也不是 Evidence。E3 回归验证无权限调用仍由 Capability Executor 返回 `FORBIDDEN`。
 - E3 使用临时本地 Bundle、Mock Provider 和存在性回调验证机制，未连接真实业务 API、企业凭证库或真实模型；不宣称生产集成完成。
+
+## E4：标准能力包拆分与现有 Adapter 迁移
+
+状态：完成并通过退出门禁，详细证据见 `e4-acceptance-report.md`。
+
+- `core/capability` 已收敛为 `@assistant/capability-core`，只保留通用契约、Catalog、Registry、Executor、Policy、Evidence 和 Audit；具体业务能力迁移到 `@assistant/capability-data-map` 与 `@assistant/capability-data-quality`。
+- 独立 `@assistant/capability-contracts` 包保留旧聚合导出和 `createStandardCapabilityCatalog()`，兼容至 E5 后首个发布周期，最早在下一次 breaking release 移除。
+- Product A/B Adapter 直接依赖领域标准包；原有搜索与质量趋势 ID、版本和结果语义保持兼容，并新增 `data_map.get_object_metadata@1.0.0`。
+- 元数据查询在 Adapter 内执行对象级与字段级授权；无权字段在进入模型上下文前移除，部分可见返回 `partial + FIELD_ACCESS_RESTRICTED + Evidence`，warning/Evidence 不泄露字段值。
+- 两个标准能力包各自提供共享 Provider 契约套件；E4 专项测试验证 A/B 标准输出一致、未绑定 Provider 返回 `UNSUPPORTED`、同版本冲突和单位冲突失败关闭。
+- E0～E4 共 30 项测试以及 `lint`、`typecheck`、`build` 均已通过；命令均按用户要求由用户逐条手动执行。
+- E4 仍使用 Mock 业务数据与授权引用，未连接真实产品字段权限 API、生产 IdP 或真实 Evidence Repository。

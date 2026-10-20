@@ -7,13 +7,14 @@
 ## 在架构中的位置
 
 ```text
-@assistant/capability-contracts  →  Catalog / Registry / Executor（业务执行与鉴权）
+@assistant/capability-core       →  Catalog / Registry / Executor（业务执行与鉴权）
+@assistant/capability-data-*     →  版本化标准业务契约
 @assistant/plugin-runtime       →  启动时发现插件并注册 Capability
 @assistant/agent-runtime        →  createDeepAgent + Tool 工厂（本包）
 apps/agent-server               →  Composition Root，装配模型、插件与 Agent
 ```
 
-依赖约束见 `docs/architecture-v2.0/03-工程结构与依赖规则.md`：本包可依赖 `deepagents`、`@assistant/capability-contracts` 与 LangChain 栈，**不得**导入具体产品 Adapter 或 A/B/C 分流逻辑。
+依赖约束见 `docs/architecture-v2.0/03-工程结构与依赖规则.md`：本包可依赖 `deepagents`、`@assistant/capability-core` 与必要的单能力烟测契约，**不得**导入具体产品 Adapter 或 A/B/C 分流逻辑。
 
 ## 目录结构（`src/`）
 

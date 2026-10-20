@@ -6,7 +6,7 @@ import type {
   CapabilityContract,
   CapabilityProvider,
   CapabilityRegistrationLease,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
 import type { AssistantPlugin, PluginFactory } from "@assistant/plugin-sdk";
 
 import { HttpCapabilityDriver, HttpCapabilityProvider } from "../driver/http-capability.js";

@@ -11,22 +11,3 @@ export {
   type CapabilityErrorCode,
   type Evidence,
 } from "./common.js";
-export {
-  dataMapObjectSchema,
-  dataMapSearchObjectsDataSchema,
-  dataMapSearchObjectsInputSchema,
-  dataMapSearchObjectsResultSchema,
-  dataMapSearchObjectsV1,
-  qualityTrendDataSchema,
-  qualityTrendInputSchema,
-  qualityTrendResultSchema,
-  qualityTrendV1,
-  standardCapabilityContracts,
-  type DataMapSearchObjectsData,
-  type DataMapSearchObjectsInput,
-  type DataMapSearchObjectsResult,
-  type KnownCapabilityContract,
-  type QualityTrendData,
-  type QualityTrendInput,
-  type QualityTrendResult,
-} from "./standard/index.js";

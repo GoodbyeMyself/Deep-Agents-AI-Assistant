@@ -3,7 +3,7 @@ import {
   type CapabilityCatalog,
   type CapabilityContract,
   type CapabilityProvider,
-} from "@assistant/capability-contracts";
+} from "@assistant/capability-core";
 import type { AssistantPlugin } from "@assistant/plugin-sdk";
 
 import type { PluginManifest, PluginManifestV2 } from "../manifest/schema.js";

@@ -1,44 +1,16 @@
-# Capability Contracts
+# Capability Core
 
-平台标准业务能力的单一事实来源，包含契约、Catalog、Registry、Executor、Policy 接口和审计结构。
+包名：`@assistant/capability-core`。这里只保留稳定的通用内核：Capability/Result/Evidence 契约、Catalog、Registry、Executor、Policy 与 Audit 接口，不包含任何具体业务能力 ID 或 Schema。
 
-## 当前标准能力
+具体标准能力由独立版本化包提供：
 
-- `data_map.search_objects@1.0.0`
-- `data_quality.get_trend@1.0.0`
+- `@assistant/capability-data-map`
+- `@assistant/capability-data-quality`
 
-## 目录结构（`src/`）
+应用 Composition Root 显式把标准能力包注册到 Catalog；Adapter 直接依赖所实现的领域能力包。新增标准能力不应修改 Core、Agent Runtime、Tool Factory 或 UI。
 
-```text
-src/
-├── index.ts                 # 包公共导出（@assistant/capability-contracts）
-├── contracts/               # Zod 契约与标准能力定义
-│   ├── common.ts              # Evidence、错误、Result 工厂、CapabilityContract
-│   ├── standard/              # 各标准能力契约（一能力一文件）
-│   │   ├── data-map-search-objects.ts
-│   │   ├── quality-trend.ts
-│   │   └── index.ts           # standardCapabilityContracts 聚合
-│   └── index.ts               # 包内 contracts 公共入口
-├── catalog/                   # 标准能力目录
-│   └── catalog.ts
-├── registry/                  # Provider 绑定注册
-│   └── registry.ts
-└── executor/                  # 校验、Policy、审计与执行
-    ├── policy.ts
-    ├── executor.ts
-    └── index.ts
-```
-
-新增标准能力时：在 `contracts/standard/` 增加独立文件并在 `contracts/standard/index.ts` 注册到 `standardCapabilityContracts`。
+旧包名 `@assistant/capability-contracts` 已移动到 `packages/capability-contracts`，仅作为过渡兼容聚合层。兼容层保留至 E5 完成后的首个发布周期，最早只会在下一次 breaking release 移除；新代码不得继续依赖它。
 
 ## 依赖边界
 
-本包属于核心领域层，不依赖具体产品 Adapter、Deep Agents、HTTP Server 或 UI。新增能力应先在这里定义稳定语义与测试，再由插件实现。
-
-## 验证
-
-```bash
-pnpm --filter @assistant/capability-contracts build
-pnpm --filter @assistant/capability-contracts typecheck
-pnpm --filter @assistant/capability-contracts test
-```
+本包不依赖标准能力包、产品 Adapter、Deep Agents、HTTP Server 或 UI。标准能力包可以依赖本包，反向依赖禁止。

@@ -1,4 +1,4 @@
-import type { CapabilityCatalog, CapabilityRegistry } from "@assistant/capability-contracts";
+import type { CapabilityCatalog, CapabilityRegistry } from "@assistant/capability-core";
 
 import type { PluginRegistry } from "../registry/plugin-registry.js";
 

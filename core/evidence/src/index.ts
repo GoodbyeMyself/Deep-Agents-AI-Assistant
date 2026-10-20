@@ -1,4 +1,4 @@
-import { evidenceSchema } from "@assistant/capability-contracts";
+import { evidenceSchema } from "@assistant/capability-core";
 import { z } from "zod";
 
 export const evidenceRecordSchema = z.object({

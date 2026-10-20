@@ -13,7 +13,9 @@
   },
   "dependencies": {
     "@assistant/agent-runtime": "workspace:*",
-    "@assistant/capability-contracts": "workspace:*",
+    "@assistant/capability-core": "workspace:*",
+    "@assistant/capability-data-map": "workspace:*",
+    "@assistant/capability-data-quality": "workspace:*",
     "@assistant/context": "workspace:*",
     "@assistant/contracts": "workspace:*",
     "@assistant/evidence": "workspace:*",

@@ -14,7 +14,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@assistant/capability-contracts": "workspace:*",
+    "@assistant/capability-core": "workspace:*",
+    "@assistant/capability-data-quality": "workspace:*",
     "@langchain/core": "catalog:",
     "@langchain/langgraph": "catalog:",
     "@langchain/langgraph-checkpoint": "catalog:",
