@@ -4,6 +4,8 @@
  */
 import { z } from "zod";
 
+export { assistantViewSchema, type AssistantView } from "./views.js";
+
 // --- HTTP API：统一错误与写操作请求体 ---
 
 /** Agent Server 标准错误响应（与 HTTP 状态码配套）。 */
@@ -68,67 +70,10 @@ export const assistantEventSchema = z.object({
   data: z.record(z.string(), z.unknown()),
 });
 
-// --- 受控 ViewModel：UI 白名单渲染，禁止任意 HTML/脚本 ---
-
-const viewBaseSchema = z.object({
-  viewId: z.string().uuid(),
-  schemaVersion: z.literal("1"),
-  title: z.string().min(1).optional(),
-  evidenceIds: z.array(z.string()),
-});
-
-/** 表格/指标等字段允许的标量类型。 */
-const scalarSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
-
-/**
- * `view.created` 事件与消息附件中的结构化视图。
- * `viewType` 为判别字段；仅列出的类型可由 AssistantViewRenderer 安全展示。
- */
-export const assistantViewSchema = z.discriminatedUnion("viewType", [
-  viewBaseSchema.extend({
-    viewType: z.literal("text"),
-    data: z.object({ content: z.string() }),
-  }),
-  viewBaseSchema.extend({
-    viewType: z.literal("metric"),
-    data: z.object({
-      label: z.string(),
-      value: scalarSchema,
-      unit: z.string().optional(),
-      trend: z.enum(["up", "down", "flat"]).optional(),
-    }),
-  }),
-  viewBaseSchema.extend({
-    viewType: z.literal("table"),
-    data: z.object({
-      columns: z.array(z.object({ key: z.string(), label: z.string() })),
-      rows: z.array(z.record(z.string(), scalarSchema)),
-    }),
-  }),
-  // chart.line 要求必填 title，与 viewBase 的 optional title 不一致，故单独定义。
-  z.object({
-    viewId: z.string().uuid(),
-    viewType: z.literal("chart.line"),
-    schemaVersion: z.literal("1"),
-    title: z.string().min(1),
-    data: z.object({
-      xField: z.literal("time"),
-      yField: z.literal("value"),
-      rows: z.array(z.object({ time: z.string(), value: z.number() })),
-    }),
-    evidenceIds: z.array(z.string()),
-  }),
-  viewBaseSchema.extend({
-    viewType: z.literal("references"),
-    data: z.object({
-      items: z.array(z.object({ referenceId: z.string(), title: z.string().optional() })),
-    }),
-  }),
-]);
-
 export type AssistantEvent = z.infer<typeof assistantEventSchema>;
 export type AssistantEventType = z.infer<typeof assistantEventTypeSchema>;
-export type AssistantView = z.infer<typeof assistantViewSchema>;
+
+export * from "./ag-ui.js";
 
 // --- OpenAPI：路径索引（详述由 agent-server 与文档同步维护） ---
 

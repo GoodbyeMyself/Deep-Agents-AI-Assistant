@@ -368,6 +368,24 @@ importers:
         specifier: 4.21.0
         version: 4.21.0
 
+  domains/data-map:
+    dependencies:
+      '@assistant/capability-core':
+        specifier: workspace:*
+        version: link:../../core/capability
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
+
+  domains/data-quality:
+    dependencies:
+      '@assistant/capability-core':
+        specifier: workspace:*
+        version: link:../../core/capability
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
+
   packages/agent-runtime:
     dependencies:
       '@assistant/capability-core':
@@ -487,26 +505,11 @@ importers:
         specifier: workspace:*
         version: link:../../domains/data-quality
 
-  domains/data-map:
-    dependencies:
-      '@assistant/capability-core':
-        specifier: workspace:*
-        version: link:../../core/capability
-      zod:
-        specifier: 4.3.6
-        version: 4.3.6
-
-  domains/data-quality:
-    dependencies:
-      '@assistant/capability-core':
-        specifier: workspace:*
-        version: link:../../core/capability
-      zod:
-        specifier: 4.3.6
-        version: 4.3.6
-
   packages/contracts:
     dependencies:
+      '@ag-ui/core':
+        specifier: 1.0.3
+        version: 1.0.3(zod@4.3.6)
       zod:
         specifier: 4.3.6
         version: 4.3.6
@@ -542,6 +545,14 @@ importers:
         version: 4.3.6
 
 packages:
+
+  '@ag-ui/core@1.0.3':
+    resolution: {integrity: sha512-HdMdZPOqworKlnzLaNktnbNYgIzOPbzt5ow6J4bPhbmHCdpWpCSZQFgkifQkn1zVHgCK1V+pmKc8xtW6FsQZKA==}
+    peerDependencies:
+      zod: 4.3.6
+    peerDependenciesMeta:
+      zod:
+        optional: true
 
   '@ant-design/colors@8.0.1':
     resolution: {integrity: sha512-foPVl0+SWIslGUtD/xBr1p9U4AKzPhNYEseXYRRo5QSzGACYZrQbe11AYJbYfAWnWSpGBx6JjBmSeugUsD9vqQ==}
@@ -2943,6 +2954,10 @@ packages:
     resolution: {integrity: sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg==}
 
 snapshots:
+
+  '@ag-ui/core@1.0.3(zod@4.3.6)':
+    optionalDependencies:
+      zod: 4.3.6
 
   '@ant-design/colors@8.0.1':
     dependencies:

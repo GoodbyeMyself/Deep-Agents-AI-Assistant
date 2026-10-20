@@ -240,3 +240,14 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   Evidence 或运行协议变化。
 - 用户在仓库根目录完成 workspace 重新链接；`pnpm test`、`pnpm lint`、`pnpm typecheck`、
   `pnpm build` 均通过。
+
+## AG-UI 1.0 协议 POC
+
+状态：完成并通过工程阶段退出门禁，详见 [AG-UI POC 验收报告](acceptance/evolution/ag-ui-poc-acceptance-report.md)；尚未接入网络端点或 CopilotKit。
+
+- 新增 ADR-024，明确 AG-UI 只作为 Agent 交互事件兼容基线，不替换 Gateway、Session/Run、ContextSnapshot、Evidence、权限和事件重放边界。
+- `@assistant/contracts` 锁定 `@ag-ui/core@1.0.3`，把旧 `AssistantEvent` 纯函数、确定性投影为 AG-UI 1.0 生命周期、文本、Tool、Subagent 和取消事件。
+- Evidence 与受控 View 使用严格校验的企业 `CUSTOM` 事件；Tool 投影只返回公开状态，不包含参数、原始业务结果或 Runtime Context。
+- 新增 `tests/ag-ui-poc/projection.test.mjs`，覆盖标准 Schema、消息生命周期、Tool 敏感数据不出站、企业 Custom Schema、取消和重放确定性。
+- 现有 SSE、Transport、ChatStore、Runner 和 Shell 尚未切换；CopilotKit 仍只是后续可选 Adapter/Shell，不是核心依赖。
+- 用户已在仓库根目录手动执行 `pnpm test:ag-ui-poc`、`pnpm test`、`pnpm lint`、`pnpm typecheck`、`pnpm build` 并确认全部通过。

@@ -30,6 +30,8 @@ Application Shell
 
 `AssistantTransport` 只处理当前部署的标准 Session/Run/Event API；React 组件不依赖 LangGraph 的 chunk、toolCall 内部类型。`useXChat` 或 X SDK 作为可选集成验证；避免 Ant Design X SDK 与自研 ChatStore 两套状态同步。优先**自研事件归一化 ChatStore + 复用 Ant Design X UI 组件**。
 
+AG-UI 1.0 可作为 `ChatAgentPort` 的标准事件语义，但不取代 Session、ContextSnapshot、Evidence 和管理 REST API。CopilotKit 若接入，只能实现独立可选 Shell/Adapter；`assistant-ui` 不直接依赖 `@copilotkit/*`，默认 Ant Design X Shell 与 React/JS/iframe SDK 在移除 CopilotKit 包后仍须独立构建和运行。
+
 ## 4. 稳定 SDK 公共接口（平台自研）
 
 ```ts

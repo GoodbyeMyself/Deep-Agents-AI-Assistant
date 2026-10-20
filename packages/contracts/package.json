@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@ag-ui/core": "1.0.3",
     "zod": "catalog:"
   }
 }

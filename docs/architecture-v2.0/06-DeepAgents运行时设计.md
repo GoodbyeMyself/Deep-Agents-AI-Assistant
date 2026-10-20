@@ -120,6 +120,8 @@ Skill 指令、描述及其外部引用不构成事实、Evidence、身份、权
 
 Deep Agents/LangGraph `stream` 输出的事件是**官方内部/原生结构**，客户端协议是我们自定义。不得让 Ant Design X 直接解析 LangGraph 的 raw chunk；Event Bridge 负责：事件映射、SSE 编号、内容合并、错误归一化、子图命名空间、取消状态、审计关联。`streamMode: 'updates'`、`subgraphs: true` 的具体返回形态在 M0 打印并添加测试。
 
+依据 ADR-024，平台可把已持久化的 `AssistantEvent` 确定性投影为 AG-UI 1.0 事件。投影层位于 Event Bridge 的客户端侧输出边界，不进入或替换 Deep Agents Agent Loop。AG-UI `rawEvent` 默认不输出；Tool 参数、原始 Tool Result、可信 Runtime Context、Policy 和 Checkpoint 均不得跨过该边界。POC 通过前，现有 REST/SSE 仍是默认协议。
+
 ## 10. 执行限制、回退和恢复
 
 - HTTP Run 要有幂等键、服务端 Run 状态及 Abort 语义；超时后的 Tool 需符合自身超时与重试规则。

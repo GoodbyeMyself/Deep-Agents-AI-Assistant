@@ -101,6 +101,12 @@ data: {"version":"1","eventId":"evt-000012","sequence":12,"sessionId":"s1","runI
 
 重连：按 `Last-Event-ID` 或 query cursor 拉取仍在保留期限的事件；服务端校验归属、幂等重放，前端根据 `eventId/sequence` 去重。若事件日志已过期，返回清晰的 `EVENT_CURSOR_EXPIRED` 让前端通过 Session/Run 状态重新同步；绝不宣称无状态 SSE 自动有完整恢复。
 
+### 6.1 AG-UI 1.0 兼容投影
+
+依据 ADR-024，现有 `AssistantEvent` 是持久化与重放的事实来源；AG-UI 事件是其确定性客户端投影。`run.started/completed/failed/cancelled`、文本、Tool 和 Subagent 映射到 AG-UI 标准事件；Evidence 与受控 View 使用版本化 `CUSTOM` 名称及项目 Schema。一个源事件映射多个 AG-UI 事件时，投影 ID 使用源 `eventId` 加稳定序号，源序列与 Session 写入 `enterprise-assistant` metadata。
+
+该投影不改变 `/sessions`、`/runs`、`/context/snapshots`、`/evidence` 的权限和资源语义，也不表示标准 AG-UI `HttpAgent` 可以绕过 Gateway。新增 AG-UI 网络端点前，必须另行确定认证、创建 Run、取消和 `Last-Event-ID` 重放方式。
+
 ## 7. Context 协议
 
 `POST /context/snapshots` 只接收 Raw Context（页面/对象/业务相关字段），服务端根据当前用户校验/归一化；返回 `{id, version, capturedAt}`。`run` 引用已授权的 Snapshot，不允许跨用户使用。StandAlone 用户对象选择也经过相同服务端校验。
