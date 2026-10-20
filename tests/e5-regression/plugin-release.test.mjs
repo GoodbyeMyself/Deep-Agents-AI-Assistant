@@ -29,7 +29,7 @@ const zodUrl = pathToFileURL(
   resolve(repositoryRoot, "packages/plugin-sdk/node_modules/zod/index.js"),
 ).href;
 const dataMapUrl = pathToFileURL(
-  resolve(repositoryRoot, "packages/capability-data-map/dist/index.js"),
+  resolve(repositoryRoot, "domains/data-map/dist/index.js"),
 ).href;
 const temporaryRoots = [];
 

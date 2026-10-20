@@ -71,10 +71,10 @@ importers:
         version: link:../../core/capability
       '@assistant/capability-data-map':
         specifier: workspace:*
-        version: link:../../packages/capability-data-map
+        version: link:../../domains/data-map
       '@assistant/capability-data-quality':
         specifier: workspace:*
-        version: link:../../packages/capability-data-quality
+        version: link:../../domains/data-quality
       '@assistant/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
@@ -86,10 +86,10 @@ importers:
         version: link:../../core/capability
       '@assistant/capability-data-map':
         specifier: workspace:*
-        version: link:../../packages/capability-data-map
+        version: link:../../domains/data-map
       '@assistant/capability-data-quality':
         specifier: workspace:*
-        version: link:../../packages/capability-data-quality
+        version: link:../../domains/data-quality
       '@assistant/plugin-sdk':
         specifier: workspace:*
         version: link:../../packages/plugin-sdk
@@ -104,10 +104,10 @@ importers:
         version: link:../../core/capability
       '@assistant/capability-data-map':
         specifier: workspace:*
-        version: link:../../packages/capability-data-map
+        version: link:../../domains/data-map
       '@assistant/capability-data-quality':
         specifier: workspace:*
-        version: link:../../packages/capability-data-quality
+        version: link:../../domains/data-quality
       '@assistant/context':
         specifier: workspace:*
         version: link:../../core/context
@@ -375,7 +375,7 @@ importers:
         version: link:../../core/capability
       '@assistant/capability-data-quality':
         specifier: workspace:*
-        version: link:../capability-data-quality
+        version: link:../../domains/data-quality
       '@langchain/core':
         specifier: 'catalog:'
         version: 1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6))
@@ -482,12 +482,12 @@ importers:
         version: link:../../core/capability
       '@assistant/capability-data-map':
         specifier: workspace:*
-        version: link:../capability-data-map
+        version: link:../../domains/data-map
       '@assistant/capability-data-quality':
         specifier: workspace:*
-        version: link:../capability-data-quality
+        version: link:../../domains/data-quality
 
-  packages/capability-data-map:
+  domains/data-map:
     dependencies:
       '@assistant/capability-core':
         specifier: workspace:*
@@ -496,7 +496,7 @@ importers:
         specifier: 4.3.6
         version: 4.3.6
 
-  packages/capability-data-quality:
+  domains/data-quality:
     dependencies:
       '@assistant/capability-core':
         specifier: workspace:*

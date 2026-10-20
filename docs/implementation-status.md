@@ -229,3 +229,16 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   业务数据和 Evidence Repository 仍为 Mock，不冒充生产集成。
 - `test:e5`、E0～E5 全量回归、lint、typecheck 和 build 均已由用户在仓库根目录逐条执行并
   确认通过；首次 lint 暴露的未实例化模板依赖解析问题已修复并复验。
+
+## E5 后：标准业务领域目录归位
+
+状态：完成并通过质量门禁。
+
+- `@assistant/capability-data-map` 与 `@assistant/capability-data-quality` 的包名、版本、契约和
+  对外导出保持不变，物理目录迁移到 `domains/data-map`、`domains/data-quality`。
+- `packages/` 继续只承载平台 SDK、Runtime、Transport 与 UI；`domains/` 承载跨产品复用的
+  标准业务语义；Adapter 仍只负责产品 API 到领域契约的映射。
+- Workspace、lockfile importer、E4/E5 测试物理路径和架构文档已同步调整，没有权限、Context、
+  Evidence 或运行协议变化。
+- 用户在仓库根目录完成 workspace 重新链接；`pnpm test`、`pnpm lint`、`pnpm typecheck`、
+  `pnpm build` 均通过。

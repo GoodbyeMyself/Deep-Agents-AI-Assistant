@@ -12,14 +12,14 @@ import {
   DATA_MAP_CAPABILITY_SOURCE,
   dataMapCapabilityContracts,
   dataMapGetObjectMetadataV1,
-} from "../../packages/capability-data-map/dist/index.js";
-import { verifyDataMapProvider } from "../../packages/capability-data-map/contract-tests/provider-suite.mjs";
+} from "../../domains/data-map/dist/index.js";
+import { verifyDataMapProvider } from "../../domains/data-map/contract-tests/provider-suite.mjs";
 import {
   DATA_QUALITY_CAPABILITY_SOURCE,
   dataQualityCapabilityContracts,
   qualityTrendV1,
-} from "../../packages/capability-data-quality/dist/index.js";
-import { verifyDataQualityProvider } from "../../packages/capability-data-quality/contract-tests/provider-suite.mjs";
+} from "../../domains/data-quality/dist/index.js";
+import { verifyDataQualityProvider } from "../../domains/data-quality/contract-tests/provider-suite.mjs";
 import {
   createStandardCapabilityCatalog,
   standardCapabilityContracts,
