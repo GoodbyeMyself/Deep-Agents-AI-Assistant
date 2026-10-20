@@ -4,7 +4,7 @@
 
 ## M0：工程初始化与框架验证
 
-状态：完成并通过退出门禁，质量门禁结果见 `m0-acceptance-report.md`。
+状态：完成并通过退出门禁，质量门禁结果见 [M0 验收报告](acceptance/milestones/m0-acceptance-report.md)。
 
 - 已建立 pnpm workspace、TypeScript strict、ESLint、Prettier、Vitest、CI 与环境变量样例。
 - 已建立实际可运行的 `core/capability`、`packages/agent-runtime`、
@@ -21,7 +21,7 @@
 
 ## M1：插件自动发现与双 Adapter POC
 
-状态：完成并通过退出门禁，质量与安全证据见 `m1-acceptance-report.md`。
+状态：完成并通过退出门禁，质量与安全证据见 [M1 验收报告](acceptance/milestones/m1-acceptance-report.md)。
 
 - `data_map.search_objects@1.0.0` 与 `data_quality.get_trend@1.0.0` 已成为平台维护的
   Zod 契约，包含标准错误、Evidence、`partial` 与缺失日期语义。
@@ -40,7 +40,7 @@ Session/SSE 属于 M2，当前未宣称完成。
 
 ## M2：企业可信执行闭环
 
-状态：完成 M2 阶段退出门禁，详细证据与 Mock 边界见 `m2-acceptance-report.md`。
+状态：完成 M2 阶段退出门禁，详细证据与 Mock 边界见 [M2 验收报告](acceptance/milestones/m2-acceptance-report.md)。
 
 - 已实现 `/api/v1` Node HTTP API、Zod 请求/SSE/View 契约和 OpenAPI 3.1 描述，支持
   ContextSnapshot、Session、历史消息、归档/软删除、幂等 Run、取消、SSE 与 Evidence 解引用。
@@ -61,8 +61,7 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
 
 ## M3：React 独立 Web 与共享聊天
 
-状态：完成并通过退出门禁，详细证据与页面预览见 `m3-acceptance-report.md` 和
-`m3-preview.png`。
+状态：完成并通过退出门禁，详细工程证据见 [M3 验收报告](acceptance/milestones/m3-acceptance-report.md)。
 
 - 已实现 `assistant-transport`：Bearer REST、Fetch SSE、事件 Schema 校验、断流续传、
   `Last-Event-ID`、事件去重与终态查询，不把网络断开伪装为完成。
@@ -84,8 +83,7 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
 
 ## M4：嵌入式助手与多宿主 SDK
 
-状态：完成并通过退出门禁，详细证据与页面预览见 `m4-acceptance-report.md` 和
-`m4-preview.png`。
+状态：完成并通过退出门禁，详细工程证据见 [M4 验收报告](acceptance/milestones/m4-acceptance-report.md)。
 
 - 已实现 `assistant-sdk` 的 React 组件/Hook 与原生 JavaScript API，统一支持
   `mount/open/close/updateContext/getState/destroy` 以及 floating/drawer/inline 展示模式。
@@ -111,7 +109,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 ## M5：独立部署与系统验收
 
 状态：完成开发与离线系统验收；生产依赖替换和真实业务联调仍是明确上线前置条件，详见
-`m5-acceptance-report.md`。
+[M5 验收报告](acceptance/milestones/m5-acceptance-report.md)。
 
 - 已提供 A/B 两套独立环境样例；同一 Agent Server 组合分别只批准 Product A 或 Product B
   Adapter，端口、密钥注入、插件目录、Store 与 Checkpointer 边界独立。
@@ -160,7 +158,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## E0：插件化能力扩展决策与回归基线
 
-状态：完成并通过退出门禁，详细证据见 `e0-acceptance-report.md`。
+状态：完成并通过退出门禁，详细证据见 [E0 验收报告](acceptance/evolution/e0-acceptance-report.md)。
 
 - 新增 ADR-022，确定“稳定 Core + 可信动态 Capability Contract 注册”的混合模型；平台标准能力与部署私有能力分层治理。
 - 标准命名空间由平台保留；私有能力使用 `<organization>.<domain>.<action>`，组织前缀需要部署批准。
@@ -171,7 +169,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## E1：开放 Capability SDK 与动态 Catalog
 
-状态：完成并通过退出门禁，详细证据见 `e1-acceptance-report.md`。
+状态：完成并通过退出门禁，详细证据见 [E1 验收报告](acceptance/evolution/e1-acceptance-report.md)。
 
 - Core 与 Plugin SDK 公开通用 `defineCapability()`；`implementCapability()` 改为接受任意满足 `CapabilityContract` 的契约，同时由具体 Zod Schema 保留输入、输出类型推导。
 - `CapabilityCatalog` 增加带来源信息的 `register/registerMany`；批量注册先完整校验后提交，重复 `id + version` 不覆盖且不留下部分注册。
@@ -182,7 +180,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## E2：Plugin Bundle V2 与事务式装载
 
-状态：完成并通过退出门禁，详细证据见 `e2-acceptance-report.md`。
+状态：完成并通过退出门禁，详细证据见 [E2 验收报告](acceptance/evolution/e2-acceptance-report.md)。
 
 - 新增 Manifest V2：可信 Local Bundle 可声明私有命名空间、Contract 来源、权限、风险和可选 Skill 目录；Manifest V1 Local/HTTP 继续兼容。
 - Plugin SDK 的 `AssistantPlugin` 可导出 `contracts`；Runtime 对 Manifest、运行时 Contract 和 Provider 集合执行一致性检查后再装载。
@@ -194,7 +192,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## E3：Plugin Skill 自动发现与 Tool 关联
 
-状态：完成并通过退出门禁，详细证据见 `e3-acceptance-report.md`。
+状态：完成并通过退出门禁，详细证据见 [E3 验收报告](acceptance/evolution/e3-acceptance-report.md)。
 
 - Manifest V2 Skill 支持声明所需 Capability、配置和凭证；路径字符串保持兼容。Skill frontmatter、目录名、整个目录树、内容大小、符号链接和内容哈希均在插件代码装配前验证。
 - Plugin Skill Registry 只收录依赖满足的 Skill；缺 Tool/配置/凭证时记录排除原因。同名 Skill 固定拒绝覆盖，冲突 Bundle 的 Contract、Provider 与 Skill 一并回滚。
@@ -205,7 +203,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## E4：标准能力包拆分与现有 Adapter 迁移
 
-状态：完成并通过退出门禁，详细证据见 `e4-acceptance-report.md`。
+状态：完成并通过退出门禁，详细证据见 [E4 验收报告](acceptance/evolution/e4-acceptance-report.md)。
 
 - `core/capability` 已收敛为 `@assistant/capability-core`，只保留通用契约、Catalog、Registry、Executor、Policy、Evidence 和 Audit；具体业务能力迁移到 `@assistant/capability-data-map` 与 `@assistant/capability-data-quality`。
 - 独立 `@assistant/capability-contracts` 包保留旧聚合导出和 `createStandardCapabilityCatalog()`，兼容至 E5 后首个发布周期，最早在下一次 breaking release 移除。
@@ -217,7 +215,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## E5：系统验收、发布流程与文档收口
 
-状态：完成并通过工程阶段退出门禁，详细记录见 `e5-acceptance-report.md`。
+状态：完成并通过工程阶段退出门禁，详细记录见 [E5 验收报告](acceptance/evolution/e5-acceptance-report.md)。
 
 - 新增可生成的 Manifest V2 模板，包含私有 Contract、Provider、Skill、发布元数据、README 和
   契约测试入口；普通私有能力无需修改 Core、Agent Server、Agent Runtime 或 UI。

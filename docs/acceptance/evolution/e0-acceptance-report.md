@@ -104,7 +104,7 @@ Vite 报告多个既有前端 Bundle 大于 500 kB；这是非阻断性能警告
 - `docs/插件化能力扩展实施计划.md`
 - `docs/architecture-v2.0/18-架构决策记录.md`
 - `docs/implementation-status.md`
-- `docs/e0-acceptance-report.md`
+- `docs/acceptance/evolution/e0-acceptance-report.md`
 
 ## 8. 退出条件
 

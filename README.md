@@ -6,7 +6,7 @@
 
 ## 当前进度
 
-V2.0 的 M0～M5 已完成本地工程与离线系统验收：
+V2.0 的 M0～M5 以及插件化演进 E0～E5 已完成本地工程与离线系统验收：
 
 - M0：pnpm Monorepo、TypeScript、质量工具以及 Deep Agents Tool、Skills、Subagents、Backend、Checkpointer、Runtime Context 和 Streaming 验证。
 - M1：Plugin SDK、可信 Plugin Loader、Capability Registry/Executor，以及 Product A/B 双 Adapter 自动挂载。
@@ -14,8 +14,10 @@ V2.0 的 M0～M5 已完成本地工程与离线系统验收：
 - M3：React 独立 Web、共享 Chat Core、受控 View Renderer、证据面板和管理状态查询。
 - M4：React SDK、JavaScript SDK、跨 Origin iframe，以及一次性票据换取短期凭证。
 - M5：A/B 独立部署配置、双实例 TCP 验收、标准契约一致性、安全/E2E、升级回滚和可观测性说明。
+- E0～E5：开放动态 Capability Contract、Manifest V2、Plugin Skill、领域标准契约包，以及插件
+  模板、版本化安装、禁用、回滚和诊断流程。
 
-当前业务 API、Identity Provider 和持久化存储仍是 Mock/内存实现。工程验收通过不等同于生产上线；详细边界见 [M5 验收报告](docs/m5-acceptance-report.md)和 [实施状态](docs/implementation-status.md)。
+当前业务 API、Identity Provider 和持久化存储仍是 Mock/内存实现。工程验收通过不等同于生产上线；详细边界见 [M5 验收报告](docs/acceptance/milestones/m5-acceptance-report.md)和 [实施状态](docs/implementation-status.md)。
 
 ## 核心原则
 
@@ -30,10 +32,10 @@ V2.0 的 M0～M5 已完成本地工程与离线系统验收：
 
 ```text
 Deep-Agents-AI-Assistant/
-├─ adapters/                         # 具体产品的业务 API → 标准 Capability 映射
+├─ adapters/                         # 具体产品的业务 API → 标准 Capability 映射（见目录 README）
 │  ├─ demo-product-a/                # Product A 示例插件及契约测试
 │  └─ demo-product-b/                # Product B 示例插件及契约测试
-├─ apps/
+├─ apps/                             # 可启动/发布的应用入口（见目录 README）
 │  ├─ agent-server/                  # Agent Server、REST/SSE、会话、Context、Evidence
 │  │  ├─ migrations/                 # 持久化模型参考迁移
 │  │  ├─ src/composition/            # 插件装配与应用 wiring
@@ -42,16 +44,20 @@ Deep-Agents-AI-Assistant/
 │  │  └─ src/server-main.ts          # 服务进程入口
 │  ├─ assistant-web/                 # 独立 React Web
 │  └─ assistant-embed/               # iframe 内运行的助手页面
-├─ core/
-│  ├─ capability/                    # 标准契约、Catalog、Registry、Executor
+├─ core/                             # 与业务和 Agent 框架无关的稳定内核（见目录 README）
+│  ├─ capability/                    # 通用 Contract、Catalog、Registry、Executor
 │  ├─ context/                       # Host Context、Normalized Context、Snapshot 契约
 │  ├─ evidence/                      # Evidence 安全解析与返回模型
 │  └─ policy/                        # 服务端 Capability 授权策略
-├─ packages/
+├─ domains/                          # 跨产品标准业务语义（见目录 README）
+│  ├─ data-map/                      # 数据地图标准 Capability Contract
+│  └─ data-quality/                  # 数据质量标准 Capability Contract
+├─ packages/                         # 可复用的平台技术组件（见目录 README）
 │  ├─ agent-runtime/                 # Deep Agents 薄封装与动态 Tool Factory
 │  ├─ assistant-sdk/                 # React Hook/组件和原生 JavaScript SDK
 │  ├─ assistant-transport/           # 版本化 REST/SSE 客户端与断流续传
 │  ├─ assistant-ui/                  # 独立 Web 与嵌入 Shell 共用的 Chat Core
+│  ├─ capability-contracts/          # 旧聚合导出的临时兼容层
 │  ├─ contracts/                     # Assistant API、事件和 View 公共契约
 │  ├─ iframe-bridge/                 # 跨 Origin 消息协议与校验
 │  ├─ plugin-runtime/                # 插件发现、校验、加载、生命周期和 Driver
@@ -69,8 +75,9 @@ Deep-Agents-AI-Assistant/
 │  └─ README.md                      # 双 Agent Server、Compose、升级/回滚
 ├─ docs/
 │  ├─ architecture-v2.0/             # 唯一架构设计基线和 M0～M5 阶段规范
+│  ├─ acceptance/                    # M0～M5 与 E0～E5 历史验收证据
 │  ├─ implementation-status.md       # 当前真实实施状态与生产边界
-│  └─ m0-acceptance-report.md ...    # 各阶段真实验收记录
+│  └─ plugin-development-guide.md   # 插件开发与接入指南
 ├─ skills/poc-data-quality/          # Deep Agents FilesystemBackend Skill 样例
 ├─ .env.example                      # 本地模型与 Agent Server 配置模板
 ├─ AGENTS.md                         # 仓库开发规则和架构约束
@@ -80,7 +87,18 @@ Deep-Agents-AI-Assistant/
 
 `node_modules/`、构建产物、测试输出、本地 `.env` 和本地参考源码目录不属于正式工程结构，不应提交。
 
-依赖方向遵循 `core → plugin-sdk/runtime → agent-runtime/server → UI/SDK`；Adapter 依赖标准契约和 Plugin SDK，Agent 核心不得依赖具体产品 Adapter。
+依赖方向遵循 `core → domains/plugin-sdk/runtime → agent-runtime/server → UI/SDK`；Adapter 依赖
+领域标准契约和 Plugin SDK，Agent 核心不得依赖具体产品 Adapter。
+
+### 一级目录导航
+
+| 目录 | 应该放什么 | 不应该放什么 | 详细说明 |
+| --- | --- | --- | --- |
+| `adapters/` | 产品 API 到标准 Capability 的可信映射 | Agent/UI 逻辑、标准 Contract 副本 | [adapters/README.md](adapters/README.md) |
+| `apps/` | 可启动和部署的应用入口、Composition Root | 可复用领域规则、产品字段映射 | [apps/README.md](apps/README.md) |
+| `core/` | Capability、Context、Policy、Evidence 通用内核 | 具体业务 ID、Deep Agents、React | [core/README.md](core/README.md) |
+| `domains/` | 跨产品标准业务契约和共享契约测试 | 产品 API 实现、Agent/UI | [domains/README.md](domains/README.md) |
+| `packages/` | SDK、Runtime、Transport、UI、跨端协议 | 具体业务语义和产品分支 | [packages/README.md](packages/README.md) |
 
 ### 前端页面与助手代码定位
 
@@ -235,9 +253,11 @@ A/B 独立部署（含本地同时起两个 Agent Server）、密钥边界、启
 - [架构基线与边界](docs/architecture-v2.0/01-架构基线与边界.md)
 - [工程结构与依赖规则](docs/architecture-v2.0/03-工程结构与依赖规则.md)
 - [安全、权限、证据与审计](docs/architecture-v2.0/08-安全权限证据与审计.md)
+- [外部认证与业务 API 委托调用流程](docs/外部认证与业务API调用流程.md)
 - [测试体系与质量门禁](docs/architecture-v2.0/16-测试体系与质量门禁.md)
 - [架构决策记录](docs/architecture-v2.0/18-架构决策记录.md)
-- [M5 验收报告](docs/m5-acceptance-report.md)
+- [验收记录索引](docs/acceptance/README.md)
+- [M5 验收报告](docs/acceptance/milestones/m5-acceptance-report.md)
 - [双产品演示指南](docs/dual-product-demo-guide.md)
 
 ## 安全提示

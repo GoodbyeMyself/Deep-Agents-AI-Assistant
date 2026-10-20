@@ -29,8 +29,6 @@
   references 的封闭判别联合。
 - `apps/agent-server/src/application/node-http.ts`：修复 Web `ReadableStream` 到 Node Response 的逐块转发，
   SSE 不再等待完整响应缓冲。
-- `docs/m3-preview.png`：端到端运行后的桌面页面快照。
-
 ## 技术验证结果
 
 - 实际版本：React 19.3.0、React DOM 19.3.0、Ant Design 6.6.6、Ant Design X 2.9.0、
