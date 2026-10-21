@@ -1,8 +1,9 @@
 import type {
-  AssistantChatAgentPort,
+  ChatAgentPort,
   MessageDto,
   SessionDto,
 } from "@assistant/assistant-transport";
+import type { AgUiEvent } from "@assistant/contracts";
 import type { RawHostContext } from "@assistant/context";
 import {
   FolderOutlined,
@@ -45,7 +46,7 @@ export function ChatWorkspace({
   sidebarFooter,
   layout = "default",
 }: {
-  transport: AssistantChatAgentPort;
+  transport: ChatAgentPort<AgUiEvent>;
   selectedObject?: SelectedBusinessObject;
   getContext?: () => RawHostContext | Promise<RawHostContext>;
   mode?: "assistant" | "standalone";

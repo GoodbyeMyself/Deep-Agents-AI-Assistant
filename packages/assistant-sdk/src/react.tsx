@@ -71,7 +71,7 @@ function AssistantSurfaceContent() {
   const selected = state.context?.object;
   const workspace = (
     <ChatWorkspace
-      transport={controller.transport}
+      transport={controller.chatTransport}
       mode="assistant"
       getContext={() => controller.getContext()}
       {...(controller.options.layout === undefined ? {} : { layout: controller.options.layout })}

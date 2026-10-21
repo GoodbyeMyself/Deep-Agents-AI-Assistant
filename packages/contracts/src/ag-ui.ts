@@ -1,11 +1,14 @@
-import { EventType, PROTOCOL_VERSION, type Event } from "@ag-ui/core";
-import { EventSchema } from "@ag-ui/core/schemas";
+import { EventType, PROTOCOL_VERSION, type Event, type RunAgentInput } from "@ag-ui/core";
+import { EventSchema, RunAgentInputSchema } from "@ag-ui/core/schemas";
 import { z } from "zod";
 
 import type { AssistantEvent } from "./index.js";
 import { assistantViewSchema } from "./views.js";
 
+export { EventType } from "@ag-ui/core";
+
 export const ENTERPRISE_ASSISTANT_METADATA_KEY = "enterprise-assistant";
+export const AG_UI_PROTOCOL_VERSION = PROTOCOL_VERSION;
 export const EVIDENCE_ADDED_EVENT_NAME = "enterprise.evidence.added.v1";
 export const VIEW_CREATED_EVENT_NAME = "enterprise.view.created.v1";
 const AG_UI_CURSOR_PREFIX = "agui1.";
@@ -42,6 +45,7 @@ export const enterpriseAssistantCustomEventSchema = z.discriminatedUnion("name",
 ]);
 
 export type AgUiEvent = Event;
+export type AgUiRunAgentInput = RunAgentInput;
 
 /**
  * AG-UI 的 Zod 输出类型把可选字段推导为 `field?: T | undefined`，与本仓库启用的
@@ -52,6 +56,11 @@ export const agUiEventSchema: { parse(value: unknown): AgUiEvent } = {
     return EventSchema.parse(value) as unknown as AgUiEvent;
   },
 };
+
+/** 使用官方 AG-UI Schema 校验标准 Agent 运行输入。 */
+export function parseAgUiRunAgentInput(value: unknown): AgUiRunAgentInput {
+  return RunAgentInputSchema.parse(value) as unknown as AgUiRunAgentInput;
+}
 
 export interface AgUiProjectionState {
   readonly textMessageOpen: boolean;

@@ -1,4 +1,4 @@
-import type { AssistantEvent, AssistantView } from "@assistant/contracts";
+import type { AgUiEvent, AssistantView } from "@assistant/contracts";
 
 export interface ChatMessage {
   id: string;
@@ -27,6 +27,6 @@ export type ChatAction =
   | { type: "reset"; messages: ChatMessage[] }
   | { type: "submit"; user: ChatMessage; assistant: ChatMessage; runId?: string }
   | { type: "run-bound"; runId: string }
-  | { type: "event"; event: AssistantEvent }
+  | { type: "event"; event: AgUiEvent }
   | { type: "failed"; message: string }
   | { type: "cancelled" };

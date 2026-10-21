@@ -1,4 +1,5 @@
-import type { AssistantChatAgentPort } from "@assistant/assistant-transport";
+import type { ChatAgentPort } from "@assistant/assistant-transport";
+import type { AgUiEvent } from "@assistant/contracts";
 import { RobotOutlined, UserOutlined } from "@ant-design/icons";
 import { Bubble } from "@ant-design/x";
 import { Avatar, Empty, Space } from "antd";
@@ -42,7 +43,7 @@ function AssistantMessageBody({
   transport,
 }: {
   message: ChatMessage;
-  transport: AssistantChatAgentPort;
+  transport: ChatAgentPort<AgUiEvent>;
 }) {
   return (
     <Space orientation="vertical" size={12} className="assistant-message-content">
@@ -69,7 +70,7 @@ export function MessageList({
   onPrompt,
 }: {
   messages: ChatMessage[];
-  transport: AssistantChatAgentPort;
+  transport: ChatAgentPort<AgUiEvent>;
   objectName?: string;
   prompts?: readonly string[];
   onPrompt?: (value: string) => void;

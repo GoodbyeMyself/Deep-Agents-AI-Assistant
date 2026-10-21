@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs } from "react/jsx-runtime";
-import { AssistantApiError, AssistantApiTransport } from "@assistant/assistant-transport";
+import { AgUiChatAgentPort, AssistantApiError, AssistantApiTransport, } from "@assistant/assistant-transport";
 import { ChatWorkspace } from "@assistant/assistant-ui";
 import { AppstoreOutlined, HomeOutlined, MessageOutlined } from "@ant-design/icons";
 import { PageContainer, ProCard, ProLayout } from "@ant-design/pro-components";
@@ -116,7 +116,8 @@ function IdentitySelect({ profile, onChange, }) {
                 })) })] }));
 }
 function AssistantChatPage({ transport, selectedObject, profileKey, }) {
-    return (_jsx("div", { className: "assistant-web-chat-host", children: _jsx(ChatWorkspace, { transport: transport, selectedObject: selectedObject, workspaceClassName: "codex-workspace" }, profileKey) }));
+    const chatTransport = useMemo(() => new AgUiChatAgentPort(transport), [transport]);
+    return (_jsx("div", { className: "assistant-web-chat-host", children: _jsx(ChatWorkspace, { transport: chatTransport, selectedObject: selectedObject, workspaceClassName: "codex-workspace" }, profileKey) }));
 }
 function useAppOutletContext() {
     const context = useOutletContext();

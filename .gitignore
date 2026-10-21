@@ -21,6 +21,7 @@ cache
 .temp
 deploy/out/
 deploy/.pack-tmp/
+/源码 Deep agents/
 
 # Editor directories and files
 .vscode/*

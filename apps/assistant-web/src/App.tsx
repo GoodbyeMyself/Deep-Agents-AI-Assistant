@@ -1,4 +1,8 @@
-import { AssistantApiError, AssistantApiTransport } from "@assistant/assistant-transport";
+import {
+  AgUiChatAgentPort,
+  AssistantApiError,
+  AssistantApiTransport,
+} from "@assistant/assistant-transport";
 import { ChatWorkspace, type SelectedBusinessObject } from "@assistant/assistant-ui";
 import { AppstoreOutlined, HomeOutlined, MessageOutlined } from "@ant-design/icons";
 import { PageContainer, ProCard, ProLayout } from "@ant-design/pro-components";
@@ -240,11 +244,12 @@ function AssistantChatPage({
   selectedObject: SelectedBusinessObject;
   profileKey: Profile;
 }) {
+  const chatTransport = useMemo(() => new AgUiChatAgentPort(transport), [transport]);
   return (
     <div className="assistant-web-chat-host">
       <ChatWorkspace
         key={profileKey}
-        transport={transport}
+        transport={chatTransport}
         selectedObject={selectedObject}
         workspaceClassName="codex-workspace"
       />

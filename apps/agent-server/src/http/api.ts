@@ -12,6 +12,7 @@ import type { IdentityProvider } from "../modules/identity/identity.js";
 import type { AgentService } from "../modules/session/service.js";
 import { ServiceError } from "../shared/errors.js";
 import { createAgUiEventStream } from "./ag-ui-events.js";
+import { createAgUiRun } from "./ag-ui-run.js";
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -44,6 +45,7 @@ function sseFrame(eventId: string, eventType: string, data: unknown): string {
 function eventStreamResponse<T>(
   events: AsyncGenerator<T>,
   serialize: (event: T) => string,
+  onCancel?: () => void | Promise<void>,
 ): Response {
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -56,7 +58,11 @@ function eventStreamResponse<T>(
       }
     },
     async cancel() {
-      await events.return(undefined);
+      try {
+        await onCancel?.();
+      } finally {
+        await events.return(undefined);
+      }
     },
   });
   return new Response(stream, {
@@ -129,6 +135,14 @@ export function createApiHandler(options: {
           201,
         );
       }
+      if (url.pathname === "/api/v1/ag-ui" && request.method === "POST") {
+        const run = createAgUiRun(options.service, principal, await body(request));
+        return eventStreamResponse(
+          run.events,
+          (event: AgUiEvent) => sseFrame(getAgUiEventCursor(event), event.type, event),
+          () => options.service.runner.cancel(run.runId, principal),
+        );
+      }
       if (url.pathname === "/api/v1/embed/tickets" && request.method === "POST") {
         if (options.embedTickets === undefined)
           throw new ServiceError("NOT_FOUND", "Resource not found.", 404);
@@ -199,9 +213,7 @@ export function createApiHandler(options: {
           sseFrame(event.eventId, event.type, event),
         );
       }
-      const agUiEventsMatch = url.pathname.match(
-        /^\/api\/v1\/runs\/([0-9a-f-]+)\/ag-ui\/events$/i,
-      );
+      const agUiEventsMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)\/ag-ui\/events$/i);
       if (agUiEventsMatch?.[1] !== undefined && request.method === "GET") {
         const cursor =
           request.headers.get("last-event-id") ?? url.searchParams.get("cursor") ?? undefined;

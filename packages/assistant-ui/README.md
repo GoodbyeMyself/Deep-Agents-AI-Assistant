@@ -23,7 +23,7 @@ src/
 │   ├── ChatWorkspace.tsx
 │   ├── MessageList.tsx
 │   ├── ChatComposer.tsx
-│   ├── store.ts          # chatReducer，消费 AssistantEvent 流
+│   ├── store.ts          # chatReducer，消费 AG-UI 1.0 事件流
 │   └── types.ts
 ├── execution/            # Tool / Subagent 执行过程展示
 │   └── ExecutionTimeline.tsx
@@ -40,25 +40,25 @@ src/
 
 | 导出 | 说明 |
 | --- | --- |
-| `ChatWorkspace` | 会话列表、消息区、Run 与上下文的主工作区；依赖 `AssistantApiTransport`。 |
+| `ChatWorkspace` | 会话列表、消息区、Run 与上下文的主工作区；依赖 `ChatAgentPort<AgUiEvent>`。 |
 | `MessageList`、`ChatComposer` | 流式气泡与 Sender 输入区。 |
 | `ExecutionTimeline` | Tool / Subagent 执行步骤（ThoughtChain）。 |
 | `EvidencePanel` | 按引用 ID 拉取并展示 Evidence。 |
 | `AssistantViewRenderer` | 校验并渲染契约内 `AssistantView`。 |
 | `SafeContent` | 转义 HTML 的 Markdown 展示。 |
-| `chatReducer`、`initialChatState` | 将 Transport SSE 事件合并为 `ChatState`。 |
+| `chatReducer`、`initialChatState` | 将 AG-UI 生命周期、文本、Tool、Subagent 与企业 Custom 事件合并为单一 `ChatState`。 |
 | `ChatMessage`、`ChatState`、`PublicExecutionStep` | 聊天 UI 状态类型。 |
 | `DEFAULT_ASSISTANT_COLOR_PRIMARY`、`resolveAssistantColorPrimary` | Ant Design `colorPrimary` 默认值与解析。 |
 | `@assistant/assistant-ui/styles.css` | 组件配套样式。 |
 
 ## 安全边界
 
-本包只渲染白名单 View 类型，不执行后端或插件提供的 HTML/JavaScript。`SafeContent` 开启 `escapeRawHtml`；UI 中的权限提示不替代服务端授权。
+本包只渲染白名单 View 类型，不执行后端或插件提供的 HTML/JavaScript。Evidence 与 View 仅消费通过项目 Schema 校验的企业 AG-UI `CUSTOM` 事件；Tool 结果只读取公开状态，不渲染参数或原始业务结果。`SafeContent` 开启 `escapeRawHtml`；UI 中的权限提示不替代服务端授权。
 
 ## 验证
 
 ```bash
 pnpm --filter @assistant/assistant-ui build
 pnpm --filter @assistant/assistant-ui typecheck
-pnpm --filter @assistant/assistant-ui test
+pnpm test:ag-ui-chat-core
 ```

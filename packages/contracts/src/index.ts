@@ -82,6 +82,7 @@ export const openApiDocument = {
   openapi: "3.1.0",
   info: { title: "Enterprise AI Assistant API", version: "1.0.0-m3" },
   paths: {
+    "/api/v1/ag-ui": { post: { summary: "Run an agent using AG-UI 1.0 input and SSE events" } },
     "/api/v1/context/snapshots": { post: { summary: "Create an authorized context snapshot" } },
     "/api/v1/sessions": {
       get: { summary: "List owned sessions" },

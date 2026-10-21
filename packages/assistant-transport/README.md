@@ -4,7 +4,12 @@
 
 ## 流式能力
 
-`watchRun` 消费 SSE 事件，维护事件游标和去重集合，并在网络中断后按配置重连。事件进入 UI 前会通过共享契约校验。
+`AssistantApiTransport.watchRun` 保留私有 `AssistantEvent` 兼容路径；默认 Shared Chat Core 通过
+`AgUiChatAgentPort.watchRun` 消费 `/runs/{id}/ag-ui/events`。两条路径读取同一持久 Run 日志，
+维护各自游标和去重集合，并在网络中断后按配置重连。事件进入 UI 前会通过共享契约校验。
+
+Run 创建、状态查询、显式取消、Session、ContextSnapshot 与 Evidence 仍使用受治理 REST；切换
+AG-UI 事件格式不会建立第二个 Run，也不会把客户端 Context 或 Tool 当成授权依据。
 
 ## 安全边界
 

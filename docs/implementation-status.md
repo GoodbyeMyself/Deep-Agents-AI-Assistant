@@ -1,6 +1,6 @@
 # 实施状态
 
-更新日期：2026-10-20
+更新日期：2026-10-21
 
 ## M0：工程初始化与框架验证
 
@@ -262,3 +262,87 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - `assistant-transport` 新增 `ChatAgentPort<TEvent>`、`AssistantChatAgentPort` 和 `AgUiChatAgentPort`；Shared Chat Core 已依赖旧事件端口抽象，但运行行为未切换。
 - 新增 `tests/ag-ui-endpoint/endpoint.test.mjs`，覆盖完整事件流、敏感字段不出站、子事件级重连、非法游标、跨用户 Run 和 AG-UI 客户端端口。
 - 用户已在仓库根目录手动执行 `pnpm test:ag-ui-endpoint`、`pnpm test`、`pnpm lint`、`pnpm typecheck`、`pnpm build` 并确认全部通过；Lint 首次发现的问题修复后已复验通过。
+
+## AG-UI 标准命令入口
+
+状态：完成并通过工程阶段退出门禁，详见 [AG-UI 标准命令入口验收报告](acceptance/evolution/ag-ui-command-acceptance-report.md)；尚未引入 CopilotKit。
+
+- 新增 `POST /api/v1/ag-ui`，以官方 AG-UI 1.0 `RunAgentInput` Schema 接收命令，并通过既有 AgentService 创建受控、持久且幂等的 Run。
+- `threadId` 必须指向当前用户和租户的活动 Session；ContextSnapshot 引用必须经 `forwardedProps.enterprise-assistant.contextSnapshotId` 提供并再次鉴权。
+- AG-UI `context/state` 不构成授权；客户端 Tool、非文本内容和 interrupt resume 当前返回受控 `4xx`，不进入 Agent Runtime。
+- 返回流继续读取同一 AssistantEvent 日志；公开生命周期使用客户端 `runId` 保持 AG-UI 调用一致性，服务端 Run ID 仍由平台生成。
+- 新增 `tests/ag-ui-command/command.test.mjs`，覆盖标准输入流、Context/State 伪造不生效、Tool/多模态/resume 拒绝、快照与 Session 越权和未认证请求。
+- 用户已在仓库根目录手动执行 `pnpm test:ag-ui-command`、`pnpm test`、`pnpm lint`、`pnpm typecheck`、`pnpm build` 并确认全部通过。
+
+## CopilotKit 可选 Shell Spike
+
+状态：完成并通过工程阶段退出门禁；详见
+[CopilotKit 可选 Shell Spike 验收报告](acceptance/evolution/copilotkit-shell-spike-acceptance-report.md)。
+
+- 独立应用位于 `apps/copilotkit-shell-spike`，不加入 `assistant-ui` 核心依赖，也不替换默认 Ant Design X Shell。
+- 锁定 `@copilotkit/react-core@1.79.1` 与 `@ag-ui/client@1.0.3`；CopilotKit 1.79.1 内置
+  `@ag-ui/client@1.0.2`，两者协议版本均为 `1.0`；专项测试覆盖直接客户端协议调用，Vite 构建
+  覆盖 CopilotKit v2 入口与其内置客户端的实际打包。
+- 页面先通过既有 `AssistantApiTransport` 创建受治理 Session 与 ContextSnapshot，再以
+  `forwardedProps.enterprise-assistant.contextSnapshotId` 调用 `POST /api/v1/ag-ui`；身份头只保存在
+  当前内存实例，不写入 URL 或浏览器持久存储。
+- 仅使用官方开发用途的 `agents__unsafe_dev_only` 注册本地 Agent；不使用 CopilotKit Cloud/Runtime，
+  不注册客户端 Tool，不接管身份、权限、Context、Evidence 或持久 Run。
+- CopilotKit STOP 通过标准 `HttpAgent.abortRun()` 中止 AG-UI HTTP 流；Agent Server 将该流的提前
+  取消映射到创建流时已认证 principal 对应的内部 durable Run，不信任客户端 `runId`。
+- 新增 `test:copilotkit-spike`，验证官方 `@ag-ui/client@1.0.3` 和 CopilotKit 1.79.1 内置客户端
+  版本约束；Vite 构建验证 CopilotKit 前端入口可打包，直接 AG-UI 客户端测试验证相同受治理端点。
+  默认 Ant Design X Shell 与 Shared Chat Core 未修改。
+- Spike Vite 构建已通过，但 CopilotKit Chat 主产物约 `2,036.77 kB`（gzip `586.36 kB`），并带出
+  大量 Markdown/代码高亮动态资源；在完成 bundle 预算、按需能力和真实加载性能评估前，不满足默认
+  Shell 替换条件。
+- 2026-10-21 已确认 `pnpm test:copilotkit-spike`、`pnpm test`、`pnpm lint`、
+  `pnpm typecheck` 与其前置 `pnpm build` 全部通过。
+
+## CopilotKit Shell 真实浏览器验收
+
+状态：完成并通过本轮浏览器验收，详见
+[CopilotKit Shell 浏览器验收报告](acceptance/evolution/copilotkit-shell-browser-acceptance-report.md)。
+
+- 使用正式 `createApiHandler`、`AgentService`、Mock Identity、ContextService 和内存 Store 启动
+  本地浏览器 fixture；仅 Agent Runner 回复为确定性 Mock，不调用真实模型或外部业务 API。
+- 真实浏览器确认页面创建 Session/ContextSnapshot 后进入 `LINK READY`，CopilotChat 用户消息经
+  `POST /api/v1/ag-ui` 返回并渲染助手文本。
+- 从业务用户 A 切换到业务用户 B 后，业务对象、Session ID 与 Snapshot ID 均变化，未复用前一
+  身份的客户端绑定；浏览器控制台无业务错误，仅有 Lit 开发模式提示。
+- 当前环境没有 Python Playwright，因此本轮使用内置浏览器自动化完成，尚未形成可在 CI 重复执行
+  的端到端测试；fixture 已保留在 Spike 测试目录，且不进入生产 Server。
+
+## AG-UI durable run 取消桥接
+
+状态：完成本阶段实现并通过定向门禁，详见
+[AG-UI durable run 取消桥接验收报告](acceptance/evolution/ag-ui-cancel-acceptance-report.md)。
+
+- `POST /api/v1/ag-ui` 返回的 SSE 被提前取消时，服务端调用现有 `AgentRunner.cancel`，使浏览器
+  `HttpAgent.abortRun()` 不只停止本地读取，也取消持久运行。
+- 取消只使用服务端创建的内部 Run ID 与请求认证后的 principal；AG-UI 客户端 `runId` 不参与
+  定位或授权，内部 Run ID 不写入公开事件或响应头。
+- Node HTTP 适配层监听响应提前关闭并取消对应 Web Stream；正常完成的响应不会触发取消。
+- GET `/runs/{id}/events` 与 `/runs/{id}/ag-ui/events` 仍是可重连读取流，读取端断开不会改变
+  Run 状态。
+- `test:ag-ui-command` 新增真实本地 HTTP 断连场景，断言取消落到内部 Run、主体为原认证用户，
+  且客户端提供的 `runId` 不能选中服务端资源。
+
+## Ant Design X Shared Chat Core 默认切换 AG-UI
+
+状态：完成并通过工程阶段退出门禁，详见
+[Shared Chat Core AG-UI 切换验收报告](acceptance/evolution/ag-ui-shared-chat-core-acceptance-report.md)。
+
+- `assistant-ui` 的单一 ChatStore 已从私有 `AssistantEvent` reducer 切换到 AG-UI 1.0，覆盖文本、
+  Tool、Subagent、成功/失败/取消，以及严格校验的 Evidence/View 企业 `CUSTOM` 事件。
+- 独立 Web 与 React/JavaScript/iframe SDK 默认使用 `AgUiChatAgentPort`；Ant Design X 继续负责
+  Bubble、Sender、ThoughtChain 和受控 View 渲染，未引入 CopilotKit 核心依赖或第二套状态源。
+- 默认路径仍先通过企业 REST 创建 Session、ContextSnapshot 和持久 Run，再读取同一 Run 的
+  `/api/v1/runs/{id}/ag-ui/events`；状态查询、显式取消、Evidence 再鉴权和精确游标重连保持不变。
+- 新增 `test:ag-ui-chat-core`，覆盖完整事件归一化、投影子事件去重、Tool 原始结果不进入 UI、
+  Evidence/View、安全终态和失败码展示。
+- 真实 Chromium 已验证默认 Ant Design X Shell 提交消息并显示 AG-UI 回答，切换模拟身份后会话
+  视图清空且业务对象变化，浏览器控制台无错误。测试使用确定性 Mock Runner，不冒充真实模型。
+- 2026-10-21 已确认 `pnpm test`、`pnpm lint`、`pnpm typecheck` 及其全量 `pnpm build` 通过；
+  CopilotKit 构建在受限沙箱内首次遇到 pnpm store `os error 5`，允许读取同一本地 store 后原命令
+  复跑通过。

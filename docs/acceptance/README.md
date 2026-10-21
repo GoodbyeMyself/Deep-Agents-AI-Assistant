@@ -20,6 +20,10 @@
 - [E4：标准能力包拆分与 Adapter 迁移](evolution/e4-acceptance-report.md)
 - [E5：系统验收、发布流程与文档收口](evolution/e5-acceptance-report.md)
 
+## AG-UI 协议与前端演进
+
+- [Ant Design X Shared Chat Core 默认切换 AG-UI](evolution/ag-ui-shared-chat-core-acceptance-report.md)
+
 ## 维护规则
 
 - 新的阶段验收报告应放入对应分类，不再平铺到 `docs/` 根目录。

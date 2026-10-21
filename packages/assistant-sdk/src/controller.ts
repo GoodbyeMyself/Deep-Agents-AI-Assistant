@@ -1,5 +1,5 @@
 import type { AssistantColorTheme } from "@assistant/assistant-ui";
-import { AssistantApiTransport } from "@assistant/assistant-transport";
+import { AgUiChatAgentPort, AssistantApiTransport } from "@assistant/assistant-transport";
 import { rawHostContextSchema, type RawHostContext } from "@assistant/context";
 
 export type AssistantPresentation = "floating" | "drawer" | "inline";
@@ -29,6 +29,7 @@ type Listener = () => void;
 
 export class AssistantController {
   readonly transport: AssistantApiTransport;
+  readonly chatTransport: AgUiChatAgentPort;
   readonly options: AssistantSdkOptions;
   #context: RawHostContext | undefined;
   #mounted = false;
@@ -48,6 +49,7 @@ export class AssistantController {
       ...(options.apiBaseUrl === undefined ? {} : { apiBaseUrl: options.apiBaseUrl }),
       getAccessCredential: options.getAccessCredential,
     });
+    this.chatTransport = new AgUiChatAgentPort(this.transport);
   }
 
   getState(): AssistantSdkState {

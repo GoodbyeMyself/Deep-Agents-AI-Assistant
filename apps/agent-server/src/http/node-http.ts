@@ -58,15 +58,27 @@ async function dispatch(
       response.end();
       return;
     }
-    const reader = webResponse.body.getReader() as {
-      read(): Promise<{ done: boolean; value?: Uint8Array }>;
+    const reader = webResponse.body.getReader();
+    let disconnected = false;
+    let cancellation: Promise<void> | undefined;
+    const cancelReader = () => {
+      if (response.writableEnded) return;
+      disconnected = true;
+      cancellation ??= reader.cancel("HTTP client disconnected");
     };
-    while (true) {
-      const result = await reader.read();
-      if (result.done) break;
-      if (result.value !== undefined) response.write(Buffer.from(result.value));
+    response.once("close", cancelReader);
+    try {
+      while (!disconnected) {
+        const result = await reader.read();
+        if (result.done) break;
+        if (result.value !== undefined && !response.destroyed)
+          response.write(Buffer.from(result.value));
+      }
+      if (!response.destroyed) response.end();
+      await cancellation;
+    } finally {
+      response.off("close", cancelReader);
     }
-    response.end();
   } catch (error) {
     const safe =
       error instanceof NodeRequestError

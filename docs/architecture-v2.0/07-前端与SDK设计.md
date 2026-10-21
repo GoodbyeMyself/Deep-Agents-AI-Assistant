@@ -32,7 +32,7 @@ Application Shell
 
 AG-UI 1.0 可作为 `ChatAgentPort` 的标准事件语义，但不取代 Session、ContextSnapshot、Evidence 和管理 REST API。CopilotKit 若接入，只能实现独立可选 Shell/Adapter；`assistant-ui` 不直接依赖 `@copilotkit/*`，默认 Ant Design X Shell 与 React/JS/iframe SDK 在移除 CopilotKit 包后仍须独立构建和运行。
 
-`assistant-transport` 提供泛型 `ChatAgentPort<TEvent>`。现有 Shared Chat Core 使用 `AssistantChatAgentPort` 保持原事件行为；`AgUiChatAgentPort` 复用同一 REST、身份凭证、ContextSnapshot、Run、取消和 Evidence API，只把运行事件切换到 AG-UI 双协议端点。两种端口不得各自创建同一业务 Run。
+`assistant-transport` 提供泛型 `ChatAgentPort<TEvent>`。默认 Shared Chat Core 使用 `AgUiChatAgentPort`，复用同一 REST、身份凭证、ContextSnapshot、持久 Run、显式取消和 Evidence API，只把运行事件切换到 AG-UI 双协议端点。`AssistantApiTransport.watchRun` 保留为旧协议兼容路径，不与 AG-UI 端口同时消费或各自创建同一业务 Run。`POST /ag-ui` 继续服务标准客户端和可选 Shell，不作为默认 Ant Design X Core 的创建 Run 路径。
 
 ## 4. 稳定 SDK 公共接口（平台自研）
 

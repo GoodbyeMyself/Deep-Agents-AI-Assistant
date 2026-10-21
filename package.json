@@ -17,6 +17,7 @@
     "build": "pnpm -r --if-present build",
     "dev:server": "pnpm --filter @assistant/agent-server serve",
     "dev:web": "pnpm --filter @assistant/assistant-web dev",
+    "dev:copilotkit-spike": "pnpm --filter @assistant/copilotkit-shell-spike dev",
     "dev:sdk-host": "pnpm --filter @assistant/demo-host dev",
     "dev:embed": "pnpm --filter @assistant/assistant-embed dev",
     "demo:a:server": "pnpm --filter @assistant/demo-server serve:product-a",
@@ -28,7 +29,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint . --max-warnings=0",
-    "test": "pnpm test:e0 && pnpm test:e1 && pnpm test:e2 && pnpm test:e3 && pnpm test:e4 && pnpm test:e5 && pnpm test:ag-ui-poc && pnpm test:ag-ui-endpoint",
+    "test": "pnpm test:e0 && pnpm test:e1 && pnpm test:e2 && pnpm test:e3 && pnpm test:e4 && pnpm test:e5 && pnpm test:ag-ui-poc && pnpm test:ag-ui-endpoint && pnpm test:ag-ui-command && pnpm test:ag-ui-chat-core && pnpm test:copilotkit-spike",
     "test:e0": "pnpm --filter @assistant/capability-contracts... --filter @assistant/agent-runtime... --filter @assistant/plugin-runtime... --filter @assistant/demo-product-a... --filter @assistant/demo-product-b... build && node --test tests/e0-regression/baseline.test.mjs",
     "test:e1": "pnpm --filter @assistant/agent-runtime... --filter @assistant/plugin-sdk... build && pnpm --filter @assistant/plugin-sdk typecheck && node --test tests/e1-regression/dynamic-catalog.test.mjs",
     "test:e2": "pnpm --filter @assistant/agent-runtime... --filter @assistant/plugin-runtime... build && node --test tests/e2-regression/plugin-bundle-v2.test.mjs",
@@ -37,6 +38,9 @@
     "test:e5": "pnpm --filter @assistant/capability-contracts... --filter @assistant/agent-runtime... --filter @assistant/plugin-runtime... build && node --test tests/e5-regression/plugin-release.test.mjs",
     "test:ag-ui-poc": "pnpm --filter @assistant/contracts build && node --test tests/ag-ui-poc/projection.test.mjs",
     "test:ag-ui-endpoint": "pnpm --filter @assistant/agent-server... --filter @assistant/assistant-transport... build && node --test tests/ag-ui-endpoint/endpoint.test.mjs",
+    "test:ag-ui-command": "pnpm --filter @assistant/agent-server... build && node --test tests/ag-ui-command/command.test.mjs",
+    "test:ag-ui-chat-core": "pnpm --filter @assistant/assistant-ui... build && node --test tests/ag-ui-chat-core/chat-store.test.mjs",
+    "test:copilotkit-spike": "pnpm --filter @assistant/agent-server... --filter @assistant/copilotkit-shell-spike build && node --test apps/copilotkit-shell-spike/tests/http-agent.test.mjs",
     "typecheck": "pnpm build && pnpm -r --if-present typecheck"
   },
   "devDependencies": {

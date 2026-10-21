@@ -11,6 +11,7 @@ export default tseslint.config(
       "**/dist-types/**",
       "**/coverage/**",
       "deepagentsjs/**",
+      "源码 Deep agents/**",
       "deploy/out/**",
       "deploy/.pack-tmp/**",
       "templates/plugin-bundle-v2/**",
