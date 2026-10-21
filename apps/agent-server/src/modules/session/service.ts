@@ -3,6 +3,7 @@ import {
   createRunRequestSchema,
   createSessionRequestSchema,
   patchSessionRequestSchema,
+  resumeRunRequestSchema,
 } from "@assistant/contracts";
 
 import type { ContextService } from "../context/context-service.js";
@@ -60,6 +61,17 @@ export class AgentService {
     const input = parseOrThrow(createRunRequestSchema, body);
     const result = this.store.createRun({ principal, sessionId, ...input });
     if (result.created) this.runner.start(result.run, principal);
+    return result.run;
+  }
+
+  resumeRun(runId: string, body: unknown, principal: VerifiedPrincipal) {
+    const input = parseOrThrow(resumeRunRequestSchema, body);
+    const result = this.store.createResumeRun({
+      principal,
+      interruptedRunId: runId,
+      response: input,
+    });
+    if (result.created) this.runner.resume(result.run, principal, input);
     return result.run;
   }
 }

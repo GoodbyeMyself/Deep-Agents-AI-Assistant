@@ -1,13 +1,24 @@
 import type { Evidence } from "@assistant/capability-core";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
-import { assistantViewSchema } from "@assistant/contracts";
+import {
+  assistantViewSchema,
+  enterpriseApprovalInterruptValueSchema,
+  type AssistantInterrupt,
+  type ResumeRunRequest,
+} from "@assistant/contracts";
 import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
+import { Command } from "@langchain/langgraph";
 import { randomUUID } from "node:crypto";
 
 import type { InMemoryAgentStore, RunRecord } from "./store.js";
 
 export interface StreamingAgent {
   stream(input: unknown, config: unknown): Promise<AsyncIterable<unknown>>;
+  getState?(config: unknown): Promise<{
+    readonly tasks?: readonly {
+      readonly interrupts?: readonly { readonly id?: string; readonly value?: unknown }[];
+    }[];
+  }>;
 }
 
 function tuple(value: unknown): { namespace: string[]; message: unknown } | undefined {
@@ -74,9 +85,23 @@ export class AgentRunner {
   ) {}
 
   start(run: RunRecord, principal: VerifiedPrincipal): void {
+    this.#start(run, principal, { type: "message" });
+  }
+
+  resume(run: RunRecord, principal: VerifiedPrincipal, response: ResumeRunRequest): void {
+    this.#start(run, principal, { type: "resume", response });
+  }
+
+  #start(
+    run: RunRecord,
+    principal: VerifiedPrincipal,
+    input:
+      | { readonly type: "message" }
+      | { readonly type: "resume"; readonly response: ResumeRunRequest },
+  ): void {
     const controller = new AbortController();
     this.#controllers.set(run.id, controller);
-    const completion = this.#execute(run, principal, controller.signal).finally(() =>
+    const completion = this.#execute(run, principal, controller.signal, input).finally(() =>
       this.#controllers.delete(run.id),
     );
     this.#completions.set(run.id, completion);
@@ -94,11 +119,21 @@ export class AgentRunner {
     this.store.appendEvent(runId, "run.cancelled", { reason: "user_requested" });
   }
 
-  async #execute(run: RunRecord, principal: VerifiedPrincipal, signal: AbortSignal): Promise<void> {
+  async #execute(
+    run: RunRecord,
+    principal: VerifiedPrincipal,
+    signal: AbortSignal,
+    input:
+      | { readonly type: "message" }
+      | { readonly type: "resume"; readonly response: ResumeRunRequest },
+  ): Promise<void> {
     const session = this.store.requireSession(run.sessionId, principal);
     const snapshot = this.store.requireSnapshot(run.contextSnapshotId, principal);
     this.store.setRunStatus(run.id, "running");
-    this.store.appendEvent(run.id, "run.started", { modelConfigVersion: run.modelConfigVersion });
+    this.store.appendEvent(run.id, "run.started", {
+      modelConfigVersion: run.modelConfigVersion,
+      ...(run.resumedFromRunId === undefined ? {} : { resumedFromRunId: run.resumedFromRunId }),
+    });
     const executionContextId = randomUUID();
     let assistantText = "";
     const evidenceRefs = new Set<string>();
@@ -106,9 +141,7 @@ export class AgentRunner {
     const toolCallIds = new Set<string>();
 
     try {
-      const stream = await this.agent.stream(
-        { messages: [new HumanMessage(messageWithContext(run.message, snapshot))] },
-        {
+      const config = {
           context: {
             executionContextId,
             contextSnapshotId: snapshot.id,
@@ -129,8 +162,20 @@ export class AgentRunner {
           subgraphs: true,
           recursionLimit: 50,
           signal,
-        },
-      );
+        };
+      const agentInput =
+        input.type === "message"
+          ? { messages: [new HumanMessage(messageWithContext(run.message, snapshot))] }
+          : new Command({
+              resume:
+                input.response.status === "resolved"
+                  ? input.response.payload
+                  : {
+                      __agui_cancelled__: true,
+                      interrupt_id: input.response.interruptId,
+                    },
+            });
+      const stream = await this.agent.stream(agentInput, config);
 
       for await (const raw of stream) {
         if (signal.aborted) break;
@@ -188,6 +233,23 @@ export class AgentRunner {
       for (const namespace of subagentNamespaces)
         this.store.appendEvent(run.id, "subagent.completed", { namespace });
       if (signal.aborted) return;
+      const interrupts = await this.#readInterrupts(config);
+      if (interrupts.length > 0) {
+        if (assistantText.length > 0)
+          this.store.addMessage({
+            sessionId: session.id,
+            runId: run.id,
+            role: "assistant",
+            content: assistantText,
+            evidenceRefs: [...evidenceRefs],
+          });
+        this.store.registerInterrupts(run.id, interrupts);
+        for (const interrupt of interrupts)
+          this.store.appendEvent(run.id, "approval.required", interrupt);
+        this.store.setRunStatus(run.id, "interrupted");
+        this.store.appendEvent(run.id, "run.interrupted", { interrupts });
+        return;
+      }
       this.store.addMessage({
         sessionId: session.id,
         runId: run.id,
@@ -205,5 +267,26 @@ export class AgentRunner {
         message: "The agent run failed.",
       });
     }
+  }
+
+  async #readInterrupts(config: unknown): Promise<AssistantInterrupt[]> {
+    if (this.agent.getState === undefined) return [];
+    const snapshot = await this.agent.getState(config);
+    const rawInterrupts = (snapshot.tasks ?? []).flatMap((task) => task.interrupts ?? []);
+    if (rawInterrupts.length > 1)
+      throw new Error("Parallel interrupts are not supported by the governed approval flow.");
+    return rawInterrupts.map((interrupt) => {
+      const value = enterpriseApprovalInterruptValueSchema.parse(interrupt.value);
+      return {
+        id: interrupt.id ?? randomUUID(),
+        reason: value.reason,
+        message: value.message,
+        ...(value.toolCallId === undefined ? {} : { toolCallId: value.toolCallId }),
+        ...(value.responseSchema === undefined
+          ? {}
+          : { responseSchema: value.responseSchema }),
+        ...(value.expiresAt === undefined ? {} : { expiresAt: value.expiresAt }),
+      };
+    });
   }
 }

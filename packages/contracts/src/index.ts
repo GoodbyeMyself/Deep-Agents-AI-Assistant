@@ -5,6 +5,7 @@
 import { z } from "zod";
 
 export { assistantViewSchema, type AssistantView } from "./views.js";
+export * from "./interrupts.js";
 
 // --- HTTP API：统一错误与写操作请求体 ---
 
@@ -50,6 +51,8 @@ export const assistantEventTypeSchema = z.enum([
   "view.created",
   "subagent.started",
   "subagent.completed",
+  "approval.required",
+  "run.interrupted",
   "run.completed",
   "run.failed",
   "run.cancelled",
@@ -97,6 +100,9 @@ export const openApiDocument = {
       get: { summary: "Read or replay the AG-UI 1.0 event projection" },
     },
     "/api/v1/runs/{id}/cancel": { post: {} },
+    "/api/v1/runs/{id}/resume": {
+      post: { summary: "Resolve an AG-UI interrupt and continue the governed run" },
+    },
     "/api/v1/evidence/{referenceId}": { get: { summary: "Resolve evidence after authorization" } },
     "/api/v1/models": { get: { summary: "List safe model metadata for this deployment" } },
     "/api/v1/plugins": { get: { summary: "List installed plugin status" } },

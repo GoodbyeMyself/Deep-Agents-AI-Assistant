@@ -3,9 +3,11 @@ import { EventSchema, RunAgentInputSchema } from "@ag-ui/core/schemas";
 import { z } from "zod";
 
 import type { AssistantEvent } from "./index.js";
+import { runInterruptedDataSchema } from "./interrupts.js";
 import { assistantViewSchema } from "./views.js";
 
 export { EventType } from "@ag-ui/core";
+export type { Interrupt as AgUiInterrupt, ResumeEntry as AgUiResumeEntry } from "@ag-ui/core";
 
 export const ENTERPRISE_ASSISTANT_METADATA_KEY = "enterprise-assistant";
 export const AG_UI_PROTOCOL_VERSION = PROTOCOL_VERSION;
@@ -312,6 +314,37 @@ export function projectAssistantEventToAgUi(
         ],
         state,
       );
+
+    case "approval.required":
+      return projectCandidates(event, [], state);
+
+    case "run.interrupted": {
+      const closed = closeTextMessage(event, state);
+      const { interrupts } = runInterruptedDataSchema.parse(event.data);
+      const publicInterrupts = interrupts.map((interrupt) => ({
+        id: interrupt.id,
+        reason: interrupt.reason,
+        ...(interrupt.message === undefined ? {} : { message: interrupt.message }),
+        ...(interrupt.toolCallId === undefined ? {} : { toolCallId: interrupt.toolCallId }),
+        ...(interrupt.responseSchema === undefined
+          ? {}
+          : { responseSchema: interrupt.responseSchema }),
+        ...(interrupt.expiresAt === undefined ? {} : { expiresAt: interrupt.expiresAt }),
+      }));
+      return projectCandidates(
+        event,
+        [
+          ...closed.events,
+          {
+            type: EventType.RUN_FINISHED,
+            threadId: event.sessionId,
+            runId: event.runId,
+            outcome: { type: "interrupt", interrupts: publicInterrupts },
+          },
+        ],
+        closed.state,
+      );
+    }
 
     case "run.completed": {
       const closed = closeTextMessage(event, state);

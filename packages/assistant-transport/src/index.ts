@@ -4,6 +4,7 @@ import {
   getAgUiEventCursor,
   type AgUiEvent,
   type AssistantEvent,
+  type ResumeRunRequest,
 } from "@assistant/contracts";
 
 export interface SessionDto {
@@ -24,11 +25,24 @@ export interface MessageDto {
   createdAt: string;
 }
 
+export interface PendingInterruptDto {
+  id: string;
+  runId: string;
+  reason: string;
+  message?: string;
+  expiresAt?: string;
+}
+
+export interface MessageListDto {
+  items: MessageDto[];
+  pendingInterrupts?: PendingInterruptDto[];
+}
+
 export interface RunDto {
   id?: string;
   runId?: string;
   sessionId: string;
-  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  status: "queued" | "running" | "interrupted" | "completed" | "failed" | "cancelled";
   eventsUrl?: string;
   agUiEventsUrl?: string;
   errorCode?: string;
@@ -65,7 +79,7 @@ export interface AssistantTransportOptions {
 export interface ChatAgentPort<TEvent> {
   listSessions(): Promise<{ items: SessionDto[] }>;
   createSession(input: { title?: string; mode: "assistant" | "standalone" }): Promise<SessionDto>;
-  listMessages(sessionId: string): Promise<{ items: MessageDto[] }>;
+  listMessages(sessionId: string): Promise<MessageListDto>;
   createContextSnapshot(
     context: JsonObject,
     mode?: "assistant" | "standalone",
@@ -76,6 +90,7 @@ export interface ChatAgentPort<TEvent> {
   ): Promise<RunDto>;
   getRun(runId: string): Promise<RunDto>;
   cancelRun(runId: string): Promise<{ status: string }>;
+  resumeRun(runId: string, input: ResumeRunRequest): Promise<RunDto>;
   resolveEvidence(referenceId: string): Promise<EvidenceDto>;
   watchRun(runId: string, signal?: AbortSignal): AsyncGenerator<TEvent>;
 }
@@ -84,7 +99,7 @@ export type AssistantChatAgentPort = ChatAgentPort<AssistantEvent>;
 
 type JsonObject = Record<string, unknown>;
 
-const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
+const terminalStatuses = new Set(["interrupted", "completed", "failed", "cancelled"]);
 
 export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
   readonly #baseUrl: string;
@@ -118,7 +133,7 @@ export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
     return this.#request(`/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
   }
 
-  listMessages(sessionId: string): Promise<{ items: MessageDto[] }> {
+  listMessages(sessionId: string): Promise<MessageListDto> {
     return this.#request(`/sessions/${encodeURIComponent(sessionId)}/messages`);
   }
 
@@ -149,6 +164,13 @@ export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
 
   cancelRun(runId: string): Promise<{ status: string }> {
     return this.#request(`/runs/${encodeURIComponent(runId)}/cancel`, { method: "POST" });
+  }
+
+  resumeRun(runId: string, input: ResumeRunRequest): Promise<RunDto> {
+    return this.#request(`/runs/${encodeURIComponent(runId)}/resume`, {
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   }
 
   resolveEvidence(referenceId: string): Promise<EvidenceDto> {
@@ -334,7 +356,7 @@ export class AgUiChatAgentPort implements ChatAgentPort<AgUiEvent> {
     return this.transport.createSession(input);
   }
 
-  listMessages(sessionId: string): Promise<{ items: MessageDto[] }> {
+  listMessages(sessionId: string): Promise<MessageListDto> {
     return this.transport.listMessages(sessionId);
   }
 
@@ -358,6 +380,10 @@ export class AgUiChatAgentPort implements ChatAgentPort<AgUiEvent> {
 
   cancelRun(runId: string): Promise<{ status: string }> {
     return this.transport.cancelRun(runId);
+  }
+
+  resumeRun(runId: string, input: ResumeRunRequest): Promise<RunDto> {
+    return this.transport.resumeRun(runId, input);
   }
 
   resolveEvidence(referenceId: string): Promise<EvidenceDto> {

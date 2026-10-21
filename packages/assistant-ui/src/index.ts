@@ -6,7 +6,12 @@ export { ExecutionTimeline } from "./execution/ExecutionTimeline.js";
 export { MessageList } from "./chat/MessageList.js";
 export { SafeContent } from "./view/SafeContent.js";
 export { chatReducer, initialChatState } from "./chat/store.js";
-export type { ChatMessage, ChatState, PublicExecutionStep } from "./chat/types.js";
+export type {
+  ApprovalRequest,
+  ChatMessage,
+  ChatState,
+  PublicExecutionStep,
+} from "./chat/types.js";
 export {
   DEFAULT_ASSISTANT_COLOR_PRIMARY,
   resolveAssistantColorPrimary,

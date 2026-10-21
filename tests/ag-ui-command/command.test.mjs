@@ -190,7 +190,7 @@ test("runs through the governed Session and ContextSnapshot boundary", async () 
   assert.equal(JSON.stringify(events).includes("forged-admin"), false);
 });
 
-test("rejects client tools, non-text content, and interrupt resume", async () => {
+test("rejects client tools, non-text content, and malformed interrupt resume", async () => {
   const { handler, session, snapshotA } = createFixture();
   const withTools = await command(
     handler,
@@ -222,11 +222,12 @@ test("rejects client tools, non-text content, and interrupt resume", async () =>
     handler,
     "token-a",
     input(session.id, snapshotA, {
+      messages: [],
       resume: [{ interruptId: "interrupt-1", status: "resolved" }],
     }),
   );
-  assert.equal(withResume.status, 422);
-  assert.equal((await withResume.json()).code, "UNSUPPORTED_AG_UI_RESUME");
+  assert.equal(withResume.status, 400);
+  assert.equal((await withResume.json()).code, "INVALID_AG_UI_INPUT");
 
   const incompatibleVersion = await command(
     handler,

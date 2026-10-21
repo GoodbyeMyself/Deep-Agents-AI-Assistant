@@ -109,7 +109,9 @@ data: {"version":"1","eventId":"evt-000012","sequence":12,"sessionId":"s1","runI
 
 该投影不改变 `/sessions`、`/runs`、`/context/snapshots`、`/evidence` 的权限和资源语义，也不表示标准 AG-UI `HttpAgent` 可以绕过 Gateway。`GET /runs/:id/ag-ui/events` 复用 Bearer 认证、Run 归属和限流；`Last-Event-ID` 使用版本化 AG-UI 投影游标，服务端重建源事件对应的投影状态，从精确的子事件位置继续。
 
-`POST /ag-ui` 接收官方 `RunAgentInput` Schema，但 `threadId` 只作为已有 Session ID 使用，`runId` 只作为幂等键和公开 AG-UI Run 标识；两者都不能建立身份。调用方必须先通过受控 Context API 创建快照，并在 `forwardedProps.enterprise-assistant.contextSnapshotId` 传递其引用，服务端再次校验用户和租户归属。`context/state` 不参与授权，客户端 `tools`、非文本输入和 interrupt resume 在当前只读阶段失败关闭。该 POST 响应流被提前取消时，服务端以内部 Run ID 和建立流时的认证主体执行 durable cancel；GET 重放流断开不取消 Run。显式取消、Evidence 与历史管理仍保留原企业 REST 资源。
+`POST /ag-ui` 接收官方 `RunAgentInput` Schema，但 `threadId` 只作为已有 Session ID 使用，`runId` 只作为幂等键和公开 AG-UI Run 标识；两者都不能建立身份。调用方必须先通过受控 Context API 创建快照，并在 `forwardedProps.enterprise-assistant.contextSnapshotId` 传递其引用，服务端再次校验用户和租户归属。`context/state` 不参与授权，客户端 `tools` 与非文本输入失败关闭。Human-in-the-loop 使用 AG-UI 1.0 标准中断契约：暂停 Run 投影为 `RUN_FINISHED.outcome.type=interrupt`，续跑以新 Run 的 `resume[]` 回答受控中断；默认 Shell 的 `/runs/:id/resume` 与标准 `/ag-ui` 入口复用同一服务端恢复逻辑。该 POST 响应流被提前取消时，服务端以内部 Run ID 和建立流时的认证主体执行 durable cancel；GET 重放流断开不取消 Run。显式取消、Evidence 与历史管理仍保留原企业 REST 资源。
+
+审批只接受服务端从 LangGraph checkpoint 读取并按项目 Schema 校验的 `approval` interrupt。普通助手文本不能生成确认按钮；确认记录绑定用户、租户、Session、原 Run、ContextSnapshot 和 interrupt ID。待确认时禁止创建普通新 Run，恢复请求重新鉴权并使用幂等键；当前阶段一次只支持一个开放中断，写操作本身仍须由 Capability Executor 与原业务 API 再次鉴权并保证幂等。
 
 ## 7. Context 协议
 

@@ -86,6 +86,8 @@ interface ChatUIState {
 
 `sessionId`、`runId`、`messageId`、`toolCallId` 必须区分；支持 optimistic 用户消息与失败重试、不重复显示重连的事件。不允许原始 ToolResult 隐含用户敏感数据而直接渲染。
 
+Human-in-the-loop 确认卡只由标准 AG-UI interrupt outcome 生成，不扫描助手文本或 Markdown。按钮提交 opaque `interruptId` 和固定批准/拒绝载荷；服务端重新鉴权后创建续跑 Run。待确认状态通过 Session 消息接口恢复，刷新页面后仍可继续或拒绝，普通输入在开放中断解决前禁用。
+
 ## 7. 独立 Web 管理菜单首版
 
 | 菜单          | M3 最小功能                                      | 后端            |

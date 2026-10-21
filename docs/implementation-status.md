@@ -269,7 +269,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 - 新增 `POST /api/v1/ag-ui`，以官方 AG-UI 1.0 `RunAgentInput` Schema 接收命令，并通过既有 AgentService 创建受控、持久且幂等的 Run。
 - `threadId` 必须指向当前用户和租户的活动 Session；ContextSnapshot 引用必须经 `forwardedProps.enterprise-assistant.contextSnapshotId` 提供并再次鉴权。
-- AG-UI `context/state` 不构成授权；客户端 Tool、非文本内容和 interrupt resume 当前返回受控 `4xx`，不进入 Agent Runtime。
+- AG-UI `context/state` 不构成授权；客户端 Tool 与非文本内容返回受控 `4xx`，不进入 Agent Runtime。
 - 返回流继续读取同一 AssistantEvent 日志；公开生命周期使用客户端 `runId` 保持 AG-UI 调用一致性，服务端 Run ID 仍由平台生成。
 - 新增 `tests/ag-ui-command/command.test.mjs`，覆盖标准输入流、Context/State 伪造不生效、Tool/多模态/resume 拒绝、快照与 Session 越权和未认证请求。
 - 用户已在仓库根目录手动执行 `pnpm test:ag-ui-command`、`pnpm test`、`pnpm lint`、`pnpm typecheck`、`pnpm build` 并确认全部通过。
@@ -346,3 +346,18 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 2026-10-21 已确认 `pnpm test`、`pnpm lint`、`pnpm typecheck` 及其全量 `pnpm build` 通过；
   CopilotKit 构建在受限沙箱内首次遇到 pnpm store `os error 5`，允许读取同一本地 store 后原命令
   复跑通过。
+
+## AG-UI Human-in-the-loop
+
+状态：完成标准 interrupt/resume 最小闭环并通过专项自动化与真实浏览器验收，详见
+[AG-UI HITL 验收报告](acceptance/evolution/ag-ui-hitl-acceptance-report.md)。
+
+- Agent Runner 从 LangGraph checkpoint 读取受控 `approval` interrupt，持久登记 `approval.required`、
+  `run.interrupted` 和 Run `interrupted` 状态；AG-UI 投影输出标准 interrupt outcome。
+- `POST /api/v1/ag-ui` 接受单个标准 `resume[]`；默认 Ant Design X Shell 使用
+  `POST /api/v1/runs/{id}/resume`，两者复用同一恢复、鉴权、幂等和续跑逻辑。
+- 待确认记录绑定用户、租户、Session、原 Run 与 ContextSnapshot；跨用户返回 `NOT_FOUND`，开放
+  interrupt 未解决前拒绝普通新 Run，重复确认不会触发第二次执行。
+- Shared Chat Core 新增确认卡、确认/拒绝状态、续跑消息和刷新恢复。普通模型文本不能生成按钮。
+- 当前一次只支持一个开放 interrupt；真实写 Capability 尚未加入，本轮以受控 Mock Graph/Runner
+  验证协议和 UI，不能视为任何生产写业务已接通。

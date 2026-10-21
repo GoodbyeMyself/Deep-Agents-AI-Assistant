@@ -23,6 +23,7 @@
 ## AG-UI 协议与前端演进
 
 - [Ant Design X Shared Chat Core 默认切换 AG-UI](evolution/ag-ui-shared-chat-core-acceptance-report.md)
+- [AG-UI Human-in-the-loop](evolution/ag-ui-hitl-acceptance-report.md)
 
 ## 维护规则
 

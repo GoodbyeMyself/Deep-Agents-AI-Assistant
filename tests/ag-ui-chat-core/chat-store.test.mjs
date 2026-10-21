@@ -38,6 +38,7 @@ function submittedState() {
       executionSteps: [],
       evidenceIds: [],
       views: [],
+      approvals: [],
     },
     assistant: {
       id: "assistant-message",
@@ -47,6 +48,7 @@ function submittedState() {
       executionSteps: [],
       evidenceIds: [],
       views: [],
+      approvals: [],
     },
   });
 }
@@ -133,4 +135,49 @@ test("maps AG-UI cancellation and failure to terminal chat states", () => {
   assert.equal(failed.messages.at(-1).content, "Agent 执行失败，请重试。");
   assert.equal(failed.messages.at(-1).executionSteps.at(-1).detail, "UPSTREAM_TIMEOUT");
   assert.equal(failed.activeRunId, undefined);
+});
+
+test("renders a standard AG-UI interrupt and prepares the resumed run", () => {
+  let state = reduceSourceEvents([
+    assistantEvent(13, "message.delta", { delta: "发布前需要你的确认。" }),
+    assistantEvent(14, "approval.required", {
+      id: "approve-publish-orders",
+      reason: "business_write",
+      message: "确认发布订单质量报告吗？",
+    }),
+    assistantEvent(15, "run.interrupted", {
+      interrupts: [
+        {
+          id: "approve-publish-orders",
+          reason: "business_write",
+          message: "确认发布订单质量报告吗？",
+        },
+      ],
+    }),
+  ]);
+
+  assert.equal(state.activeRunId, undefined);
+  assert.equal(state.messages.at(-1).approvals[0].status, "pending");
+  assert.equal(state.messages.at(-1).approvals[0].runId, runId);
+  assert.equal(state.messages.at(-1).executionSteps.at(-1).title, "等待你的确认");
+
+  state = chatReducer(state, {
+    type: "resume-bound",
+    interruptId: "approve-publish-orders",
+    decision: "approved",
+    runId: "33333333-3333-4333-8333-333333333333",
+    assistant: {
+      id: "assistant-resumed",
+      role: "assistant",
+      content: "",
+      status: "loading",
+      executionSteps: [],
+      evidenceIds: [],
+      views: [],
+      approvals: [],
+    },
+  });
+  assert.equal(state.messages.at(-2).approvals[0].status, "approved");
+  assert.equal(state.messages.at(-1).executionSteps[0].title, "正在继续执行");
+  assert.equal(state.activeRunId, "33333333-3333-4333-8333-333333333333");
 });

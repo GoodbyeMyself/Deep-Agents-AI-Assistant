@@ -185,7 +185,18 @@ export function createApiHandler(options: {
       }
       const messagesMatch = url.pathname.match(/^\/api\/v1\/sessions\/([0-9a-f-]+)\/messages$/i);
       if (messagesMatch?.[1] !== undefined && request.method === "GET")
-        return json({ items: options.service.store.listMessages(messagesMatch[1], principal) });
+        return json({
+          items: options.service.store.listMessages(messagesMatch[1], principal),
+          pendingInterrupts: options.service.store
+            .listPendingInterrupts(messagesMatch[1], principal)
+            .map((interrupt) => ({
+              id: interrupt.id,
+              runId: interrupt.runId,
+              reason: interrupt.reason,
+              ...(interrupt.message === undefined ? {} : { message: interrupt.message }),
+              ...(interrupt.expiresAt === undefined ? {} : { expiresAt: interrupt.expiresAt }),
+            })),
+        });
       const createRunMatch = url.pathname.match(/^\/api\/v1\/sessions\/([0-9a-f-]+)\/runs$/i);
       if (createRunMatch?.[1] !== undefined && request.method === "POST") {
         const run = options.service.createRun(createRunMatch[1], await body(request), principal);
@@ -231,6 +242,20 @@ export function createApiHandler(options: {
       if (cancelMatch?.[1] !== undefined && request.method === "POST") {
         options.service.runner.cancel(cancelMatch[1], principal);
         return json({ status: "cancelled" }, 202);
+      }
+      const resumeMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)\/resume$/i);
+      if (resumeMatch?.[1] !== undefined && request.method === "POST") {
+        const run = options.service.resumeRun(resumeMatch[1], await body(request), principal);
+        return json(
+          {
+            runId: run.id,
+            sessionId: run.sessionId,
+            status: run.status,
+            eventsUrl: `/api/v1/runs/${run.id}/events`,
+            agUiEventsUrl: `/api/v1/runs/${run.id}/ag-ui/events`,
+          },
+          202,
+        );
       }
       const evidenceMatch = url.pathname.match(/^\/api\/v1\/evidence\/(.+)$/);
       if (evidenceMatch?.[1] !== undefined && request.method === "GET")

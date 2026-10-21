@@ -11,6 +11,10 @@
 Run 创建、状态查询、显式取消、Session、ContextSnapshot 与 Evidence 仍使用受治理 REST；切换
 AG-UI 事件格式不会建立第二个 Run，也不会把客户端 Context 或 Tool 当成授权依据。
 
+Human-in-the-loop 暂停使用标准 AG-UI interrupt outcome。默认 Shared Chat Core 通过
+`resumeRun` 调用受控 `/runs/{id}/resume`，标准 AG-UI 客户端则使用 `RunAgentInput.resume[]`；两条
+入口复用同一个服务端待确认记录和续跑 Run，不允许普通新消息绕过审批。
+
 ## 安全边界
 
 - 每个请求通过 `getAccessCredential` 获取当前短期凭证。

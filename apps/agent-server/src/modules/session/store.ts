@@ -4,7 +4,12 @@ import type {
   Evidence,
 } from "@assistant/capability-core";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
-import type { AssistantEvent, AssistantEventType } from "@assistant/contracts";
+import type {
+  AssistantEvent,
+  AssistantEventType,
+  AssistantInterrupt,
+  ResumeRunRequest,
+} from "@assistant/contracts";
 import { resolveEvidence, type EvidenceRecord } from "@assistant/evidence";
 import { randomUUID } from "node:crypto";
 
@@ -29,9 +34,21 @@ export interface RunRecord {
   readonly clientRequestId: string;
   readonly message: string;
   readonly modelConfigVersion: string;
-  status: "queued" | "running" | "completed" | "failed" | "cancelled";
+  status: "queued" | "running" | "interrupted" | "completed" | "failed" | "cancelled";
   errorCode?: string;
+  readonly resumedFromRunId?: string;
+  readonly interruptId?: string;
   readonly createdAt: string;
+}
+
+export interface PendingInterruptRecord extends AssistantInterrupt {
+  readonly runId: string;
+  readonly sessionId: string;
+  readonly ownerId: string;
+  readonly tenantId: string;
+  status: "pending" | "resolved" | "cancelled" | "expired";
+  readonly createdAt: string;
+  resolvedAt?: string;
 }
 export interface MessageRecord {
   readonly id: string;
@@ -53,6 +70,7 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
   readonly #evidence = new Map<string, EvidenceRecord>();
   readonly #idempotency = new Map<string, string>();
   readonly #activeRuns = new Map<string, string>();
+  readonly #interrupts = new Map<string, PendingInterruptRecord>();
   readonly auditRecords: CapabilityAuditRecord[] = [];
 
   constructor(private readonly modelConfigVersion = "mock-model-config@1") {}
@@ -146,6 +164,17 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
     if (session.status !== "active")
       throw new ServiceError("SESSION_NOT_ACTIVE", "Session is not active.", 409);
     this.requireSnapshot(input.contextSnapshotId, input.principal);
+    if (
+      [...this.#interrupts.values()].some(
+        (interrupt) =>
+          interrupt.sessionId === session.id && interrupt.status === "pending",
+      )
+    )
+      throw new ServiceError(
+        "INTERRUPT_RESUME_REQUIRED",
+        "The pending interrupt must be resolved before starting another run.",
+        409,
+      );
     const key = `${session.id}:${input.clientRequestId}`;
     const existingId = this.#idempotency.get(key);
     if (existingId !== undefined)
@@ -195,8 +224,124 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
     if (run === undefined) throw notFound();
     run.status = status;
     if (errorCode !== undefined) run.errorCode = errorCode;
-    if (["completed", "failed", "cancelled"].includes(status))
+    if (["interrupted", "completed", "failed", "cancelled"].includes(status))
       this.#activeRuns.delete(run.sessionId);
+  }
+
+  registerInterrupts(runId: string, interrupts: readonly AssistantInterrupt[]): void {
+    const run = this.#runs.get(runId);
+    if (run === undefined) throw notFound();
+    for (const interrupt of interrupts) {
+      const key = `${runId}:${interrupt.id}`;
+      if (this.#interrupts.has(key))
+        throw new ServiceError("INTERRUPT_CONFLICT", "Interrupt already exists.", 409);
+      this.#interrupts.set(key, {
+        ...structuredClone(interrupt),
+        runId,
+        sessionId: run.sessionId,
+        ownerId: run.ownerId,
+        tenantId: run.tenantId,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
+    }
+  }
+
+  requireInterrupt(
+    runId: string,
+    interruptId: string,
+    principal: VerifiedPrincipal,
+  ): PendingInterruptRecord {
+    this.requireRun(runId, principal);
+    const value = this.#interrupts.get(`${runId}:${interruptId}`);
+    if (
+      value === undefined ||
+      value.ownerId !== principal.id ||
+      value.tenantId !== principal.tenantId
+    )
+      throw notFound();
+    return value;
+  }
+
+  findPendingInterrupt(
+    sessionId: string,
+    interruptId: string,
+    principal: VerifiedPrincipal,
+  ): PendingInterruptRecord {
+    this.requireSession(sessionId, principal);
+    const value = [...this.#interrupts.values()].find(
+      (item) => item.sessionId === sessionId && item.id === interruptId,
+    );
+    if (
+      value === undefined ||
+      value.ownerId !== principal.id ||
+      value.tenantId !== principal.tenantId
+    )
+      throw notFound();
+    return value;
+  }
+
+  createResumeRun(input: {
+    principal: VerifiedPrincipal;
+    interruptedRunId: string;
+    response: ResumeRunRequest;
+  }): { run: RunRecord; interruptedRun: RunRecord; created: boolean } {
+    const interruptedRun = this.requireRun(input.interruptedRunId, input.principal);
+    const key = `${interruptedRun.sessionId}:resume:${input.response.clientRequestId}`;
+    const existingId = this.#idempotency.get(key);
+    if (existingId !== undefined)
+      return {
+        run: structuredClone(this.#runs.get(existingId)!),
+        interruptedRun: structuredClone(interruptedRun),
+        created: false,
+      };
+
+    const interrupt = this.requireInterrupt(
+      interruptedRun.id,
+      input.response.interruptId,
+      input.principal,
+    );
+    if (interrupt.status !== "pending")
+      throw new ServiceError("INTERRUPT_ALREADY_RESOLVED", "Interrupt is no longer pending.", 409);
+    if (interruptedRun.status !== "interrupted")
+      throw new ServiceError("RUN_NOT_INTERRUPTED", "Run is not awaiting input.", 409);
+    if (
+      input.response.status === "resolved" &&
+      interrupt.expiresAt !== undefined &&
+      Date.parse(interrupt.expiresAt) <= Date.now()
+    ) {
+      throw new ServiceError("INTERRUPT_EXPIRED", "Interrupt has expired.", 409);
+    }
+    const session = this.requireSession(interruptedRun.sessionId, input.principal);
+    if (session.status !== "active")
+      throw new ServiceError("SESSION_NOT_ACTIVE", "Session is not active.", 409);
+    if (this.#activeRuns.has(session.id))
+      throw new ServiceError("RUN_CONFLICT", "The session already has an active run.", 409);
+
+    const run: RunRecord = {
+      id: randomUUID(),
+      sessionId: session.id,
+      ownerId: input.principal.id,
+      tenantId: input.principal.tenantId,
+      contextSnapshotId: interruptedRun.contextSnapshotId,
+      clientRequestId: input.response.clientRequestId,
+      message: "",
+      modelConfigVersion: interruptedRun.modelConfigVersion,
+      status: "queued",
+      resumedFromRunId: interruptedRun.id,
+      interruptId: interrupt.id,
+      createdAt: new Date().toISOString(),
+    };
+    this.#runs.set(run.id, run);
+    this.#idempotency.set(key, run.id);
+    this.#activeRuns.set(session.id, run.id);
+    interrupt.status = input.response.status;
+    interrupt.resolvedAt = new Date().toISOString();
+    return {
+      run: structuredClone(run),
+      interruptedRun: structuredClone(interruptedRun),
+      created: true,
+    };
   }
 
   addMessage(record: Omit<MessageRecord, "id" | "createdAt">): MessageRecord {
@@ -209,6 +354,16 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
     this.requireSession(sessionId, principal);
     return this.#messages
       .filter((item) => item.sessionId === sessionId)
+      .map((item) => structuredClone(item));
+  }
+
+  listPendingInterrupts(
+    sessionId: string,
+    principal: VerifiedPrincipal,
+  ): PendingInterruptRecord[] {
+    this.requireSession(sessionId, principal);
+    return [...this.#interrupts.values()]
+      .filter((item) => item.sessionId === sessionId && item.status === "pending")
       .map((item) => structuredClone(item));
   }
 
@@ -280,7 +435,7 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
           lastSequence = event.sequence;
           yield event;
         }
-        if (["completed", "failed", "cancelled"].includes(run.status)) return;
+        if (["interrupted", "completed", "failed", "cancelled"].includes(run.status)) return;
         await new Promise<void>((resolve) => {
           wake = resolve;
         });

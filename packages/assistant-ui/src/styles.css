@@ -357,6 +357,30 @@
   margin: 0;
   padding-left: 20px;
 }
+.assistant-approval {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #ffd591;
+  border-radius: 12px;
+  background: #fffbe6;
+}
+.assistant-approval-heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: #613400;
+}
+.assistant-approval-heading .ant-tag {
+  margin-left: auto;
+}
+.assistant-approval p,
+.assistant-approval small {
+  margin: 0;
+}
+.assistant-approval small {
+  color: var(--assistant-muted);
+}
 .assistant-execution {
   width: 100%;
   margin: 0 0 2px;

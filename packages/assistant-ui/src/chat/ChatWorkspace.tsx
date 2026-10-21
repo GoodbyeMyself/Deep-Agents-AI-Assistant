@@ -1,5 +1,6 @@
 import type {
   ChatAgentPort,
+  MessageListDto,
   MessageDto,
   SessionDto,
 } from "@assistant/assistant-transport";
@@ -18,7 +19,7 @@ import { useCallback, useEffect, useReducer, useState, type ReactNode } from "re
 import { ChatComposer } from "./ChatComposer.js";
 import { MessageList } from "./MessageList.js";
 import { chatReducer, initialChatState } from "./store.js";
-import type { ChatMessage } from "./types.js";
+import type { ApprovalRequest, ChatMessage } from "./types.js";
 
 export interface SelectedBusinessObject {
   id: string;
@@ -34,7 +35,40 @@ const toMessage = (message: MessageDto): ChatMessage => ({
   executionSteps: [],
   evidenceIds: [...message.evidenceRefs],
   views: [],
+  approvals: [],
 });
+
+function toMessages(result: MessageListDto): ChatMessage[] {
+  const messages = result.items.map(toMessage);
+  const pending = result.pendingInterrupts ?? [];
+  if (pending.length === 0) return messages;
+  const approvals: ApprovalRequest[] = pending.map((interrupt) => ({
+    id: interrupt.id,
+    runId: interrupt.runId,
+    reason: interrupt.reason,
+    ...(interrupt.message === undefined ? {} : { message: interrupt.message }),
+    ...(interrupt.expiresAt === undefined ? {} : { expiresAt: interrupt.expiresAt }),
+    status: "pending",
+  }));
+  const lastAssistantIndex = messages.findLastIndex((message) => message.role === "assistant");
+  if (lastAssistantIndex >= 0)
+    return messages.map((message, index) =>
+      index === lastAssistantIndex ? { ...message, approvals } : message,
+    );
+  return [
+    ...messages,
+    {
+      id: `approval:${approvals[0]!.id}`,
+      role: "assistant",
+      content: "",
+      status: "success",
+      executionSteps: [{ key: "run", title: "等待你的确认", status: "pending" }],
+      evidenceIds: [],
+      views: [],
+      approvals,
+    },
+  ];
+}
 
 export function ChatWorkspace({
   transport,
@@ -100,7 +134,7 @@ export function ChatWorkspace({
     setLoading(true);
     void transport
       .listMessages(activeSessionId)
-      .then(({ items }) => !disposed && dispatch({ type: "reset", messages: items.map(toMessage) }))
+      .then((result) => !disposed && dispatch({ type: "reset", messages: toMessages(result) }))
       .catch(() => !disposed && setError("无法读取此会话。"))
       .finally(() => !disposed && setLoading(false));
     return () => {
@@ -124,6 +158,7 @@ export function ChatWorkspace({
           executionSteps: [],
           evidenceIds: [],
           views: [],
+          approvals: [],
         },
         assistant: {
           id: `assistant:${localId}`,
@@ -133,6 +168,7 @@ export function ChatWorkspace({
           executionSteps: [],
           evidenceIds: [],
           views: [],
+          approvals: [],
         },
       });
       const capturedContext =
@@ -170,6 +206,58 @@ export function ChatWorkspace({
     if (state.activeRunId !== undefined) void transport.cancelRun(state.activeRunId);
   };
 
+  const resolveApproval = async (
+    approval: ApprovalRequest,
+    decision: "approved" | "rejected",
+  ) => {
+    setError(undefined);
+    dispatch({ type: "approval-status", interruptId: approval.id, status: "submitting" });
+    try {
+      const localId = crypto.randomUUID();
+      const response =
+        decision === "approved"
+          ? {
+              interruptId: approval.id,
+              status: "resolved" as const,
+              payload: { approved: true as const },
+              clientRequestId: localId,
+            }
+          : {
+              interruptId: approval.id,
+              status: "cancelled" as const,
+              payload: { approved: false as const },
+              clientRequestId: localId,
+            };
+      const run = await transport.resumeRun(approval.runId, response);
+      const runId = run.runId ?? run.id;
+      if (runId === undefined) throw new Error("Missing resumed run ID");
+      dispatch({
+        type: "resume-bound",
+        interruptId: approval.id,
+        decision,
+        runId,
+        assistant: {
+          id: `assistant:${localId}`,
+          role: "assistant",
+          content: "",
+          status: "loading",
+          executionSteps: [],
+          evidenceIds: [],
+          views: [],
+          approvals: [],
+        },
+      });
+      for await (const event of transport.watchRun(runId)) dispatch({ type: "event", event });
+      const final = await transport.getRun(runId);
+      if (final.status === "failed")
+        dispatch({ type: "failed", message: "Agent 恢复执行失败，请重试。" });
+      if (final.status === "cancelled") dispatch({ type: "cancelled" });
+    } catch {
+      dispatch({ type: "approval-status", interruptId: approval.id, status: "pending" });
+      setError("无法提交确认结果；操作尚未继续，请重试。");
+    }
+  };
+
   const useSessionHeader = workspaceClassName?.includes("codex-workspace") ?? false;
   const panelLayout = layout === "panel";
   const prompts = [
@@ -181,6 +269,11 @@ export function ChatWorkspace({
   ];
   const activeSessionTitle =
     sessions.find((session) => session.id === activeSessionId)?.title ?? "新会话";
+  const hasPendingApproval = state.messages.some((message) =>
+    message.approvals.some(
+      (approval) => approval.status === "pending" || approval.status === "submitting",
+    ),
+  );
 
   return (
     <div
@@ -324,12 +417,13 @@ export function ChatWorkspace({
               transport={transport}
               {...(selectedObject?.name ? { objectName: selectedObject.name } : {})}
               {...(panelLayout ? { prompts, onPrompt: (value) => void submit(value) } : {})}
+              onApproval={(approval, decision) => void resolveApproval(approval, decision)}
             />
           )}
         </div>
         <ChatComposer
           loading={state.activeRunId !== undefined}
-          disabled={selectedObject === undefined}
+          disabled={selectedObject === undefined || hasPendingApproval}
           objectName={selectedObject?.name ?? "业务对象"}
           {...(panelLayout ? { placeholder: "发消息..." } : {})}
           onSubmit={(value) => void submit(value)}

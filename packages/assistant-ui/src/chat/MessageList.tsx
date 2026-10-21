@@ -8,7 +8,8 @@ import { EvidencePanel } from "../evidence/EvidencePanel.js";
 import { ExecutionTimeline } from "../execution/ExecutionTimeline.js";
 import { AssistantViewRenderer } from "../view/AssistantViewRenderer.js";
 import { SafeContent } from "../view/SafeContent.js";
-import type { ChatMessage } from "./types.js";
+import { ApprovalCard } from "./ApprovalCard.js";
+import type { ApprovalRequest, ChatMessage } from "./types.js";
 
 const bubbleRoles = {
   user: {
@@ -41,9 +42,11 @@ const bubbleRoles = {
 function AssistantMessageBody({
   message,
   transport,
+  onApproval,
 }: {
   message: ChatMessage;
   transport: ChatAgentPort<AgUiEvent>;
+  onApproval: (approval: ApprovalRequest, decision: "approved" | "rejected") => void;
 }) {
   return (
     <Space orientation="vertical" size={12} className="assistant-message-content">
@@ -57,6 +60,9 @@ function AssistantMessageBody({
       {message.views.map((view) => (
         <AssistantViewRenderer key={view.viewId} value={view} />
       ))}
+      {message.approvals.map((approval) => (
+        <ApprovalCard key={approval.id} approval={approval} onDecision={onApproval} />
+      ))}
       <EvidencePanel referenceIds={message.evidenceIds} transport={transport} />
     </Space>
   );
@@ -68,12 +74,14 @@ export function MessageList({
   objectName,
   prompts,
   onPrompt,
+  onApproval,
 }: {
   messages: ChatMessage[];
   transport: ChatAgentPort<AgUiEvent>;
   objectName?: string;
   prompts?: readonly string[];
   onPrompt?: (value: string) => void;
+  onApproval: (approval: ApprovalRequest, decision: "approved" | "rejected") => void;
 }) {
   if (messages.length === 0 && prompts !== undefined && onPrompt !== undefined)
     return (
@@ -120,7 +128,11 @@ export function MessageList({
           streaming: message.status === "loading",
           loading: waitingForContent,
           content: isAssistant ? (
-            <AssistantMessageBody message={message} transport={transport} />
+            <AssistantMessageBody
+              message={message}
+              transport={transport}
+              onApproval={onApproval}
+            />
           ) : (
             message.content
           ),

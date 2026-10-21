@@ -74,6 +74,37 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       activeRunId: action.runId,
     };
   if (action.type === "run-bound") return { ...state, activeRunId: action.runId };
+  if (action.type === "approval-status")
+    return {
+      ...state,
+      messages: state.messages.map((message) => ({
+        ...message,
+        approvals: message.approvals.map((approval) =>
+          approval.id === action.interruptId
+            ? { ...approval, status: action.status }
+            : approval,
+        ),
+      })),
+    };
+  if (action.type === "resume-bound")
+    return {
+      ...state,
+      activeRunId: action.runId,
+      messages: [
+        ...state.messages.map((message) => ({
+          ...message,
+          approvals: message.approvals.map((approval) =>
+            approval.id === action.interruptId
+              ? { ...approval, status: action.decision }
+              : approval,
+          ),
+        })),
+        {
+          ...action.assistant,
+          executionSteps: [{ key: "run", title: "正在继续执行", status: "loading" }],
+        },
+      ],
+    };
   if (action.type === "failed")
     return {
       ...state,
@@ -165,7 +196,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     const parsed = enterpriseAssistantCustomEventSchema.safeParse({
       type: event.type,
       name: event.name,
-      value: event.value,
+      value: event.value as unknown,
     });
     if (parsed.success && parsed.data.name === EVIDENCE_ADDED_EVENT_NAME) {
       const { referenceId } = parsed.data.value;
@@ -186,13 +217,25 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   }
   if (event.type === EventType.RUN_FINISHED) {
     const cancelled = event.outcome?.type === "cancelled";
+    const interrupts = event.outcome?.type === "interrupt" ? event.outcome.interrupts : undefined;
+    const interrupted = interrupts !== undefined;
     messages = updateLastAssistant({ ...state, messages }, (message) => ({
       ...message,
       status: cancelled ? "abort" : "success",
+      approvals: interrupts === undefined
+        ? message.approvals
+        : interrupts.map((interrupt) => ({
+            id: interrupt.id,
+            runId: event.runId,
+            reason: interrupt.reason,
+            ...(interrupt.message === undefined ? {} : { message: interrupt.message }),
+            ...(interrupt.expiresAt === undefined ? {} : { expiresAt: interrupt.expiresAt }),
+            status: "pending" as const,
+          })),
       executionSteps: upsertStep(message.executionSteps, {
         key: "run",
-        title: cancelled ? "已取消" : "分析完成",
-        status: cancelled ? "error" : "success",
+        title: cancelled ? "已取消" : interrupted ? "等待你的确认" : "分析完成",
+        status: cancelled ? "error" : interrupted ? "pending" : "success",
       }),
     }));
     activeRunId = undefined;
