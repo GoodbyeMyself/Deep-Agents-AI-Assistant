@@ -1,4 +1,4 @@
-import type { AssistantApiTransport } from "@assistant/assistant-transport";
+import type { AssistantChatAgentPort } from "@assistant/assistant-transport";
 import { RobotOutlined, UserOutlined } from "@ant-design/icons";
 import { Bubble } from "@ant-design/x";
 import { Avatar, Empty, Space } from "antd";
@@ -42,7 +42,7 @@ function AssistantMessageBody({
   transport,
 }: {
   message: ChatMessage;
-  transport: AssistantApiTransport;
+  transport: AssistantChatAgentPort;
 }) {
   return (
     <Space orientation="vertical" size={12} className="assistant-message-content">
@@ -69,7 +69,7 @@ export function MessageList({
   onPrompt,
 }: {
   messages: ChatMessage[];
-  transport: AssistantApiTransport;
+  transport: AssistantChatAgentPort;
   objectName?: string;
   prompts?: readonly string[];
   onPrompt?: (value: string) => void;

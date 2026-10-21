@@ -1,10 +1,17 @@
-import { apiErrorSchema, openApiDocument } from "@assistant/contracts";
+import {
+  apiErrorSchema,
+  getAgUiEventCursor,
+  openApiDocument,
+  type AgUiEvent,
+  type AssistantEvent,
+} from "@assistant/contracts";
 import { randomUUID } from "node:crypto";
 
 import type { EmbedTicketService } from "../modules/embed/embed-ticket.js";
 import type { IdentityProvider } from "../modules/identity/identity.js";
 import type { AgentService } from "../modules/session/service.js";
 import { ServiceError } from "../shared/errors.js";
+import { createAgUiEventStream } from "./ag-ui-events.js";
 
 const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
@@ -30,8 +37,36 @@ async function body(request: Request): Promise<unknown> {
   }
 }
 
-function sseEvent(event: { eventId: string; type: string }): string {
-  return `id: ${event.eventId}\nevent: ${event.type}\ndata: ${JSON.stringify(event)}\n\n`;
+function sseFrame(eventId: string, eventType: string, data: unknown): string {
+  return `id: ${eventId}\nevent: ${eventType}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function eventStreamResponse<T>(
+  events: AsyncGenerator<T>,
+  serialize: (event: T) => string,
+): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        for await (const event of events) controller.enqueue(encoder.encode(serialize(event)));
+        controller.close();
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      await events.return(undefined);
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
+    },
+  });
 }
 
 export class FixedWindowRateLimiter {
@@ -146,6 +181,7 @@ export function createApiHandler(options: {
             sessionId: run.sessionId,
             status: run.status,
             eventsUrl: `/api/v1/runs/${run.id}/events`,
+            agUiEventsUrl: `/api/v1/runs/${run.id}/ag-ui/events`,
           },
           202,
         );
@@ -159,28 +195,25 @@ export function createApiHandler(options: {
           request.headers.get("last-event-id") ?? url.searchParams.get("cursor") ?? undefined;
         options.service.store.listEvents(eventsMatch[1], principal, cursor);
         const events = options.service.store.streamEvents(eventsMatch[1], principal, cursor);
-        const encoder = new TextEncoder();
-        const stream = new ReadableStream<Uint8Array>({
-          async start(controller) {
-            try {
-              for await (const event of events) controller.enqueue(encoder.encode(sseEvent(event)));
-              controller.close();
-            } catch (error) {
-              controller.error(error);
-            }
-          },
-          async cancel() {
-            await events.return(undefined);
-          },
-        });
-        return new Response(stream, {
-          status: 200,
-          headers: {
-            "content-type": "text/event-stream",
-            "cache-control": "no-store",
-            "x-content-type-options": "nosniff",
-          },
-        });
+        return eventStreamResponse(events, (event: AssistantEvent) =>
+          sseFrame(event.eventId, event.type, event),
+        );
+      }
+      const agUiEventsMatch = url.pathname.match(
+        /^\/api\/v1\/runs\/([0-9a-f-]+)\/ag-ui\/events$/i,
+      );
+      if (agUiEventsMatch?.[1] !== undefined && request.method === "GET") {
+        const cursor =
+          request.headers.get("last-event-id") ?? url.searchParams.get("cursor") ?? undefined;
+        const events = createAgUiEventStream(
+          options.service.store,
+          agUiEventsMatch[1],
+          principal,
+          cursor,
+        );
+        return eventStreamResponse(events, (event: AgUiEvent) =>
+          sseFrame(getAgUiEventCursor(event), event.type, event),
+        );
       }
       const cancelMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)\/cancel$/i);
       if (cancelMatch?.[1] !== undefined && request.method === "POST") {

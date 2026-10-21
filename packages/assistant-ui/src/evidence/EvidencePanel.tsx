@@ -1,4 +1,4 @@
-import type { AssistantApiTransport, EvidenceDto } from "@assistant/assistant-transport";
+import type { AssistantChatAgentPort, EvidenceDto } from "@assistant/assistant-transport";
 import { Sources } from "@ant-design/x";
 import { Alert, Descriptions, Drawer, Skeleton } from "antd";
 import { useState } from "react";
@@ -8,7 +8,7 @@ export function EvidencePanel({
   transport,
 }: {
   referenceIds: readonly string[];
-  transport: AssistantApiTransport;
+  transport: AssistantChatAgentPort;
 }) {
   const [selected, setSelected] = useState<string>();
   const [evidence, setEvidence] = useState<EvidenceDto>();

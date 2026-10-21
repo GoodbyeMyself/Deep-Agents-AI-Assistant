@@ -24,6 +24,7 @@
 | `POST /sessions/:id/runs`    | 会话所有者                  | 创建 Run，带 idempotency key        |
 | `GET /runs/:id`              | Run 所属用户                | Run 状态                            |
 | `GET /runs/:id/events`       | Run 所属用户                | SSE 事件/重连                       |
+| `GET /runs/:id/ag-ui/events` | Run 所属用户                | 同一事件日志的 AG-UI 1.0 投影/重连 |
 | `POST /runs/:id/cancel`      | Run 所属用户                | 取消 Run                            |
 | `POST /context/snapshots`    | 登录用户                    | 校验 Raw Context 并创建快照         |
 | `GET /evidence/:referenceId` | 有权用户                    | 解引用证据，重新鉴权                |
@@ -105,7 +106,7 @@ data: {"version":"1","eventId":"evt-000012","sequence":12,"sessionId":"s1","runI
 
 依据 ADR-024，现有 `AssistantEvent` 是持久化与重放的事实来源；AG-UI 事件是其确定性客户端投影。`run.started/completed/failed/cancelled`、文本、Tool 和 Subagent 映射到 AG-UI 标准事件；Evidence 与受控 View 使用版本化 `CUSTOM` 名称及项目 Schema。一个源事件映射多个 AG-UI 事件时，投影 ID 使用源 `eventId` 加稳定序号，源序列与 Session 写入 `enterprise-assistant` metadata。
 
-该投影不改变 `/sessions`、`/runs`、`/context/snapshots`、`/evidence` 的权限和资源语义，也不表示标准 AG-UI `HttpAgent` 可以绕过 Gateway。新增 AG-UI 网络端点前，必须另行确定认证、创建 Run、取消和 `Last-Event-ID` 重放方式。
+该投影不改变 `/sessions`、`/runs`、`/context/snapshots`、`/evidence` 的权限和资源语义，也不表示标准 AG-UI `HttpAgent` 可以绕过 Gateway。`GET /runs/:id/ag-ui/events` 复用 Bearer 认证、Run 归属和限流；`Last-Event-ID` 使用版本化 AG-UI 投影游标，服务端重建源事件对应的投影状态，从精确的子事件位置继续。创建 Run、取消和 Evidence 仍调用原 REST 资源。
 
 ## 7. Context 协议
 

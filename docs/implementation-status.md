@@ -251,3 +251,14 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 新增 `tests/ag-ui-poc/projection.test.mjs`，覆盖标准 Schema、消息生命周期、Tool 敏感数据不出站、企业 Custom Schema、取消和重放确定性。
 - 现有 SSE、Transport、ChatStore、Runner 和 Shell 尚未切换；CopilotKit 仍只是后续可选 Adapter/Shell，不是核心依赖。
 - 用户已在仓库根目录手动执行 `pnpm test:ag-ui-poc`、`pnpm test`、`pnpm lint`、`pnpm typecheck`、`pnpm build` 并确认全部通过。
+
+## AG-UI 双协议端点与 ChatAgentPort
+
+状态：完成并通过工程阶段退出门禁，详见 [AG-UI 双协议端点验收报告](acceptance/evolution/ag-ui-endpoint-acceptance-report.md)；尚未切换默认 ChatStore 或引入 CopilotKit。
+
+- 新增 `/api/v1/runs/{id}/ag-ui/events`，与旧 `/events` 并存并读取同一个持久 `AssistantEvent` 日志；创建 Run 的响应同时返回两个事件地址。
+- 新端点复用 Bearer 认证、用户/租户 Run 归属、限流、`no-store` 和安全错误响应；跨用户仍返回不泄漏资源存在性的 `NOT_FOUND`。
+- AG-UI 投影游标包含源事件 ID 与子事件序号。服务端在发送 200 前校验游标，并重建投影状态，支持从同一源事件展开的 `TEXT_MESSAGE_START` 与 `CONTENT` 之间精确恢复。
+- `assistant-transport` 新增 `ChatAgentPort<TEvent>`、`AssistantChatAgentPort` 和 `AgUiChatAgentPort`；Shared Chat Core 已依赖旧事件端口抽象，但运行行为未切换。
+- 新增 `tests/ag-ui-endpoint/endpoint.test.mjs`，覆盖完整事件流、敏感字段不出站、子事件级重连、非法游标、跨用户 Run 和 AG-UI 客户端端口。
+- 用户已在仓库根目录手动执行 `pnpm test:ag-ui-endpoint`、`pnpm test`、`pnpm lint`、`pnpm typecheck`、`pnpm build` 并确认全部通过；Lint 首次发现的问题修复后已复验通过。

@@ -8,6 +8,7 @@ import { assistantViewSchema } from "./views.js";
 export const ENTERPRISE_ASSISTANT_METADATA_KEY = "enterprise-assistant";
 export const EVIDENCE_ADDED_EVENT_NAME = "enterprise.evidence.added.v1";
 export const VIEW_CREATED_EVENT_NAME = "enterprise.view.created.v1";
+const AG_UI_CURSOR_PREFIX = "agui1.";
 
 export const enterpriseAssistantMetadataSchema = z
   .object({
@@ -40,8 +41,17 @@ export const enterpriseAssistantCustomEventSchema = z.discriminatedUnion("name",
   }),
 ]);
 
-export const agUiEventSchema = EventSchema;
 export type AgUiEvent = Event;
+
+/**
+ * AG-UI 的 Zod 输出类型把可选字段推导为 `field?: T | undefined`，与本仓库启用的
+ * exactOptionalPropertyTypes 不兼容；该边界先完成官方 Schema 校验，再收窄为官方 Event 类型。
+ */
+export const agUiEventSchema: { parse(value: unknown): AgUiEvent } = {
+  parse(value) {
+    return EventSchema.parse(value) as unknown as AgUiEvent;
+  },
+};
 
 export interface AgUiProjectionState {
   readonly textMessageOpen: boolean;
@@ -64,6 +74,43 @@ export class AssistantEventProjectionError extends Error {
   ) {
     super(`Cannot project ${eventType}: invalid ${field}.`);
   }
+}
+
+export interface AgUiEventCursor {
+  readonly sourceEventId: string;
+  readonly projectionIndex: number;
+}
+
+export function encodeAgUiEventCursor(cursor: AgUiEventCursor): string {
+  if (cursor.sourceEventId.length === 0 || !Number.isSafeInteger(cursor.projectionIndex))
+    throw new Error("Invalid AG-UI event cursor.");
+  if (cursor.projectionIndex < 0) throw new Error("Invalid AG-UI event cursor.");
+  return `${AG_UI_CURSOR_PREFIX}${encodeURIComponent(cursor.sourceEventId)}.${cursor.projectionIndex}`;
+}
+
+export function decodeAgUiEventCursor(value: string): AgUiEventCursor | undefined {
+  if (!value.startsWith(AG_UI_CURSOR_PREFIX)) return undefined;
+  const separator = value.lastIndexOf(".");
+  if (separator <= AG_UI_CURSOR_PREFIX.length) return undefined;
+  const projectionIndex = Number(value.slice(separator + 1));
+  if (!Number.isSafeInteger(projectionIndex) || projectionIndex < 0) return undefined;
+  try {
+    const sourceEventId = decodeURIComponent(
+      value.slice(AG_UI_CURSOR_PREFIX.length, separator),
+    );
+    return sourceEventId.length === 0 ? undefined : { sourceEventId, projectionIndex };
+  } catch {
+    return undefined;
+  }
+}
+
+export function getAgUiEventCursor(event: AgUiEvent): string {
+  const metadata = (event.metadata as Record<string, unknown> | undefined)?.[
+    ENTERPRISE_ASSISTANT_METADATA_KEY
+  ];
+  const parsed = enterpriseAssistantMetadataSchema.safeParse(metadata);
+  if (!parsed.success) throw new Error("AG-UI event is missing enterprise cursor metadata.");
+  return parsed.data.eventId;
 }
 
 function requiredString(event: AssistantEvent, field: string): string {
@@ -100,10 +147,9 @@ function addEnterpriseEnvelope(
   source: AssistantEvent,
   candidate: Event,
   projectionIndex: number,
-  projectionCount: number,
 ): AgUiEvent {
   const eventId =
-    projectionCount === 1 ? source.eventId : `${source.eventId}:${projectionIndex + 1}`;
+    encodeAgUiEventCursor({ sourceEventId: source.eventId, projectionIndex });
   const event: Event = {
     ...candidate,
     timestamp: eventTimestamp(source),
@@ -129,7 +175,7 @@ function projectCandidates(
 ): AgUiProjectionResult {
   return {
     events: candidates.map((candidate, index) =>
-      addEnterpriseEnvelope(source, candidate, index, candidates.length),
+      addEnterpriseEnvelope(source, candidate, index),
     ),
     state,
   };

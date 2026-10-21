@@ -1,4 +1,10 @@
-import { assistantEventSchema, type AssistantEvent } from "@assistant/contracts";
+import {
+  agUiEventSchema,
+  assistantEventSchema,
+  getAgUiEventCursor,
+  type AgUiEvent,
+  type AssistantEvent,
+} from "@assistant/contracts";
 
 export interface SessionDto {
   id: string;
@@ -24,6 +30,7 @@ export interface RunDto {
   sessionId: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
   eventsUrl?: string;
+  agUiEventsUrl?: string;
   errorCode?: string;
 }
 
@@ -54,11 +61,32 @@ export interface AssistantTransportOptions {
   reconnectAttempts?: number;
 }
 
+/** Chat Shell 所需的最小端口；管理页面 API 不进入该边界。 */
+export interface ChatAgentPort<TEvent> {
+  listSessions(): Promise<{ items: SessionDto[] }>;
+  createSession(input: { title?: string; mode: "assistant" | "standalone" }): Promise<SessionDto>;
+  listMessages(sessionId: string): Promise<{ items: MessageDto[] }>;
+  createContextSnapshot(
+    context: JsonObject,
+    mode?: "assistant" | "standalone",
+  ): Promise<{ id: string; version: string; capturedAt: string }>;
+  createRun(
+    sessionId: string,
+    input: { message: string; contextSnapshotId: string; clientRequestId: string },
+  ): Promise<RunDto>;
+  getRun(runId: string): Promise<RunDto>;
+  cancelRun(runId: string): Promise<{ status: string }>;
+  resolveEvidence(referenceId: string): Promise<EvidenceDto>;
+  watchRun(runId: string, signal?: AbortSignal): AsyncGenerator<TEvent>;
+}
+
+export type AssistantChatAgentPort = ChatAgentPort<AssistantEvent>;
+
 type JsonObject = Record<string, unknown>;
 
 const terminalStatuses = new Set(["completed", "failed", "cancelled"]);
 
-export class AssistantApiTransport {
+export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
   readonly #baseUrl: string;
   readonly #credential: AssistantTransportOptions["getAccessCredential"];
   readonly #fetch: typeof fetch;
@@ -169,7 +197,13 @@ export class AssistantApiTransport {
     const seen = new Set<string>();
     while (!signal?.aborted) {
       try {
-        for await (const event of this.#stream(runId, cursor, signal)) {
+        for await (const event of this.#stream(
+          runId,
+          "events",
+          cursor,
+          assistantEventSchema,
+          signal,
+        )) {
           cursor = event.eventId;
           if (seen.has(event.eventId)) continue;
           seen.add(event.eventId);
@@ -187,14 +221,47 @@ export class AssistantApiTransport {
     }
   }
 
-  async *#stream(
+  async *watchRunAgUi(runId: string, signal?: AbortSignal): AsyncGenerator<AgUiEvent> {
+    let cursor: string | undefined;
+    let attempt = 0;
+    const seen = new Set<string>();
+    while (!signal?.aborted) {
+      try {
+        for await (const event of this.#stream(
+          runId,
+          "ag-ui/events",
+          cursor,
+          agUiEventSchema,
+          signal,
+        )) {
+          cursor = getAgUiEventCursor(event);
+          if (seen.has(cursor)) continue;
+          seen.add(cursor);
+          yield event;
+          const eventType = String(event.type);
+          if (eventType === "RUN_FINISHED" || eventType === "RUN_ERROR") return;
+        }
+        return;
+      } catch (error) {
+        if (signal?.aborted) return;
+        const run = await this.getRun(runId);
+        if (terminalStatuses.has(run.status)) return;
+        if (attempt >= this.#reconnectAttempts) throw error;
+        attempt += 1;
+      }
+    }
+  }
+
+  async *#stream<T>(
     runId: string,
+    path: "events" | "ag-ui/events",
     cursor: string | undefined,
+    schema: { parse(value: unknown): T },
     signal: AbortSignal | undefined,
-  ): AsyncGenerator<AssistantEvent> {
+  ): AsyncGenerator<T> {
     const token = await this.#credential();
     const response = await this.#fetch(
-      `${this.#baseUrl}/runs/${encodeURIComponent(runId)}/events`,
+      `${this.#baseUrl}/runs/${encodeURIComponent(runId)}/${path}`,
       {
         headers: {
           authorization: `Bearer ${token}`,
@@ -219,7 +286,7 @@ export class AssistantApiTransport {
           .filter((line) => line.startsWith("data:"))
           .map((line) => line.slice(5).trimStart())
           .join("\n");
-        if (data.length > 0) yield assistantEventSchema.parse(JSON.parse(data) as unknown);
+        if (data.length > 0) yield schema.parse(JSON.parse(data) as unknown);
       }
       if (done) break;
     }
@@ -249,5 +316,55 @@ export class AssistantApiTransport {
       typeof payload["message"] === "string" ? payload["message"] : "Request failed.",
       typeof payload["traceId"] === "string" ? payload["traceId"] : undefined,
     );
+  }
+}
+
+/** AG-UI 事件版本的 Chat 端口；REST 资源操作继续复用同一受控 Transport。 */
+export class AgUiChatAgentPort implements ChatAgentPort<AgUiEvent> {
+  constructor(private readonly transport: AssistantApiTransport) {}
+
+  listSessions(): Promise<{ items: SessionDto[] }> {
+    return this.transport.listSessions();
+  }
+
+  createSession(input: {
+    title?: string;
+    mode: "assistant" | "standalone";
+  }): Promise<SessionDto> {
+    return this.transport.createSession(input);
+  }
+
+  listMessages(sessionId: string): Promise<{ items: MessageDto[] }> {
+    return this.transport.listMessages(sessionId);
+  }
+
+  createContextSnapshot(
+    context: JsonObject,
+    mode?: "assistant" | "standalone",
+  ): Promise<{ id: string; version: string; capturedAt: string }> {
+    return this.transport.createContextSnapshot(context, mode);
+  }
+
+  createRun(
+    sessionId: string,
+    input: { message: string; contextSnapshotId: string; clientRequestId: string },
+  ): Promise<RunDto> {
+    return this.transport.createRun(sessionId, input);
+  }
+
+  getRun(runId: string): Promise<RunDto> {
+    return this.transport.getRun(runId);
+  }
+
+  cancelRun(runId: string): Promise<{ status: string }> {
+    return this.transport.cancelRun(runId);
+  }
+
+  resolveEvidence(referenceId: string): Promise<EvidenceDto> {
+    return this.transport.resolveEvidence(referenceId);
+  }
+
+  watchRun(runId: string, signal?: AbortSignal): AsyncGenerator<AgUiEvent> {
+    return this.transport.watchRunAgUi(runId, signal);
   }
 }

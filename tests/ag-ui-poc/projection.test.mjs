@@ -6,6 +6,8 @@ import {
   ENTERPRISE_ASSISTANT_METADATA_KEY,
   VIEW_CREATED_EVENT_NAME,
   agUiEventSchema,
+  decodeAgUiEventCursor,
+  getAgUiEventCursor,
   initialAgUiProjectionState,
   projectAssistantEventToAgUi,
 } from "../../packages/contracts/dist/index.js";
@@ -71,10 +73,18 @@ test("projects a replayable text run into a valid AG-UI lifecycle", () => {
   ])
     assert.deepEqual(agUiEventSchema.parse(event), event);
 
-  const projectedIds = firstDelta.events.map(
-    (event) => event.metadata[ENTERPRISE_ASSISTANT_METADATA_KEY].eventId,
+  const projectedCursors = firstDelta.events.map((event) => getAgUiEventCursor(event));
+  assert.deepEqual(
+    projectedCursors.map((cursor) => decodeAgUiEventCursor(cursor)),
+    [
+      { sourceEventId: "event-2", projectionIndex: 0 },
+      { sourceEventId: "event-2", projectionIndex: 1 },
+    ],
   );
-  assert.deepEqual(projectedIds, ["event-2:1", "event-2:2"]);
+  assert.equal(
+    firstDelta.events[0].metadata[ENTERPRISE_ASSISTANT_METADATA_KEY].eventId,
+    projectedCursors[0],
+  );
 });
 
 test("projects tool status without exposing arguments or raw business results", () => {

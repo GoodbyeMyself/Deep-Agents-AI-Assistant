@@ -1,4 +1,8 @@
-import type { AssistantApiTransport, MessageDto, SessionDto } from "@assistant/assistant-transport";
+import type {
+  AssistantChatAgentPort,
+  MessageDto,
+  SessionDto,
+} from "@assistant/assistant-transport";
 import type { RawHostContext } from "@assistant/context";
 import {
   FolderOutlined,
@@ -41,7 +45,7 @@ export function ChatWorkspace({
   sidebarFooter,
   layout = "default",
 }: {
-  transport: AssistantApiTransport;
+  transport: AssistantChatAgentPort;
   selectedObject?: SelectedBusinessObject;
   getContext?: () => RawHostContext | Promise<RawHostContext>;
   mode?: "assistant" | "standalone";
