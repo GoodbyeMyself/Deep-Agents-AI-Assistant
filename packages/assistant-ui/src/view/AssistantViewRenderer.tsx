@@ -1,6 +1,7 @@
 import { assistantViewSchema } from "@assistant/contracts";
 import { Alert, Card, Statistic, Table, Tag } from "antd";
 
+import { LineChartView } from "./LineChartView.js";
 import { SafeContent } from "./SafeContent.js";
 
 function displayScalar(value: unknown): string {
@@ -52,37 +53,5 @@ export function AssistantViewRenderer({ value }: { value: unknown }) {
       </ul>
     );
 
-  const rows = view.data.rows;
-  const values = rows.map((row) => row.value);
-  const min = Math.min(...values, 0);
-  const max = Math.max(...values, 1);
-  const points = rows
-    .map((row, index) => {
-      const x = rows.length < 2 ? 50 : (index / (rows.length - 1)) * 100;
-      const y = 92 - ((row.value - min) / Math.max(max - min, 1)) * 80;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  return (
-    <figure className="assistant-line-chart">
-      <figcaption>{view.title}</figcaption>
-      <svg
-        viewBox="0 0 100 100"
-        role="img"
-        aria-label={`${view.title}，共 ${rows.length} 个数据点`}
-      >
-        <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" />
-      </svg>
-      <details>
-        <summary>查看图表数据</summary>
-        <ol>
-          {rows.map((row) => (
-            <li key={row.time}>
-              {row.time}：{row.value}
-            </li>
-          ))}
-        </ol>
-      </details>
-    </figure>
-  );
+  return <LineChartView title={view.title} rows={view.data.rows} />;
 }
