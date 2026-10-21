@@ -318,6 +318,9 @@
   color: rgb(0 0 0 / 88%);
   text-align: left;
 }
+.assistant-message-actions {
+  margin-top: 4px;
+}
 .assistant-safe-content p {
   margin: 0 0 8px;
 }
@@ -413,6 +416,9 @@
 }
 .assistant-approval small {
   color: var(--assistant-muted);
+}
+.assistant-think {
+  width: 100%;
 }
 .assistant-execution {
   width: 100%;

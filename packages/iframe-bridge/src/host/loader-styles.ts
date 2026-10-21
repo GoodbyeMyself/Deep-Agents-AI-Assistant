@@ -1,3 +1,5 @@
+import { ASSISTANT_PANEL_DEFAULT_WIDTH } from "./panel-resize.js";
+
 export function loaderStylesheet(accent: string, zIndex: number): string {
   return `
     :host { display: contents; pointer-events: none; color-scheme: light; --assistant-accent: ${accent}; }
@@ -21,8 +23,9 @@ export function loaderStylesheet(accent: string, zIndex: number): string {
     }
     .floating-assistant-panel {
       position: fixed; right: 24px; bottom: 22px; z-index: ${zIndex};
-      width: min(448px, calc(100vw - 32px)); height: min(740px, calc(100vh - 44px));
-      overflow: hidden; border: 1px solid rgb(20 87 70 / 18%); border-radius: 22px;
+      --assistant-panel-width: ${ASSISTANT_PANEL_DEFAULT_WIDTH}px;
+      width: min(var(--assistant-panel-width), calc(100vw - 32px)); height: min(740px, calc(100vh - 44px));
+      overflow: hidden; border: 1px solid rgb(20 87 70 / 18%); border-radius: 14px;
       background: #f8fbfa; box-shadow: 0 28px 80px rgb(6 31 25 / 30%);
       opacity: 0; visibility: hidden; pointer-events: none;
       transform: translateY(18px) scale(.975); transform-origin: right bottom;
@@ -30,6 +33,30 @@ export function loaderStylesheet(accent: string, zIndex: number): string {
     }
     .floating-assistant-panel.is-open {
       opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1);
+    }
+    .floating-assistant-panel.is-resizing {
+      transition: none;
+      user-select: none;
+    }
+    .assistant-panel-resize-handle {
+      position: absolute; left: 0; top: 0; bottom: 0; z-index: 4;
+      width: 10px; margin: 0; padding: 0; border: 0; background: transparent;
+      cursor: ew-resize; touch-action: none; pointer-events: auto;
+    }
+    .assistant-panel-resize-handle::after {
+      content: ""; position: absolute; left: 3px; top: 50%; width: 3px; height: 56px;
+      border-radius: 2px; transform: translateY(-50%);
+      background: #d9d9d9;
+      opacity: 0; transition: opacity 160ms ease;
+    }
+    .floating-assistant-panel.is-open .assistant-panel-resize-handle::after,
+    .assistant-panel-resize-handle:hover::after,
+    .assistant-panel-resize-handle:focus-visible::after {
+      opacity: 1;
+    }
+    .assistant-panel-resize-handle:focus-visible {
+      outline: 2px solid #bfbfbf;
+      outline-offset: -2px;
     }
     .assistant-loader-frame { width: 100%; height: 100%; border: 0; background: #f8fbfa; }
     .assistant-loader-close {
@@ -52,7 +79,11 @@ export function loaderStylesheet(accent: string, zIndex: number): string {
     @media (max-width: 640px) {
       .assistant-loader-launcher { right: 14px; bottom: 14px; min-width: 54px; padding-right: 9px; }
       .assistant-loader-launcher strong { display: none; }
-      .floating-assistant-panel { right: 8px; bottom: 8px; width: calc(100vw - 16px); height: calc(100vh - 16px); border-radius: 18px; }
+      .floating-assistant-panel {
+        right: 8px; bottom: 8px; width: calc(100vw - 16px); height: calc(100vh - 16px);
+        border-radius: 10px;
+      }
+      .assistant-panel-resize-handle { display: none; }
     }
     @media (prefers-reduced-motion: reduce) {
       .assistant-loader-launcher, .floating-assistant-panel, .assistant-loader-close { transition: none; }

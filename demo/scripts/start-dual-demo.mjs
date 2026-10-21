@@ -4,6 +4,21 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { openBrowser } from "./open-browser.mjs";
+import { waitForPort } from "./wait-for-port.mjs";
+
+/** @type {const} */
+export const DEMO_PORTS = {
+  aServer: 3411,
+  aWeb: 5411,
+  aEmbed: 5511,
+  bServer: 3412,
+  bWeb: 5412,
+  bEmbed: 5512,
+  standaloneServer: 3410,
+  standaloneWeb: 5173,
+};
+
 const commands = [
   {
     name: "Product A Agent Server",
@@ -25,9 +40,9 @@ const commands = [
       "127.0.0.1",
     ],
     env: {
-      ASSISTANT_EMBED_PORT: "5511",
-      ASSISTANT_API_TARGET: "http://127.0.0.1:3411",
-      ASSISTANT_HOST_ORIGIN: "http://127.0.0.1:5411",
+      ASSISTANT_EMBED_PORT: String(DEMO_PORTS.aEmbed),
+      ASSISTANT_API_TARGET: `http://127.0.0.1:${DEMO_PORTS.aServer}`,
+      ASSISTANT_HOST_ORIGIN: `http://127.0.0.1:${DEMO_PORTS.aWeb}`,
     },
   },
   {
@@ -50,12 +65,42 @@ const commands = [
       "127.0.0.1",
     ],
     env: {
-      ASSISTANT_EMBED_PORT: "5512",
-      ASSISTANT_API_TARGET: "http://127.0.0.1:3412",
-      ASSISTANT_HOST_ORIGIN: "http://127.0.0.1:5412",
+      ASSISTANT_EMBED_PORT: String(DEMO_PORTS.bEmbed),
+      ASSISTANT_API_TARGET: `http://127.0.0.1:${DEMO_PORTS.bServer}`,
+      ASSISTANT_HOST_ORIGIN: `http://127.0.0.1:${DEMO_PORTS.bWeb}`,
+    },
+  },
+  {
+    name: "Standalone Agent Server",
+    args: [
+      "demo/server/node_modules/tsx/dist/cli.mjs",
+      "demo/server/src/demo-product-a-server-main.ts",
+    ],
+    env: {
+      SERVER_PORT: String(DEMO_PORTS.standaloneServer),
+    },
+  },
+  {
+    name: "Standalone Web Assistant",
+    args: [
+      "apps/assistant-web/node_modules/vite/bin/vite.js",
+      "apps/assistant-web",
+      "--host",
+      "127.0.0.1",
+    ],
+    env: {
+      ASSISTANT_API_TARGET: `http://127.0.0.1:${DEMO_PORTS.standaloneServer}`,
+      ASSISTANT_WEB_PORT: String(DEMO_PORTS.standaloneWeb),
     },
   },
 ];
+
+const browserTargets = [
+  { label: "Product A（含嵌入式助手）", url: `http://127.0.0.1:${DEMO_PORTS.aWeb}` },
+  { label: "Product B（含嵌入式助手）", url: `http://127.0.0.1:${DEMO_PORTS.bWeb}` },
+  { label: "独立 Web 助手", url: `http://127.0.0.1:${DEMO_PORTS.standaloneWeb}/assistant` },
+];
+
 const childRunner = fileURLToPath(new URL("./run-demo-child.mjs", import.meta.url));
 const launcherParentPid = process.ppid;
 const heartbeatPath = join(tmpdir(), `assistant-dual-demo-${process.pid}.heartbeat`);
@@ -119,11 +164,41 @@ process.once("SIGTERM", () => {
 });
 process.once("exit", terminate);
 
-console.log("\n双产品演示正在启动：");
-console.log("  Product A  http://127.0.0.1:5411");
-console.log("  Product B  http://127.0.0.1:5412");
-console.log("  A iframe   http://127.0.0.1:5511");
-console.log("  B iframe   http://127.0.0.1:5512");
-console.log("按 Ctrl+C 停止全部演示进程。\n");
+console.log("\n双产品 + 独立 Web 演示正在启动：");
+console.log(`  Product A       http://127.0.0.1:${DEMO_PORTS.aWeb}`);
+console.log(`  Product B       http://127.0.0.1:${DEMO_PORTS.bWeb}`);
+console.log(`  独立 Web 助手   http://127.0.0.1:${DEMO_PORTS.standaloneWeb}/assistant`);
+console.log(`  A iframe 助手   http://127.0.0.1:${DEMO_PORTS.aEmbed}（由 A 页面嵌入）`);
+console.log(`  B iframe 助手   http://127.0.0.1:${DEMO_PORTS.bEmbed}（由 B 页面嵌入）`);
+console.log("按 Ctrl+C 停止全部演示进程。");
+if (process.env["DEMO_OPEN_BROWSER"] === "0") {
+  console.log("已设置 DEMO_OPEN_BROWSER=0，不会自动打开浏览器。\n");
+} else {
+  console.log("端口就绪后将自动打开 Product A、Product B 与独立 Web 助手。\n");
+}
+
+void (async () => {
+  const ports = [
+    DEMO_PORTS.aServer,
+    DEMO_PORTS.aWeb,
+    DEMO_PORTS.aEmbed,
+    DEMO_PORTS.bServer,
+    DEMO_PORTS.bWeb,
+    DEMO_PORTS.bEmbed,
+    DEMO_PORTS.standaloneServer,
+    DEMO_PORTS.standaloneWeb,
+  ];
+  try {
+    await Promise.all(ports.map((port) => waitForPort(port)));
+    for (const target of browserTargets) {
+      openBrowser(target.url);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+    }
+    console.log("已在浏览器中打开演示入口。");
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`未能自动打开浏览器（${message}）。请手动访问上述地址。`);
+  }
+})();
 
 setInterval(() => undefined, 60_000);

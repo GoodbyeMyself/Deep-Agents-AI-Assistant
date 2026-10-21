@@ -16,7 +16,7 @@ export function ExecutionTimeline({
   steps: PublicExecutionStep[];
   status: "loading" | "success" | "error" | "abort";
 }) {
-  const shouldExpand = status === "loading" || status === "error";
+  const shouldExpand = status === "error";
   const [expanded, setExpanded] = useState(shouldExpand);
   const detailsId = useId();
 

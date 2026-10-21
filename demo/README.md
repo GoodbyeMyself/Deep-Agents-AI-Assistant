@@ -20,6 +20,8 @@
 pnpm demo
 ```
 
-打开 Product A `http://127.0.0.1:5411` 和 Product B `http://127.0.0.1:5412`。按 `Ctrl+C` 停止全部进程。
+默认会在端口就绪后自动打开 Product A、Product B 与独立 Web 助手（`http://127.0.0.1:5173/assistant`）。设置 `DEMO_OPEN_BROWSER=0` 可仅启动服务、不打开浏览器。
 
-演示始终使用 Mock Identity 和模拟业务数据。A/B 必须从根目录 `.env` 读取真实 DeepSeek Key，缺少配置时启动失败；两套业务页分别在 `5511`、`5512` 通过 iframe 加载助手。生产接入边界见 `docs/dual-product-demo-guide.md`。
+按 `Ctrl+C` 停止全部进程（共八个子服务）。
+
+演示始终使用 Mock Identity 和模拟业务数据。A/B/独立 Web 的 Agent Server 必须从根目录 `.env` 读取真实 DeepSeek Key，缺少配置时启动失败；A/B 业务页分别在 `5511`、`5512` 通过 iframe 加载嵌入式助手。生产接入边界见 `docs/dual-product-demo-guide.md`。

@@ -20,3 +20,23 @@ pnpm --filter @assistant/assistant-web build
 pnpm --filter @assistant/assistant-web typecheck
 pnpm --filter @assistant/assistant-web e2e
 ```
+
+### 连哪个 Agent Server？
+
+独立 Web 只通过 Vite 把 `/api` 代理到 `ASSISTANT_API_TARGET`（默认 `http://127.0.0.1:3000`）。页面上使用的 `mock-token-*` 是 **演示用身份 Mock**，不代表后端一定是假模型。
+
+| 启动方式 | 典型 API 地址 | 模型 |
+| --- | --- | --- |
+| 根目录 `pnpm demo`（推荐） | `http://127.0.0.1:3410`（由启动器注入环境变量） | 真实 DeepSeek + Product A 插件 |
+| 仅 `pnpm dev:web` | 默认 `3000` | 若未起服务会失败；若起了 `demo-server serve:web-offline` 则为 **假模型固定话术** |
+| `pnpm dev:server` + `dev:web` | `3000` 上的 `agent-server` | 真实 DeepSeek（需根目录 `.env`） |
+
+在 **运行状态** 页查看模型：`deepseek` / `deepseek-chat` 表示真实演示；`offline` / `fake-model` 表示离线 Mock。
+
+单独调试前端时，请先 `pnpm demo` 或手动：
+
+```bash
+# PowerShell（需已有 3410 上的 Standalone Agent Server，例如完整 pnpm demo）
+$env:ASSISTANT_API_TARGET="http://127.0.0.1:3410"
+pnpm --filter @assistant/assistant-web dev
+```

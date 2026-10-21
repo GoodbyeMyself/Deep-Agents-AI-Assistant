@@ -22,10 +22,13 @@ pnpm demo
 
 - Product A 数据质量运营台：<http://127.0.0.1:5411>
 - Product B 数据资产驾驶舱：<http://127.0.0.1:5412>
+- 独立 Web 助手：<http://127.0.0.1:5173/assistant>
 
-按 `Ctrl+C` 停止六个演示进程。端口对应关系：A Web `5411`、A Agent Server `3411`、A iframe Assistant `5511`；B Web `5412`、B Agent Server `3412`、B iframe Assistant `5512`。
+`pnpm demo` 在端口就绪后会自动打开上述三个入口（嵌入式助手随 A/B 页面加载）。设置 `DEMO_OPEN_BROWSER=0` 可跳过自动打开浏览器。
 
-启动器包含父进程与心跳监控；在 Windows 上即使启动器异常退出，六个子服务也会自动清理，避免演示结束后继续占用端口。
+按 `Ctrl+C` 停止八个演示进程。端口对应关系：A Web `5411`、A Agent Server `3411`、A iframe Assistant `5511`；B Web `5412`、B Agent Server `3412`、B iframe Assistant `5512`；独立 Web `5173`、独立 Agent Server `3410`。
+
+启动器包含父进程与心跳监控；在 Windows 上即使启动器异常退出，八个子服务也会自动清理，避免演示结束后继续占用端口。
 
 页面左下角及顶部只读取服务端安全模型元数据，显示 `LIVE DEEPSEEK` 和模型名；API Key 不会返回浏览器。A/B 的入口 HTML 加载同一声明式 Assistant Loader，由 Loader 在 Shadow DOM 中统一创建右下角按钮、固定浮窗和 iframe；宿主不包含助手容器实现。Loader 通过一次性票据、固定 Origin 和 channelId 与各自的跨 Origin iframe 建立短期会话，长期凭证不会进入 iframe URL 或 `postMessage`。
 

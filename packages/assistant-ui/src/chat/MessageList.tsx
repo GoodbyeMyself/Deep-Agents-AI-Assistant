@@ -1,8 +1,9 @@
 import type { ChatAgentPort } from "@assistant/assistant-transport";
 import type { AgUiEvent } from "@assistant/contracts";
 import { RobotOutlined, UserOutlined } from "@ant-design/icons";
-import { Bubble } from "@ant-design/x";
+import { Actions, Bubble, Think } from "@ant-design/x";
 import { Avatar, Empty, Space } from "antd";
+import { useState } from "react";
 
 import { EvidencePanel } from "../evidence/EvidencePanel.js";
 import { ExecutionTimeline } from "../execution/ExecutionTimeline.js";
@@ -28,6 +29,7 @@ const bubbleRoles = {
     placement: "start" as const,
     variant: "shadow" as const,
     shape: "corner" as const,
+    footerPlacement: "outer-start" as const,
     avatar: (
       <Avatar style={{ backgroundColor: "#fde3cf", color: "#f56a00" }} icon={<RobotOutlined />} />
     ),
@@ -39,6 +41,24 @@ const bubbleRoles = {
   },
 };
 
+function AssistantMessageActions({ content }: { content: string }) {
+  const [feedback, setFeedback] = useState<"default" | "dislike" | "like">("default");
+  const text = content.trim();
+  if (text.length === 0) return null;
+  return (
+    <Actions
+      className="assistant-message-actions"
+      items={[
+        { key: "copy", actionRender: <Actions.Copy text={text} /> },
+        {
+          key: "feedback",
+          actionRender: <Actions.Feedback value={feedback} onChange={setFeedback} />,
+        },
+      ]}
+    />
+  );
+}
+
 function AssistantMessageBody({
   message,
   transport,
@@ -48,22 +68,40 @@ function AssistantMessageBody({
   transport: ChatAgentPort<AgUiEvent>;
   onApproval: (approval: ApprovalRequest, decision: "approved" | "rejected") => void;
 }) {
+  const answerText = message.content.trim();
+  const isStreaming = message.status === "loading";
+  const showStructuredResults = !isStreaming;
+
   return (
     <Space orientation="vertical" size={12} className="assistant-message-content">
+      {isStreaming ? (
+        <Think
+          className="assistant-think"
+          title="思考中"
+          loading={answerText.length === 0}
+          blink={answerText.length > 0}
+          defaultExpanded
+        >
+          {answerText.length === 0
+            ? "正在理解你的问题并编排可信业务能力…"
+            : "正在整理结论，请稍候…"}
+        </Think>
+      ) : null}
       <ExecutionTimeline steps={message.executionSteps} status={message.status} />
-      <SafeContent
-        streaming={message.status === "loading"}
-        content={
-          message.content || (message.status === "loading" ? "正在连接可信业务能力…" : "")
-        }
-      />
-      {message.views.map((view) => (
-        <AssistantViewRenderer key={view.viewId} value={view} />
-      ))}
+      {answerText.length > 0 ? (
+        <SafeContent streaming={isStreaming} content={message.content} />
+      ) : null}
+      {showStructuredResults
+        ? message.views.map((view) => (
+            <AssistantViewRenderer key={view.viewId} value={view} />
+          ))
+        : null}
       {message.approvals.map((approval) => (
         <ApprovalCard key={approval.id} approval={approval} onDecision={onApproval} />
       ))}
-      <EvidencePanel referenceIds={message.evidenceIds} transport={transport} />
+      {showStructuredResults ? (
+        <EvidencePanel referenceIds={message.evidenceIds} transport={transport} />
+      ) : null}
     </Space>
   );
 }
@@ -120,13 +158,16 @@ export function MessageList({
       role={bubbleRoles}
       items={messages.map((message) => {
         const isAssistant = message.role === "assistant";
-        const waitingForContent = isAssistant && message.status === "loading" && !message.content;
+        const showActions =
+          isAssistant && message.status !== "loading" && message.content.trim().length > 0;
         return {
           key: message.id,
           role: isAssistant ? "ai" : "user",
           status: message.status,
           streaming: message.status === "loading",
-          loading: waitingForContent,
+          ...(showActions
+            ? { footer: <AssistantMessageActions content={message.content} /> }
+            : {}),
           content: isAssistant ? (
             <AssistantMessageBody
               message={message}

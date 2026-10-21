@@ -7,6 +7,7 @@ import { createIframeHostBridge } from "../bridge/host-bridge.js";
 import { ASSISTANT_CONTEXT_EVENT } from "./constants.js";
 import { canonicalOrigin, createEmbedTicket } from "./embed-ticket.js";
 import { loaderStylesheet } from "./loader-styles.js";
+import { attachPanelWidthResize } from "./panel-resize.js";
 import type { IframeAssistantHost, IframeAssistantHostOptions } from "./types.js";
 
 /**
@@ -62,9 +63,15 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
   iframe.title = "企业业务智能助手";
   iframe.src = iframeUrl.href;
   iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
-  panel.append(closeButton, status, iframe);
+  const resizeHandle = document.createElement("button");
+  resizeHandle.type = "button";
+  resizeHandle.className = "assistant-panel-resize-handle";
+  resizeHandle.setAttribute("aria-label", "拖拽调整助手宽度");
+  panel.append(resizeHandle, closeButton, status, iframe);
   shadow.append(style, launcher, panel);
   document.body.append(host);
+
+  const detachPanelResize = attachPanelWidthResize(panel, resizeHandle);
 
   const setOpen = (next: boolean) => {
     open = next;
@@ -108,6 +115,7 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
     close: () => setOpen(false),
     updateContext,
     destroy() {
+      detachPanelResize();
       bridge.destroy();
       window.removeEventListener(ASSISTANT_CONTEXT_EVENT, contextListener);
       host.remove();

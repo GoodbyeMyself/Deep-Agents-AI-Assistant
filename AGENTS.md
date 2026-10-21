@@ -27,7 +27,8 @@
 - 先做可验证实现和测试，再补辅助文档；不批量生成空壳模块。
 - Deep Agents、LangChain、Ant Design X 官方 API 不得臆造；PluginLoader、definePlugin、CapabilityRegistry 等是本项目自研接口。
 - 缺少真实模型 Key/外部 API 时 Mock 与真实验证明确分开；不得用模拟数据冒充业务集成成功。
-- 运行 `pnpm lint`、`pnpm typecheck`、`pnpm build`（建立后均要求执行）。失败必须处理或说明阻断。
+- **所有 `pnpm` 命令必须由用户本人执行。Codex 禁止运行任何 `pnpm` 命令**（包括但不限于安装、启动、Lint、测试、类型检查和构建），也不得为绕过该限制改用其他命令间接触发 `pnpm`。Codex 只能向用户列出建议执行的命令，并依据用户提供的真实输出继续处理。
+- `pnpm lint`、`pnpm typecheck`、`pnpm build`（建立后）仍是退出门禁；在用户尚未提供执行结果时，必须报告为“未执行/待用户验证”，不得自行补跑或宣称通过。
 - 任何权限/契约变更同时更新 `docs/implementation-status.md` 与 ADR。
 
 ## 4. 安全要求

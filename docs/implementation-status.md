@@ -71,6 +71,7 @@ Checkpointer；当前不宣称跨进程重启恢复或真实产品权限集成�
   步骤同时展示业务名称、标准 Capability 标识和公开协作 namespace，但不展示模型私有推理。
 - 消息列表使用 Ant Design X `Bubble.List`，模型正文使用 `@ant-design/x-markdown@2.9.0`
   解析 CommonMark/GFM；流式状态传递给渲染器，原始 HTML 转义为文本并保留 XSS 净化边界。
+  助手回复气泡下方使用 `Actions`（复制、反馈）作为 `footer` 操作区。
 - 独立 Web 已提供业务对象选择语义、用户会话管理、模型/能力状态和管理员插件状态；
   普通用户与管理员页面按服务端权限分离。
 - 使用 React 19、Ant Design 6.6.6、Ant Design X 2.9.0 与 Vite 8.3.4；未直接消费
@@ -138,7 +139,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   Transport 和标准 Capability Contract。
 - 两套页面提供不同品牌、业务指标、对象列表和活动信息，并把当前订单/客户对象通过宿主
   Context 传入助手；工具结果展示标准指标、Partial 限制与 Evidence。
-- 根命令 `pnpm demo` 一次启动六个进程；Windows 下使用父进程与心跳监控，启动器退出后
+- 根命令 `pnpm demo` 一次启动八个进程（A/B 双产品 + 嵌入式助手 + 独立 Web）；端口就绪后自动打开浏览器，可用 `DEMO_OPEN_BROWSER=0` 关闭；Windows 下使用父进程与心跳监控，启动器退出后
   自动清理子进程。
 - 交互式演示缺少 DeepSeek Key 时明确失败，不提供离线回退。Mock Identity 和模拟业务数据始终明确展示，未把真实模型调用描述为真实企业数据集成。
 - 仓库已移除 Vitest/Playwright 自动化测试与 `tests/capability-contract-testkit`；`deepagentsjs/` 子树保持独立，未改动其测试配置。

@@ -156,7 +156,7 @@ pnpm dev:web      # http://127.0.0.1:5173
 Product A/B 的 iframe 悬浮助手演示使用：
 
 ```bash
-pnpm demo         # Product A: 5411；Product B: 5412
+pnpm demo         # A:5411 B:5412 独立 Web:5173；就绪后自动打开浏览器
 ```
 
 业务工程的最小声明式接入如下。`assistant-loader.js` 由助手发行物提供，悬浮按钮、窗口尺寸、层级、响应式样式和 iframe 生命周期均由 Loader 管理：
@@ -198,7 +198,7 @@ pnpm format:check
 
 ### 双产品业务接入演示（推荐）
 
-先在根目录 `.env` 配置 `DEEPSEEK_API_KEY`，再用一条命令同时启动 Product A、Product B、各自独立的 Agent Server 和 iframe 助手：
+先在根目录 `.env` 配置 `DEEPSEEK_API_KEY`，再用一条命令同时启动 Product A、Product B、嵌入式 iframe 助手、独立 Web（`assistant-web`）及各自 Agent Server：
 
 ```bash
 pnpm demo
@@ -206,6 +206,7 @@ pnpm demo
 
 - Product A 数据质量运营台（React 19 + Ant Design 6）：`http://127.0.0.1:5411`
 - Product B 数据资产驾驶舱（Vue 3 + Element Plus + Vite）：`http://127.0.0.1:5412`
+- 独立 Web 助手（ProLayout + Shared Chat Core）：`http://127.0.0.1:5173/assistant`
 
 两套页面采用不同宿主框架和视觉语言，但都通过安全 iframe Bridge 挂载同一套 Assistant SDK 和标准 Capability，分别连接 `demo-product-a`、`demo-product-b` Adapter；端口、进程、会话与 Checkpointer 独立。助手头部和输入区固定，中间消息区独立滚动。完整讲解顺序和边界见 [双产品演示指南](docs/dual-product-demo-guide.md)。
 
