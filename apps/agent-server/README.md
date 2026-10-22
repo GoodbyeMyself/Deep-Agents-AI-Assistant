@@ -28,6 +28,18 @@ src/
 
 业务能力不在本应用内实现。`composition/` 只接收 `mcp-client-runtime` 已发现、校验和批准的 MCP Tools，不扫描 Adapter、Plugin 或业务 Skill 目录。
 
+## 本地 MCP 装配
+
+`server-main.ts` 支持通过可信进程配置连接一个或多个本地 stdio MCP：
+
+- `MCP_DEVELOPMENT_STDIO=true`：显式确认仅用于本地开发；`NODE_ENV=production` 时拒绝。
+- `MCP_SERVERS`：JSON 数组，每项包含 `serverId`、绝对 `serverEntry` 和非空 `approvals`。
+- 每项批准固定 `toolName + schemaDigest + riskLevel`，发现不等于批准。
+
+启动时任意 MCP 连接失败、Schema 漂移、出现额外未批准 Tool 或模型 Tool 名冲突，整个 Runtime Snapshot
+失败关闭。成功后所有 MCP 的批准 Tool 一并注入 Deep Agents；关闭 Agent Server 时关闭全部 MCP 连接。
+生产环境仍必须使用带 TLS 和网络安全策略的 Streamable HTTP，不能启用本地 stdio 配置。
+
 ## 安全边界
 
 - UI Context 和 Prompt 不构成授权依据。

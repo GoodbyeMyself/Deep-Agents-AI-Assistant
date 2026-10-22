@@ -1,6 +1,10 @@
 import { ChatOpenAI } from "@langchain/openai";
 
 import { createAgentApplication } from "./composition/create-application.js";
+import {
+  connectApprovedDevelopmentMcps,
+  readDevelopmentMcpDeploymentConfig,
+} from "./composition/mcp-bootstrap.js";
 import { createNodeHttpServer } from "./http/node-http.js";
 
 function envValue(name: string): string | undefined {
@@ -14,6 +18,11 @@ if (apiKey === undefined) throw new Error("DEEPSEEK_API_KEY or OPENAI_API_KEY is
 const baseURL = envValue("DEEPSEEK_BASE_URL");
 const modelName =
   envValue("MODEL_NAME") ?? (deepSeekKey === undefined ? "gpt-5-mini" : "deepseek-chat");
+const port = Number(process.env["SERVER_PORT"] ?? "3000");
+const host = process.env["SERVER_HOST"] ?? "127.0.0.1";
+if (!Number.isInteger(port) || port < 1 || port > 65_535) {
+  throw new Error("SERVER_PORT must be an integer between 1 and 65535.");
+}
 const model = new ChatOpenAI({
   apiKey,
   model: modelName,
@@ -25,24 +34,57 @@ const model = new ChatOpenAI({
   ...(deepSeekKey === undefined ? {} : { modelKwargs: { thinking: { type: "disabled" } } }),
   ...(baseURL === undefined ? {} : { configuration: { baseURL } }),
 });
+const mcpConfig = readDevelopmentMcpDeploymentConfig(process.env, process.execPath);
+const mcpRuntime =
+  mcpConfig === undefined ? undefined : await connectApprovedDevelopmentMcps(mcpConfig);
 const application = await createAgentApplication({
   model,
+  ...(mcpRuntime === undefined
+    ? {}
+    : {
+        tools: mcpRuntime.tools,
+        mcpServers: mcpRuntime.serverStatuses,
+        mcpTools: mcpRuntime.toolStatuses,
+      }),
   modelConfig: {
     id: "default",
     provider: deepSeekKey === undefined ? "openai" : "deepseek",
     model: modelName,
     version: "1",
   },
+}).catch(async (error: unknown) => {
+  await mcpRuntime?.close();
+  throw error;
 });
 const server = createNodeHttpServer(application.handler);
-server.once("close", () => void application.dispose());
-const port = Number(process.env["SERVER_PORT"] ?? "3000");
-const host = process.env["SERVER_HOST"] ?? "127.0.0.1";
-if (!Number.isInteger(port) || port < 1 || port > 65_535) {
-  throw new Error("SERVER_PORT must be an integer between 1 and 65535.");
+let disposed = false;
+async function dispose(): Promise<void> {
+  if (disposed) return;
+  disposed = true;
+  await Promise.all([application.dispose(), mcpRuntime?.close()]);
 }
+function disposeSafely(): void {
+  void dispose().catch((error: unknown) => {
+    console.error("Agent Server shutdown failed.", error);
+    process.exitCode = 1;
+  });
+}
+server.once("close", disposeSafely);
+server.once("error", (error) => {
+  console.error("Agent Server failed.", error);
+  process.exitCode = 1;
+  disposeSafely();
+});
 server.listen(port, host, () =>
   console.log(
-    `Agent Server listening for deployment '${process.env["DEPLOYMENT_ID"] ?? "local"}' on http://${host}:${port}`,
+    `Agent Server listening for deployment '${process.env["DEPLOYMENT_ID"] ?? "local"}' on http://${host}:${port}` +
+      (mcpConfig === undefined
+        ? " without MCP Servers"
+        : ` with MCP Servers '${mcpConfig.servers.map((server) => server.serverId).join(", ")}'`),
   ),
 );
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.once(signal, () => {
+    server.close();
+  });
+}

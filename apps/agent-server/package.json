@@ -16,6 +16,7 @@
     "@assistant/context": "workspace:*",
     "@assistant/contracts": "workspace:*",
     "@assistant/evidence": "workspace:*",
+    "@assistant/mcp-client-runtime": "workspace:*",
     "@langchain/core": "catalog:",
     "@langchain/langgraph": "catalog:",
     "@langchain/langgraph-checkpoint": "catalog:",

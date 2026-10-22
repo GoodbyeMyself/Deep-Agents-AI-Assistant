@@ -419,13 +419,15 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   MCP JSON Schema、计算 SHA-256、匹配 Server/Tool/风险/Schema 批准并转换为 LangChain Tool。
 - 未批准、Schema 漂移、非只读、缺少结构化结果、Tool 错误和超大结果均失败关闭；远端错误正文不
   直接进入模型上下文；LangChain 取消信号透传给 MCP SDK，并有 in-memory Handler 取消测试。
-- 跨仓 stdio 测试从环境接收 Server ID、入口和 Tool arguments，只验证外部 MCP 的发现、批准与通用
-  结构化调用；根据 ADR-027，不解析业务字段，也不再与旧 Adapter 做语义对比。MCP 路径尚未装入
-  默认 Agent Server。
+- Agent Server Composition Root 已支持从可信进程配置连接一个或多个本地 stdio MCP，逐 Server
+  发现 Tool、校验固定 Schema 摘要与只读风险、拒绝额外未批准 Tool，并将全部批准 Tool 合并注入
+  Deep Agents。任一连接、漂移或 Tool 名冲突会关闭整组连接并拒绝启动。
+- 跨仓 stdio 测试已改为验证 Agent Server 的实际装配入口；另有多 MCP 测试验证同一 Runtime
+  同时挂载 Product A/B。根据 ADR-027，平台仍不解析业务字段，也不做 A/B 业务结果等价比较。
 - 当前数据、授权和 Evidence 都是明确 Mock。Streamable HTTP、委托身份、业务 Evidence 重新鉴权、
   连接池/重连和 Product B 真实系统接入属于 MCP-2。
-- MCP 仓曾生成 lockfile，但本次根级项目重构后需要用户重新执行 `pnpm install` 更新；所有相关 pnpm
-  门禁均为待验证状态。
+- Product A/B 原有 stdio 协议与主平台 Client Runtime 测试已由用户确认通过；新增 Composition Root、
+  多 MCP 装配及完整仓库 pnpm 门禁待用户重新执行。
 
 ## V2.2：一系统一 MCP
 

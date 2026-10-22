@@ -3,11 +3,9 @@ import { isAbsolute, resolve } from "node:path";
 import test from "node:test";
 
 import {
-  connectDevelopmentStdioMcp,
-  createApprovedMcpToolSnapshot,
-  createMcpLangChainTools,
-  discoverMcpTools,
-} from "../../packages/mcp-client-runtime/dist/index.js";
+  connectApprovedDevelopmentMcps,
+  readDevelopmentMcpDeploymentConfig,
+} from "../../apps/agent-server/dist/composition/mcp-bootstrap.js";
 
 const configuredEntry = process.env["MCP_SERVER_ENTRY"];
 if (configuredEntry === undefined) {
@@ -23,37 +21,35 @@ if (typeof toolArguments !== "object" || toolArguments === null || Array.isArray
   throw new Error("MCP_TEST_TOOL_ARGUMENTS must contain a JSON object.");
 }
 const serverId = process.env["MCP_SERVER_ID"] ?? "integration-mcp";
+const configuredApprovals = process.env["MCP_TOOL_APPROVALS"];
+if (configuredApprovals === undefined) {
+  throw new Error("MCP_TOOL_APPROVALS must pin the approved Tool name, Schema digest and risk.");
+}
 
-test("main platform discovers, approves and calls the external business MCP over stdio", async () => {
-  const connection = await connectDevelopmentStdioMcp({
-    developmentOnly: true,
-    serverId,
-    command: process.execPath,
-    args: [serverEntry],
-  });
+test("agent-server composition discovers, approves, mounts and calls the external MCP", async () => {
+  const config = readDevelopmentMcpDeploymentConfig(
+    {
+      MCP_DEVELOPMENT_STDIO: "true",
+      MCP_SERVERS: JSON.stringify([
+        {
+          serverEntry,
+          serverId,
+          approvals: JSON.parse(configuredApprovals),
+        },
+      ]),
+    },
+    process.execPath,
+  );
+  assert.ok(config);
+  const runtime = await connectApprovedDevelopmentMcps(config);
   try {
-    const candidates = await discoverMcpTools(connection.client, {
-      serverId: connection.serverId,
-    });
-    assert.equal(candidates.length, 1);
-    const candidate = candidates[0];
-    assert.ok(candidate);
-    const snapshot = createApprovedMcpToolSnapshot(candidates, [
-      {
-        serverId: candidate.serverId,
-        toolName: candidate.name,
-        schemaDigest: candidate.schemaDigest,
-        riskLevel: "read",
-      },
-    ]);
-    const tools = createMcpLangChainTools({
-      client: connection.client,
-      approvedTools: snapshot.approved,
-    });
-    const result = await tools[0]?.invoke(toolArguments);
+    assert.equal(runtime.tools.length, 1);
+    assert.equal(runtime.serverStatuses[0]?.["status"], "ready");
+    assert.equal(runtime.toolStatuses[0]?.["status"], "approved");
+    const result = await runtime.tools[0]?.invoke(toolArguments);
     assert.equal(typeof result, "object");
     assert.notEqual(result, null);
   } finally {
-    await connection.close();
+    await runtime.close();
   }
 });
