@@ -2,8 +2,7 @@
 DEPLOYMENT_ID=product-a
 SERVER_HOST=127.0.0.1
 SERVER_PORT=3101
-PLUGIN_ID=demo-product-a
-PLUGINS_DIR=./adapters/demo-product-a
+# Business tools are supplied by this deployment's approved external MCP Server.
 MODEL_NAME=deepseek-chat
 DEEPSEEK_BASE_URL=https://api.deepseek.com
 DEEPSEEK_API_KEY=

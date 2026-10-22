@@ -1,5 +1,25 @@
-import { evidenceSchema } from "@assistant/capability-core";
 import { z } from "zod";
+
+export const evidenceSchema = z.object({
+  id: z.string().min(1),
+  source: z.object({
+    type: z.enum(["table", "dataset", "metric", "record", "task", "document", "service"]),
+    id: z.string().min(1),
+    title: z.string().min(1).optional(),
+  }),
+  collectedAt: z.iso.datetime({ offset: true }),
+  referenceId: z.string().min(1),
+  dataScope: z
+    .object({
+      from: z.iso.datetime({ offset: true }).optional(),
+      to: z.iso.datetime({ offset: true }).optional(),
+      filters: z.record(z.string(), z.unknown()).optional(),
+    })
+    .optional(),
+  methodology: z.string().min(1).optional(),
+});
+
+export type Evidence = z.infer<typeof evidenceSchema>;
 
 export const evidenceRecordSchema = z.object({
   referenceId: z.string().min(1),

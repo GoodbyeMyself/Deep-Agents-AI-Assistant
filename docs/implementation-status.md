@@ -1,14 +1,18 @@
 # 实施状态
 
-更新日期：2026-10-21
+更新日期：2026-10-22
+
+> 当前架构以 V2.2“一系统一 MCP”为准。M0～E5 章节是已经退出运行路径的历史实施记录，不代表
+> 当前目录仍存在。主仓的 Adapter、Domain、业务 Skill/Template、Plugin SDK/Runtime、Capability
+> Catalog/Executor/Policy 及兼容层已经删除；当前状态见文末“V2.2”。
 
 ## M0：工程初始化与框架验证
 
 状态：完成并通过退出门禁，质量门禁结果见 [M0 验收报告](acceptance/milestones/m0-acceptance-report.md)。
 
 - 已建立 pnpm workspace、TypeScript strict、ESLint、Prettier、Vitest、CI 与环境变量样例。
-- 已建立实际可运行的 `core/capability`、`packages/agent-runtime`、
-  `apps/agent-server`，未创建后续阶段空壳包。
+- 当时建立了 `core/capability`、`packages/agent-runtime`、`apps/agent-server`；其中
+  `core/capability` 已在 V2.2 清理，以下内容仅为历史验收记录。
 - 已锁定并执行 `deepagents@1.14.2`，验证 Tool、Runtime Context、Skills、
   Subagent、FilesystemBackend、MemorySaver 和 Streaming。
 - 已建立最小质量趋势标准契约示例，为 M1 Tool Factory 对接保留产品无关边界。
@@ -130,7 +134,8 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 状态：已完成真实 DeepSeek + iframe 双产品演示增强，不改变 M5 架构范围和生产边界。
 
-所有可执行演示工程已集中到根目录 `demo/`；正式 `apps/`、`packages/` 不再混放产品演示页面、
+当时所有可执行演示工程集中到根目录 `demo/`；V2.2 已整体迁移到独立
+`E:\Deep-Agents-AI-Assistant-Demo` 仓库，正式 `apps/`、`packages/` 不再混放产品演示页面、
 共享演示壳、测试模型入口或演示启动脚本。架构规定的 Adapter 契约样例仍保留在
 `adapters/`，由 Demo Server 作为已批准插件加载。
 
@@ -145,7 +150,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 仓库已移除 Vitest/Playwright 自动化测试与 `tests/capability-contract-testkit`；`deepagentsjs/` 子树保持独立，未改动其测试配置。
 - A/B 页面均通过固定 Origin、一次性票据和 channelId 校验的 iframe Bridge 挂载助手；宿主右下角固定按钮按需展开悬浮助手窗，不占用业务页面布局且不随页面滚动；助手头部与输入区固定，中间消息区独立滚动，页面对象切换只更新后续 Run 的 ContextSnapshot。
 
-完整操作流程与边界见 `dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换
+历史操作流程已迁至 `E:\Deep-Agents-AI-Assistant-Demo\docs\dual-product-demo-guide.md`。进入真实客户演示前仍需按目标产品替换
 企业 IdP、业务 API、模型与持久化驱动，并完成目标环境的安全配置和联调。
 
 ## 容器部署目录
@@ -362,3 +367,79 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - Shared Chat Core 新增确认卡、确认/拒绝状态、续跑消息和刷新恢复。普通模型文本不能生成按钮。
 - 当前一次只支持一个开放 interrupt；真实写 Capability 尚未加入，本轮以受控 Mock Graph/Runner
   验证协议和 UI，不能视为任何生产写业务已接通。
+
+## 统一 Runtime Policy 与可信回答发布
+
+状态：实现完成并通过专项自动化，完整质量门禁待用户执行；详见
+[Runtime Policy 验收报告](acceptance/evolution/runtime-policy-acceptance-report.md)。
+
+- 新增严格 Zod 校验的 `AgentRuntimePolicy`，由应用组合根解析一次并同时注入 Agent Runtime 与
+  Runner；未知字段、零值和负数失败关闭。
+- 显式配置 `SummarizationMiddleware`：40,000 tokens 触发、保留最近 24 条消息、摘要输入最多
+  32,000 tokens，避免 DeepSeek/OpenAI-compatible 模型依赖自动 Profile 推断。
+- 使用官方 `toolCallLimitMiddleware` 与 `modelCallLimitMiddleware` 设置每 Run 12 次 Tool、10 次
+  Model 的默认预算；Runner 统一使用策略中的 recursion limit 和 120 秒总超时。
+- 模型正文改为严格发布：先缓冲 Draft，再验证非空、长度、业务结果 Evidence、Evidence 当前
+  Run/主体归属；partial 由服务端追加限制声明，验证后才产生正文事件和持久消息。
+- 增加稳定失败码及 `test:runtime-policy` 专项测试。用户首次执行发现 LangChain Middleware 参数
+  声明在当前 Zod 4 类型组合下收窄为 `never`/`undefined`；已增加限定在第三方边界的无 `any`
+  类型适配，并于 2026-10-21 由用户重新执行 `pnpm test:runtime-policy` 确认通过。根级 `lint`、
+  `typecheck`、`build` 与全量 `test` 仍待用户验证。
+
+## V2.1 外部 MCP 业务能力架构（已被 V2.2 取代）
+
+状态：历史迁移设计；详见
+[V2.1 外部 MCP 业务能力架构](architecture-v2.0/21-V2.1-外部MCP业务能力架构.md) 和 ADR-026。
+
+- 目标边界已调整：主仓成为受治理的 MCP Host；`E:\Deep-Agents-AI-Assistant-MCP` 负责业务
+  Domain、产品 API Adapter、业务 Prompt/Resource 和 MCP Server 模板。
+- 边界进一步收紧为“业务能力全部由 MCP 提供，平台只做平台能力”：主仓不再作为业务 Capability
+  Catalog 或标准业务契约发布方，不解释业务字段、口径、权限名称和业务错误；这些全部迁入 MCP 仓。
+- 主仓继续拥有身份、ContextSnapshot、Session/Run、平台 Policy、Evidence 安全传输/Audit、
+  Runtime Policy 和回答发布门禁；业务结果信封、业务错误和业务权限语义由 MCP 仓维护，外部 MCP
+  不能通过 Tool 描述、Prompt 或参数自授予权限。
+- 生产目标使用带 TLS 的 Streamable HTTP；stdio 只用于开发/测试。具体 SDK 版本、协议版本、
+  import path 和认证 API 必须在 MCP-1 依据实际官方包锁定和验证。
+- 主仓 `adapters/`、`domains/`、业务 `skills/`、`templates/`、Plugin SDK/Runtime、Capability
+  兼容包和 E0–E5 旧回归链路已删除。Agent Server 不再扫描本地插件，只接收平台侧已批准的 MCP
+  Tools。生产 MCP 连接管理尚未完成，因此仍不能宣称生产业务 Tool、认证或 Evidence 链路已完成。
+- 主仓 `demo/` 已迁移到独立 `E:\Deep-Agents-AI-Assistant-Demo` Git 仓库，不再属于主仓 workspace、
+  lint 范围或根脚本；Demo 通过显式本地 `link:` 消费相邻平台仓的 SDK/Context/UI 包。
+- MCP-1 将以 `data_quality.get_trend` 做最小只读垂直切片，并要求新旧路径对同一测试向量双跑一致；
+  完成 MCP-2～MCP-4 门禁后才允许切换默认路径和清理旧目录。
+
+## MCP-1：外部业务 MCP 最小只读切片
+
+状态：实现完成，依赖安装和真实门禁待用户执行；详见
+[MCP-1 验收报告](acceptance/evolution/mcp-1-acceptance-report.md)。
+
+- MCP 仓锁定官方 `@modelcontextprotocol/server@2.3.1` 与 Client `2.3.1`；V2.2 重构后由根级
+  `product-a-mcp` 提供 Product A 自有 `get_quality_trend` Tool、Schema、stdio 入口和 in-memory 测试。
+- 主仓新增 `@assistant/mcp-client-runtime`，不依赖 `domains/*`、Adapter 或业务结果类型；它只发现
+  MCP JSON Schema、计算 SHA-256、匹配 Server/Tool/风险/Schema 批准并转换为 LangChain Tool。
+- 未批准、Schema 漂移、非只读、缺少结构化结果、Tool 错误和超大结果均失败关闭；远端错误正文不
+  直接进入模型上下文；LangChain 取消信号透传给 MCP SDK，并有 in-memory Handler 取消测试。
+- 跨仓 stdio 测试从环境接收 Server ID、入口和 Tool arguments，只验证外部 MCP 的发现、批准与通用
+  结构化调用；根据 ADR-027，不解析业务字段，也不再与旧 Adapter 做语义对比。MCP 路径尚未装入
+  默认 Agent Server。
+- 当前数据、授权和 Evidence 都是明确 Mock。Streamable HTTP、委托身份、业务 Evidence 重新鉴权、
+  连接池/重连和 Product B 真实系统接入属于 MCP-2。
+- MCP 仓曾生成 lockfile，但本次根级项目重构后需要用户重新执行 `pnpm install` 更新；所有相关 pnpm
+  门禁均为待验证状态。
+
+## V2.2：一系统一 MCP
+
+状态：S1 结构纠偏已实现，真实门禁待用户执行；详见
+[V2.2 一系统一 MCP 架构](architecture-v2.0/22-V2.2-一系统一MCP架构.md) 和 ADR-027。
+
+- 取消跨 Product A/B 的通用业务能力层，不再建设共享 Domain、标准 Capability、统一业务结果或
+  产品 Adapter。每个业务系统独占一个完整 MCP 项目。
+- `Deep-Agents-AI-Assistant-MCP` 根目录新增 `product-a-mcp/`，Schema、业务规则、MCP Server、stdio
+  入口和测试均位于该项目；原 `domains/data-quality`、`servers/demo-product-a` 文件已移除。
+- Product A Tool 不再发布 `capabilityId/contractVersion/requiredPermission` 跨系统元数据；平台只批准
+  Server、Tool、Schema 摘要和通用风险。
+- 主仓 stdio 集成测试不再导入 Capability Catalog、Plugin Runtime、旧 Adapter 或 Product A 业务字段。
+  主仓业务目录、Plugin/Capability 运行机制和旧回归测试已清理；workspace、Server Composition Root、
+  管理状态 API、Web 状态页与部署打包均切换为 MCP 术语和平台边界。
+- MCP 仓已新增独立 `product-b-mcp/`，提供 `list_open_work_orders` 只读 Tool，用于验证挂载不同业务
+  能力；它不依赖 Product A Schema。当前工单数据、站点授权和 Evidence 均为 Mock。

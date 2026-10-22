@@ -12,7 +12,7 @@
 @assistant/assistant-ui         →  ChatWorkspace、主题 token
 @assistant/assistant-sdk        →  Controller + Shell 形态（本包）
 apps/assistant-embed            →  iframe 内使用 AssistantReact
-demo/sdk-host                   →  React 内联接入联调示例
+Deep-Agents-AI-Assistant-Demo/sdk-host → React 内联接入联调示例
 ```
 
 设计约束见 `docs/architecture-v2.0/07-前端与SDK设计.md`：Transport 只面向平台 HTTP 契约，不暴露 LangGraph / Deep Agents 类型；宿主传入的 Context 经 Schema 校验后上传，**不构成授权依据**（鉴权在服务端与原业务系统）。
@@ -65,7 +65,7 @@ src/
 
 ## 接入示例
 
-**React（推荐，可复用 Controller）** — `demo/sdk-host/src/main.tsx`：
+**React（推荐，可复用 Controller）** — `E:\Deep-Agents-AI-Assistant-Demo\sdk-host\src\main.tsx`：
 
 ```tsx
 import "antd/dist/reset.css";
@@ -113,4 +113,5 @@ pnpm --filter @assistant/assistant-sdk build
 pnpm --filter @assistant/assistant-sdk typecheck
 ```
 
-联调：`pnpm dev:sdk-host` 或 `pnpm --filter @assistant/demo-host dev`（需本地 Agent Server）。本包 `package.json` 未配置独立 `test` script；相关单测若在仓库其他包中维护，以根目录 `pnpm test` 为准。
+联调请进入 `E:\Deep-Agents-AI-Assistant-Demo` 执行 `pnpm dev:sdk-host`（需本地 Agent Server）。
+本包 `package.json` 未配置独立 `test` script；相关单测若在仓库其他包中维护，以根目录 `pnpm test` 为准。

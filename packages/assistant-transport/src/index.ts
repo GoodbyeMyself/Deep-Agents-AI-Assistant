@@ -181,12 +181,12 @@ export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
     return this.#request("/models");
   }
 
-  listPlugins(): Promise<{ items: JsonObject[] }> {
-    return this.#request("/plugins");
+  listMcpServers(): Promise<{ items: JsonObject[] }> {
+    return this.#request("/mcp/servers");
   }
 
-  listCapabilities(): Promise<{ items: JsonObject[] }> {
-    return this.#request("/capabilities");
+  listMcpTools(): Promise<{ items: JsonObject[] }> {
+    return this.#request("/mcp/tools");
   }
 
   createEmbedTicket(targetOrigin: string): Promise<{ ticket: string; expiresAt: string }> {

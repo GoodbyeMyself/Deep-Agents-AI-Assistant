@@ -72,21 +72,21 @@ function RuntimeStatus({
   isAdmin: boolean;
 }) {
   const [models, setModels] = useState<Record<string, unknown>[]>([]);
-  const [capabilities, setCapabilities] = useState<Record<string, unknown>[]>([]);
-  const [plugins, setPlugins] = useState<Record<string, unknown>[]>([]);
+  const [mcpTools, setMcpTools] = useState<Record<string, unknown>[]>([]);
+  const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<string>();
   useEffect(() => {
     let disposed = false;
     void Promise.all([
       transport.listModels(),
-      transport.listCapabilities(),
-      isAdmin ? transport.listPlugins() : Promise.resolve({ items: [] }),
+      transport.listMcpTools(),
+      isAdmin ? transport.listMcpServers() : Promise.resolve({ items: [] }),
     ])
-      .then(([modelResult, capabilityResult, pluginResult]) => {
+      .then(([modelResult, toolResult, serverResult]) => {
         if (disposed) return;
         setModels(modelResult.items);
-        setCapabilities(capabilityResult.items);
-        setPlugins(pluginResult.items);
+        setMcpTools(toolResult.items);
+        setMcpServers(serverResult.items);
       })
       .catch((cause: unknown) => {
         if (!disposed)
@@ -105,7 +105,7 @@ function RuntimeStatus({
     <PageContainer
       header={{
         title: "运行状态",
-        subTitle: "仅显示安全的部署元数据；插件明细需要平台管理员权限。",
+        subTitle: "仅显示安全的部署元数据；MCP Server 明细需要平台管理员权限。",
       }}
     >
       <main id="main-content">
@@ -120,25 +120,25 @@ function RuntimeStatus({
               ))}
             </Descriptions>
           </ProCard>
-          <ProCard title="标准能力">
+          <ProCard title="MCP Tools">
             <Table
-              rowKey={(row) => displayValue(row["id"], "unknown-capability")}
+              rowKey={(row) => displayValue(row["name"], "unknown-tool")}
               pagination={false}
-              dataSource={capabilities}
+              dataSource={mcpTools}
               columns={[
-                { title: "能力", dataIndex: "id" },
-                { title: "版本", dataIndex: "version" },
+                { title: "Tool", dataIndex: "name" },
+                { title: "MCP Server", dataIndex: "serverId" },
               ]}
             />
           </ProCard>
-          <ProCard title="插件状态">
+          <ProCard title="MCP Server 状态">
             {isAdmin ? (
               <Table
-                rowKey={(row) => displayValue(row["pluginId"], "unknown-plugin")}
+                rowKey={(row) => displayValue(row["serverId"], "unknown-mcp-server")}
                 pagination={false}
-                dataSource={plugins}
+                dataSource={mcpServers}
                 columns={[
-                  { title: "插件", dataIndex: "pluginId" },
+                  { title: "MCP Server", dataIndex: "serverId" },
                   {
                     title: "状态",
                     dataIndex: "status",
@@ -149,7 +149,7 @@ function RuntimeStatus({
                 ]}
               />
             ) : (
-              <Empty description="管理员可查看插件运行明细" />
+              <Empty description="管理员可查看 MCP Server 运行明细" />
             )}
           </ProCard>
         </div>

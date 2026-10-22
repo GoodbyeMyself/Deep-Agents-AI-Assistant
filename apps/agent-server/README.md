@@ -6,11 +6,11 @@
 
 ```text
 src/
-├── main.ts                      # M0 真实模型烟测入口
+├── main.ts                      # 开发入口，与部署入口使用同一 Composition Root
 ├── server-main.ts               # 可部署 HTTP 服务入口
 ├── index.ts                     # 对外导出（演示与集成测试可引用）
-├── composition/                 # Composition Root：插件装配与应用 wiring
-│   ├── plugin-bootstrap.ts      # 可信插件发现、Capability 注册与 Agent 创建
+├── composition/                 # Composition Root：MCP Tool 与平台服务装配
+│   ├── runtime-bootstrap.ts     # 将已批准 MCP Tools 挂载到 Agent Runtime
 │   └── create-application.ts    # 组装 Store、Runner、HTTP Handler
 ├── http/                        # 传输层：Fetch API Handler 与 Node HTTP 适配
 │   ├── api.ts
@@ -26,7 +26,7 @@ src/
 
 包根目录 `migrations/` 为持久化参考脚本。
 
-与 `docs/architecture-v2.0/03-工程结构与依赖规则.md` 一致：`modules/*` 对应后续可抽离的 `platform/session-service` 等；`composition/` 保持唯一装配点，不写产品名分支。
+业务能力不在本应用内实现。`composition/` 只接收 `mcp-client-runtime` 已发现、校验和批准的 MCP Tools，不扫描 Adapter、Plugin 或业务 Skill 目录。
 
 ## 安全边界
 

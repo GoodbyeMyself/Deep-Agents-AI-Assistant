@@ -124,11 +124,16 @@ Deep Agents/LangGraph `stream` 输出的事件是**官方内部/原生结构**�
 
 ## 10. 执行限制、回退和恢复
 
+- 统一 `AgentRuntimePolicy` 是运行治理的单一配置来源：显式摘要 token/message 阈值、每 Run
+  Tool/Model 调用预算、LangGraph recursion limit、Run 总超时和回答发布校验。应用组合根只解析
+  一次，同一不可变策略同时交给 Agent Factory 与 Runner。
 - HTTP Run 要有幂等键、服务端 Run 状态及 Abort 语义；超时后的 Tool 需符合自身超时与重试规则。
 - 只读工具可对明确可重试的网络错误实施有界重试；写操作（未来）必须独立设计幂等/审批。
 - 断流不应强行中断后端 Run；客户端可通过 `runId` + `Last-Event-ID` 重连，视 M2 事件日志实现。
 - 模型不可用时返回标准错误并记录，不偷偷切换到未经配置/未授权的模型。
 - 不把 LangGraph Checkpoint 原始 blob 完整返回浏览器。
+- 最终回答采用严格发布：模型 Draft 在服务端缓冲，通过 Evidence 当前 Run/主体归属、长度和
+  partial 披露校验后才产生客户端正文事件；校验器不能替代 Capability Executor 或原业务授权。
 
 ## 11. 官方资料
 

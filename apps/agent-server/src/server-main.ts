@@ -1,7 +1,4 @@
-import { fileURLToPath } from "node:url";
-
 import { ChatOpenAI } from "@langchain/openai";
-import type { PluginRuntimeRecord } from "@assistant/plugin-runtime";
 
 import { createAgentApplication } from "./composition/create-application.js";
 import { createNodeHttpServer } from "./http/node-http.js";
@@ -11,36 +8,9 @@ function envValue(name: string): string | undefined {
   return value === undefined || value.length === 0 ? undefined : value;
 }
 
-function envSet(name: string): ReadonlySet<string> {
-  return new Set(
-    (envValue(name) ?? "")
-      .split(",")
-      .map((item) => item.trim())
-      .filter((item) => item.length > 0),
-  );
-}
-
-function assertApprovedPluginsReady(records: readonly PluginRuntimeRecord[]): void {
-  const failed = records.filter((record) => record.status !== "ready");
-  if (records.length === 0 || failed.length > 0) {
-    const detail =
-      failed
-        .map(
-          (record) =>
-            `${record.pluginId ?? record.pluginPath}: ${record.errorCode ?? record.status}`,
-        )
-        .join("; ") || "no plugins discovered";
-    throw new Error(`Approved plugins are not ready (${detail}).`);
-  }
-}
-
 const deepSeekKey = envValue("DEEPSEEK_API_KEY");
 const apiKey = deepSeekKey ?? envValue("OPENAI_API_KEY");
 if (apiKey === undefined) throw new Error("DEEPSEEK_API_KEY or OPENAI_API_KEY is required.");
-const pluginId = envValue("PLUGIN_ID") ?? "demo-product-a";
-const installDir =
-  envValue("PLUGINS_DIR") ??
-  fileURLToPath(new URL(`../../../adapters/${pluginId}/`, import.meta.url));
 const baseURL = envValue("DEEPSEEK_BASE_URL");
 const modelName =
   envValue("MODEL_NAME") ?? (deepSeekKey === undefined ? "gpt-5-mini" : "deepseek-chat");
@@ -57,10 +27,6 @@ const model = new ChatOpenAI({
 });
 const application = await createAgentApplication({
   model,
-  installDir,
-  approvedPluginIds: new Set([pluginId]),
-  approvedNamespaces: envSet("APPROVED_PLUGIN_NAMESPACES"),
-  approvedPermissions: envSet("APPROVED_PLUGIN_PERMISSIONS"),
   modelConfig: {
     id: "default",
     provider: deepSeekKey === undefined ? "openai" : "deepseek",
@@ -68,9 +34,6 @@ const application = await createAgentApplication({
     version: "1",
   },
 });
-if (envValue("ASSISTANT_REQUIRE_READY_PLUGINS") === "1") {
-  assertApprovedPluginsReady(application.pluginRecords);
-}
 const server = createNodeHttpServer(application.handler);
 server.once("close", () => void application.dispose());
 const port = Number(process.env["SERVER_PORT"] ?? "3000");

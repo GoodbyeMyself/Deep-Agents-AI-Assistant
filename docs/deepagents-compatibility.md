@@ -27,6 +27,10 @@
 - LangChain `tool(handler, { name, description, schema })`，handler 第二参数的
   `ToolRuntime.context` 能收到 invoke/stream config 的 `context`。
 - `agent.invoke(input, { context, configurable: { thread_id } })`。
+- `createDeepAgent({ middleware })` 会按中间件名称合并自定义项；`deepagents@1.14.2` 内置
+  `SummarizationMiddleware`，项目使用 `langchain@1.5.10` 的同名公开实现显式配置 token 阈值。
+- `langchain@1.5.10` 的 `toolCallLimitMiddleware`、`modelCallLimitMiddleware` 已用于每 Run 调用预算，
+  超限选择 `exitBehavior: 'error'`，由平台 Runner 映射稳定错误码。
 - `FilesystemBackend({ rootDir, virtualMode: true })` 与 `skills: ['/skills/']`。
 - `MemorySaver`：同 `thread_id` 恢复消息历史，不同 Thread 隔离。
 - 声明式 Subagent：`{ name, description, systemPrompt, model, tools }`；自定义
@@ -80,6 +84,13 @@ Streaming 均执行真实安装包代码。
    SSE 错误信封。
 4. `streamMode: 'messages'` 的子图 namespace 是动态多段数组，如
    `['tools:<subagent-run-id>', 'model_request:<run-id>']`；客户端不能硬编码 UUID 或层数。
+5. Deep Agents 默认摘要参数依赖模型 Profile 自动推断。当前 DeepSeek/OpenAI-compatible 配置不依赖
+   该推断，项目通过统一 Runtime Policy 明确提供 token/message 阈值；修改阈值必须通过长会话回归。
+6. `langchain@1.5.10` 的 Summarization/ToolCallLimit/ModelCallLimit 配置类型经过包内 Zod v3/v4
+   interop 推导后，在本仓库 Zod 4 override 与 `exactOptionalPropertyTypes` 下会错误收窄为
+   `never`/`undefined`。Runtime Policy 只在第三方导入边界使用 `unknown` 后按锁定源码公开参数做窄
+   函数签名适配；没有使用 `any`，没有修改依赖源码，运行时仍调用官方 Middleware。升级依赖时应
+   优先删除该适配并恢复直接类型推断。
 
 ## M1 对接要求
 

@@ -59,7 +59,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["demo/scripts/**/*.mjs", "deploy/**/*.mjs"],
+    files: ["deploy/**/*.mjs"],
     languageOptions: { globals: globals.node },
   },
   eslintConfigPrettier,

@@ -163,13 +163,13 @@ export function createApiHandler(options: {
         return json({ items: options.service.store.listSessions(principal) });
       if (url.pathname === "/api/v1/models" && request.method === "GET")
         return json({ items: options.service.runtimeInfo.models });
-      if (url.pathname === "/api/v1/plugins" && request.method === "GET") {
+      if (url.pathname === "/api/v1/mcp/servers" && request.method === "GET") {
         if (!principal.permissionScopes.includes("platform:admin"))
           throw new ServiceError("FORBIDDEN", "Access denied.", 403);
-        return json({ items: options.service.runtimeInfo.plugins });
+        return json({ items: options.service.runtimeInfo.mcpServers });
       }
-      if (url.pathname === "/api/v1/capabilities" && request.method === "GET")
-        return json({ items: options.service.runtimeInfo.capabilities });
+      if (url.pathname === "/api/v1/mcp/tools" && request.method === "GET")
+        return json({ items: options.service.runtimeInfo.mcpTools });
 
       const sessionMatch = url.pathname.match(/^\/api\/v1\/sessions\/([0-9a-f-]+)$/i);
       if (sessionMatch?.[1] !== undefined) {

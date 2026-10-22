@@ -1,5 +1,9 @@
-import type { Evidence } from "@assistant/capability-core";
+import type { Evidence } from "@assistant/evidence";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
+import {
+  defaultAgentRuntimePolicy,
+  type AgentRuntimePolicy,
+} from "@assistant/agent-runtime";
 import {
   assistantViewSchema,
   enterpriseApprovalInterruptValueSchema,
@@ -11,6 +15,7 @@ import { Command } from "@langchain/langgraph";
 import { randomUUID } from "node:crypto";
 
 import type { InMemoryAgentStore, RunRecord } from "./store.js";
+import { AnswerValidationError, validateAnswer } from "./answer-validator.js";
 
 export interface StreamingAgent {
   stream(input: unknown, config: unknown): Promise<AsyncIterable<unknown>>;
@@ -82,6 +87,7 @@ export class AgentRunner {
   constructor(
     private readonly agent: StreamingAgent,
     private readonly store: InMemoryAgentStore,
+    private readonly runtimePolicy: AgentRuntimePolicy = defaultAgentRuntimePolicy,
   ) {}
 
   start(run: RunRecord, principal: VerifiedPrincipal): void {
@@ -137,32 +143,35 @@ export class AgentRunner {
     const executionContextId = randomUUID();
     let assistantText = "";
     const evidenceRefs = new Set<string>();
+    const capabilityStatuses: Array<"success" | "partial" | "error"> = [];
     const subagentNamespaces = new Set<string>();
     const toolCallIds = new Set<string>();
+    const timeoutSignal = AbortSignal.timeout(this.runtimePolicy.limits.runTimeoutMs);
 
     try {
+      const executionSignal = AbortSignal.any([signal, timeoutSignal]);
       const config = {
-          context: {
-            executionContextId,
-            contextSnapshotId: snapshot.id,
-            traceId: randomUUID(),
-            principalId: principal.id,
-            tenantId: principal.tenantId,
-            sessionId: session.id,
-            runId: run.id,
-            authorizationRef: principal.authorizationRef,
-            ...(snapshot.context.object === undefined
-              ? {}
-              : { contextObjectId: snapshot.context.object.id }),
-            authorizedObjectIds: [...principal.authorizedObjectIds],
-            permissionScopes: [...principal.permissionScopes],
-          },
-          configurable: { thread_id: session.threadId },
-          streamMode: "messages",
-          subgraphs: true,
-          recursionLimit: 50,
-          signal,
-        };
+        context: {
+          executionContextId,
+          contextSnapshotId: snapshot.id,
+          traceId: randomUUID(),
+          principalId: principal.id,
+          tenantId: principal.tenantId,
+          sessionId: session.id,
+          runId: run.id,
+          authorizationRef: principal.authorizationRef,
+          ...(snapshot.context.object === undefined
+            ? {}
+            : { contextObjectId: snapshot.context.object.id }),
+          authorizedObjectIds: [...principal.authorizedObjectIds],
+          permissionScopes: [...principal.permissionScopes],
+        },
+        configurable: { thread_id: session.threadId },
+        streamMode: "messages",
+        subgraphs: true,
+        recursionLimit: this.runtimePolicy.limits.recursionLimit,
+        signal: executionSignal,
+      };
       const agentInput =
         input.type === "message"
           ? { messages: [new HumanMessage(messageWithContext(run.message, snapshot))] }
@@ -178,7 +187,7 @@ export class AgentRunner {
       const stream = await this.agent.stream(agentInput, config);
 
       for await (const raw of stream) {
-        if (signal.aborted) break;
+        if (executionSignal.aborted) break;
         const item = tuple(raw);
         if (item === undefined) continue;
         const subagent = item.namespace.find((part) => part.startsWith("tools:"));
@@ -197,12 +206,16 @@ export class AgentRunner {
               });
             }
           }
-          if ((item.message.tool_calls?.length ?? 0) === 0 && item.message.text.length > 0) {
+          if ((item.message.tool_calls?.length ?? 0) === 0 && item.message.text.length > 0)
             assistantText += item.message.text;
-            this.store.appendEvent(run.id, "message.delta", { delta: item.message.text });
-          }
         } else if (ToolMessage.isInstance(item.message)) {
           const parsed = capabilityResult(jsonContent(item.message.content));
+          if (
+            parsed?.status === "success" ||
+            parsed?.status === "partial" ||
+            parsed?.status === "error"
+          )
+            capabilityStatuses.push(parsed.status);
           this.store.appendEvent(
             run.id,
             parsed?.status === "error" ? "tool.failed" : "tool.completed",
@@ -233,16 +246,26 @@ export class AgentRunner {
       for (const namespace of subagentNamespaces)
         this.store.appendEvent(run.id, "subagent.completed", { namespace });
       if (signal.aborted) return;
+      if (timeoutSignal.aborted) throw new Error("RUN_TIMEOUT");
       const interrupts = await this.#readInterrupts(config);
       if (interrupts.length > 0) {
-        if (assistantText.length > 0)
+        if (assistantText.length > 0) {
+          const answer = this.#validateAnswer(
+            run,
+            principal,
+            assistantText,
+            evidenceRefs,
+            capabilityStatuses,
+          );
+          this.store.appendEvent(run.id, "message.delta", { delta: answer.text });
           this.store.addMessage({
             sessionId: session.id,
             runId: run.id,
             role: "assistant",
-            content: assistantText,
-            evidenceRefs: [...evidenceRefs],
+            content: answer.text,
+            evidenceRefs: answer.evidenceRefs,
           });
+        }
         this.store.registerInterrupts(run.id, interrupts);
         for (const interrupt of interrupts)
           this.store.appendEvent(run.id, "approval.required", interrupt);
@@ -250,23 +273,75 @@ export class AgentRunner {
         this.store.appendEvent(run.id, "run.interrupted", { interrupts });
         return;
       }
+      const answer = this.#validateAnswer(
+        run,
+        principal,
+        assistantText,
+        evidenceRefs,
+        capabilityStatuses,
+      );
+      this.store.appendEvent(run.id, "message.delta", { delta: answer.text });
       this.store.addMessage({
         sessionId: session.id,
         runId: run.id,
         role: "assistant",
-        content: assistantText,
-        evidenceRefs: [...evidenceRefs],
+        content: answer.text,
+        evidenceRefs: answer.evidenceRefs,
       });
       this.store.setRunStatus(run.id, "completed");
-      this.store.appendEvent(run.id, "run.completed", { evidenceRefs: [...evidenceRefs] });
-    } catch {
+      this.store.appendEvent(run.id, "run.completed", {
+        evidenceRefs: answer.evidenceRefs,
+        partial: answer.partial,
+      });
+    } catch (error) {
       if (signal.aborted) return;
-      this.store.setRunStatus(run.id, "failed", "AGENT_EXECUTION_FAILED");
+      const failure = timeoutSignal.aborted
+        ? { code: "RUN_TIMEOUT", message: "The agent run exceeded its time limit." }
+        : this.#classifyFailure(error);
+      this.store.setRunStatus(run.id, "failed", failure.code);
       this.store.appendEvent(run.id, "run.failed", {
-        code: "AGENT_EXECUTION_FAILED",
-        message: "The agent run failed.",
+        code: failure.code,
+        message: failure.message,
       });
     }
+  }
+
+  #validateAnswer(
+    run: RunRecord,
+    principal: VerifiedPrincipal,
+    text: string,
+    evidenceRefs: ReadonlySet<string>,
+    capabilityStatuses: readonly ("success" | "partial" | "error")[],
+  ) {
+    return validateAnswer(
+      { text, evidenceRefs: [...evidenceRefs], capabilityStatuses },
+      this.runtimePolicy.answerValidation,
+      (referenceId) =>
+        this.store.requireEvidenceForRun(referenceId, run.id, principal),
+    );
+  }
+
+  #classifyFailure(error: unknown): { readonly code: string; readonly message: string } {
+    if (error instanceof AnswerValidationError)
+      return { code: error.code, message: "The generated answer could not be safely released." };
+    if (error instanceof Error && error.message === "RUN_TIMEOUT")
+      return { code: "RUN_TIMEOUT", message: "The agent run exceeded its time limit." };
+
+    let current = error;
+    for (let depth = 0; depth < 5 && current instanceof Error; depth += 1) {
+      if (current.name === "ToolCallLimitExceededError")
+        return {
+          code: "TOOL_CALL_LIMIT_EXCEEDED",
+          message: "The agent reached its tool call limit.",
+        };
+      if (current.name === "ModelCallLimitMiddlewareError")
+        return {
+          code: "MODEL_CALL_LIMIT_EXCEEDED",
+          message: "The agent reached its model call limit.",
+        };
+      current = current.cause;
+    }
+    return { code: "AGENT_EXECUTION_FAILED", message: "The agent run failed." };
   }
 
   async #readInterrupts(config: unknown): Promise<AssistantInterrupt[]> {

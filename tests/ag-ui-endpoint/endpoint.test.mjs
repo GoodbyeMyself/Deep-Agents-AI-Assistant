@@ -82,7 +82,7 @@ function createFixture() {
   const service = {
     store,
     runner: { cancel() {} },
-    runtimeInfo: { models: [], plugins: [], capabilities: [] },
+    runtimeInfo: { models: [], mcpServers: [], mcpTools: [] },
   };
   const handler = createApiHandler({ identity, service });
   return { handler, run };

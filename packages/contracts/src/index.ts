@@ -1,6 +1,6 @@
 /**
  * 前后端共享的 Assistant API 请求、SSE 事件与受控 View 的 Zod 契约。
- * 仅描述传输层协议；业务 Capability 输入/输出见 `core/capability`。
+ * 仅描述平台传输协议；业务 Tool 输入/输出由各系统的外部 MCP 定义。
  */
 import { z } from "zod";
 
@@ -105,7 +105,7 @@ export const openApiDocument = {
     },
     "/api/v1/evidence/{referenceId}": { get: { summary: "Resolve evidence after authorization" } },
     "/api/v1/models": { get: { summary: "List safe model metadata for this deployment" } },
-    "/api/v1/plugins": { get: { summary: "List installed plugin status" } },
-    "/api/v1/capabilities": { get: { summary: "List registered standard capabilities" } },
+    "/api/v1/mcp/servers": { get: { summary: "List configured MCP server status" } },
+    "/api/v1/mcp/tools": { get: { summary: "List approved MCP tools" } },
   },
 } as const;

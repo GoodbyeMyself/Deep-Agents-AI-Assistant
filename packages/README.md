@@ -1,30 +1,27 @@
 # packages
 
-`packages/` 存放可复用的平台技术组件。它们为 Agent、插件、前端和宿主接入提供 SDK、Runtime、
-协议与 UI，但不定义具体产品 API，也不承载数据地图、数据质量等标准业务语义。
+`packages/` 存放可复用的平台技术组件。它们为 Agent、MCP 客户端、前端和宿主接入提供 Runtime、
+协议与 UI，不定义业务能力或产品 API。
 
 ## 当前 Packages
 
 | 目录 | 职责 |
 | --- | --- |
-| `agent-runtime/` | 官方 Deep Agents 的薄封装、Tool Factory、Skill Snapshot 和诊断去敏 |
-| `plugin-sdk/` | `definePlugin()`、`implementCapability()` 等插件开发 API |
-| `plugin-runtime/` | Manifest、可信发现、批准/哈希校验、事务注册、Skill 和生命周期 |
+| `agent-runtime/` | 官方 Deep Agents 的薄封装、运行策略和诊断去敏 |
+| `mcp-client-runtime/` | 外部 MCP 连接、Tool 发现/批准快照和 LangChain Tool 安全适配；不理解业务 Schema 语义 |
 | `contracts/` | REST、SSE、Assistant View 等跨端公共协议 |
 | `assistant-transport/` | Session/Run/Evidence 客户端和 SSE 断流续传 |
 | `assistant-ui/` | 独立 Web 与嵌入模式共享的 React Chat Core |
 | `assistant-sdk/` | React 与原生 JavaScript 宿主接入 API |
 | `iframe-bridge/` | 跨 Origin 消息、一次性 Ticket 和声明式 Loader 的安全桥 |
-| `capability-contracts/` | 旧聚合导出的临时兼容层；新代码应直接依赖 Core 或 `domains/*` |
 
 ## 依赖边界
 
 - Package 应当可复用，不出现 Product A/B/C 的业务分支。
-- Agent Runtime 只消费已注册的 Catalog、Registry、Tool 和 Skill，不硬编码具体 Capability ID。
-- Plugin Runtime 只装载批准的构建产物，不提供市场、任意上传或热加载。
+- Agent Runtime 的目标路径只消费经批准的 MCP Tool Snapshot，不硬编码产品 Tool 名或业务字段。
 - UI、SDK 和 Transport 只消费受控 API/View 契约，不直接访问业务 API 或密钥。
-- 具体业务 Contract 放在 `domains/*`，产品 Provider 放在 `adapters/*`，通用安全不变量放在
-  `core/*`。
+- V2.2 中，每个系统的 MCP 独立拥有自己的 Tool、Schema、权限和业务 API。主仓不保留
+  `domains/*`、`adapters/*`、业务 `skills/*`、业务模板或 Plugin SDK/Runtime。
 
 ## 新增 Package
 

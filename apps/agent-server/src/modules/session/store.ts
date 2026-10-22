@@ -1,8 +1,4 @@
-import type {
-  CapabilityAuditRecord,
-  CapabilityAuditSink,
-  Evidence,
-} from "@assistant/capability-core";
+import type { Evidence } from "@assistant/evidence";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
 import type {
   AssistantEvent,
@@ -60,7 +56,7 @@ export interface MessageRecord {
   readonly createdAt: string;
 }
 
-export class InMemoryAgentStore implements CapabilityAuditSink {
+export class InMemoryAgentStore {
   readonly #sessions = new Map<string, SessionRecord>();
   readonly #runs = new Map<string, RunRecord>();
   readonly #messages: MessageRecord[] = [];
@@ -71,14 +67,7 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
   readonly #idempotency = new Map<string, string>();
   readonly #activeRuns = new Map<string, string>();
   readonly #interrupts = new Map<string, PendingInterruptRecord>();
-  readonly auditRecords: CapabilityAuditRecord[] = [];
-
   constructor(private readonly modelConfigVersion = "mock-model-config@1") {}
-
-  write(record: CapabilityAuditRecord): Promise<void> {
-    this.auditRecords.push(structuredClone(record));
-    return Promise.resolve();
-  }
 
   saveSnapshot(snapshot: ContextSnapshot): void {
     this.#snapshots.set(snapshot.id, structuredClone(snapshot));
@@ -469,5 +458,21 @@ export class InMemoryAgentStore implements CapabilityAuditSink {
     )
       throw notFound();
     return resolveEvidence(record);
+  }
+
+  requireEvidenceForRun(
+    referenceId: string,
+    runId: string,
+    principal: VerifiedPrincipal,
+  ): void {
+    const record = this.#evidence.get(referenceId);
+    if (
+      record === undefined ||
+      record.runId !== runId ||
+      record.ownerId !== principal.id ||
+      record.tenantId !== principal.tenantId ||
+      (record.objectId !== undefined && !principal.authorizedObjectIds.includes(record.objectId))
+    )
+      throw notFound();
   }
 }

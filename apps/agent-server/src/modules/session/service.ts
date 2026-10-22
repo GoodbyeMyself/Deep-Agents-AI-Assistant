@@ -28,10 +28,9 @@ export class AgentService {
     readonly runner: AgentRunner,
     readonly runtimeInfo: {
       readonly models: readonly Record<string, unknown>[];
-      readonly plugins: readonly Record<string, unknown>[];
-      readonly capabilities: readonly Record<string, unknown>[];
-      readonly skills?: readonly Record<string, unknown>[];
-    } = { models: [], plugins: [], capabilities: [] },
+      readonly mcpServers: readonly Record<string, unknown>[];
+      readonly mcpTools: readonly Record<string, unknown>[];
+    } = { models: [], mcpServers: [], mcpTools: [] },
   ) {}
 
   async createSnapshot(
