@@ -60,6 +60,14 @@ E:\Deep-Agents-AI-Assistant-MCP\
 ## 当前状态
 
 `packages/mcp-client-runtime` 已提供只读 Tool 治理、Schema 摘要批准、调用超时和结果大小限制。
+`agent-server` Composition Root 已支持在本地开发中连接一个或多个显式批准的 stdio MCP，并把批准
+Tool 注入 Deep Agents。Product A/B 页面、嵌入助手、独立助手及 MCP 的完整启动命令见
+[本地全链路启动说明](LOCAL-DEVELOPMENT-STARTUP.md)。
+
+完成三个仓库的一次性安装和构建后，可在主仓执行 `./start-local-development.ps1`，一键启动 Product
+A/B 的 Agent Server、Embed、Demo 和独立助手；加 `-OpenBrowser` 可同时打开页面。Windows 下也可
+直接双击 `start-local-development.cmd`。
+
 生产级 MCP 连接配置、生命周期、健康状态和密钥引用仍按
 [V2.2 架构](docs/architecture-v2.0/22-V2.2-一系统一MCP架构.md) 后续阶段实现。
 

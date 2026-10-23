@@ -33,7 +33,10 @@ test("one agent-server composition mounts and calls multiple approved MCP Server
   const runtime = await connectApprovedDevelopmentMcps(config);
   try {
     assert.equal(runtime.serverStatuses.length, testServers.length);
-    assert.equal(runtime.tools.length, testServers.length);
+    assert.equal(
+      runtime.tools.length,
+      testServers.reduce((total, server) => total + server.approvals.length, 0),
+    );
     for (const server of testServers) {
       const approval = server.approvals[0];
       const expectedName = `mcp_${server.serverId}_${approval.toolName}`.replaceAll(

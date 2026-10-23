@@ -143,7 +143,7 @@ function RuntimeStatus({
                     title: "状态",
                     dataIndex: "status",
                     render: (value) => (
-                      <Tag color={value === "active" ? "cyan" : "gold"}>{String(value)}</Tag>
+                      <Tag color={value === "ready" ? "cyan" : "gold"}>{String(value)}</Tag>
                     ),
                   },
                 ]}
@@ -275,11 +275,7 @@ function useAppOutletContext(): AppOutletContext {
 function AssistantRoute() {
   const { transport, profile, selectedObject } = useAppOutletContext();
   return (
-    <AssistantChatPage
-      transport={transport}
-      selectedObject={selectedObject}
-      profileKey={profile}
-    />
+    <AssistantChatPage transport={transport} selectedObject={selectedObject} profileKey={profile} />
   );
 }
 

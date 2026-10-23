@@ -25,6 +25,14 @@ const configuredApprovals = process.env["MCP_TOOL_APPROVALS"];
 if (configuredApprovals === undefined) {
   throw new Error("MCP_TOOL_APPROVALS must pin the approved Tool name, Schema digest and risk.");
 }
+const toolApprovals = JSON.parse(configuredApprovals);
+if (!Array.isArray(toolApprovals) || toolApprovals.length === 0) {
+  throw new Error("MCP_TOOL_APPROVALS must contain at least one Tool approval.");
+}
+const invokedToolName = process.env["MCP_TEST_TOOL_NAME"] ?? toolApprovals[0]?.toolName;
+if (typeof invokedToolName !== "string") {
+  throw new Error("MCP_TEST_TOOL_NAME must identify an approved Tool.");
+}
 
 test("agent-server composition discovers, approves, mounts and calls the external MCP", async () => {
   const config = readDevelopmentMcpDeploymentConfig(
@@ -34,7 +42,7 @@ test("agent-server composition discovers, approves, mounts and calls the externa
         {
           serverEntry,
           serverId,
-          approvals: JSON.parse(configuredApprovals),
+          approvals: toolApprovals,
         },
       ]),
     },
@@ -43,10 +51,14 @@ test("agent-server composition discovers, approves, mounts and calls the externa
   assert.ok(config);
   const runtime = await connectApprovedDevelopmentMcps(config);
   try {
-    assert.equal(runtime.tools.length, 1);
+    assert.equal(runtime.tools.length, toolApprovals.length);
     assert.equal(runtime.serverStatuses[0]?.["status"], "ready");
     assert.equal(runtime.toolStatuses[0]?.["status"], "approved");
-    const result = await runtime.tools[0]?.invoke(toolArguments);
+    assert.equal(typeof runtime.toolStatuses[0]?.["name"], "string");
+    const modelToolName = `mcp_${serverId}_${invokedToolName}`.replaceAll(/[^a-zA-Z0-9_-]/g, "_");
+    const tool = runtime.tools.find((candidate) => candidate.name === modelToolName);
+    assert.ok(tool, `Expected mounted Tool '${modelToolName}'.`);
+    const result = await tool.invoke(toolArguments);
     assert.equal(typeof result, "object");
     assert.notEqual(result, null);
   } finally {

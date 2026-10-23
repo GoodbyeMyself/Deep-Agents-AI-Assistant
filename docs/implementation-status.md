@@ -414,7 +414,7 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 [MCP-1 验收报告](acceptance/evolution/mcp-1-acceptance-report.md)。
 
 - MCP 仓锁定官方 `@modelcontextprotocol/server@2.3.1` 与 Client `2.3.1`；V2.2 重构后由根级
-  `product-a-mcp` 提供 Product A 自有 `get_quality_trend` Tool、Schema、stdio 入口和 in-memory 测试。
+  `product-a-mcp` 提供 Product A 自有只读 Tool（质量趋势、样本行、表元数据、资产检索）、`api/clients` 微服务 Mock 分层、stdio 入口和 in-memory 测试。
 - 主仓新增 `@assistant/mcp-client-runtime`，不依赖 `domains/*`、Adapter 或业务结果类型；它只发现
   MCP JSON Schema、计算 SHA-256、匹配 Server/Tool/风险/Schema 批准并转换为 LangChain Tool。
 - 未批准、Schema 漂移、非只读、缺少结构化结果、Tool 错误和超大结果均失败关闭；远端错误正文不

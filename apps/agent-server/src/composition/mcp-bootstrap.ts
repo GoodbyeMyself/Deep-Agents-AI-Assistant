@@ -191,7 +191,7 @@ async function connectApprovedDevelopmentMcp(
       snapshot.approved.map((tool) =>
         Object.freeze({
           serverId: tool.serverId,
-          toolName: tool.name,
+          name: tool.name,
           schemaDigest: tool.schemaDigest,
           riskLevel: tool.riskLevel,
           status: "approved",
