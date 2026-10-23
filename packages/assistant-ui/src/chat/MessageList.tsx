@@ -1,5 +1,5 @@
 import type { ChatAgentPort } from "@assistant/assistant-transport";
-import type { AgUiEvent } from "@assistant/contracts";
+import type { AgUiEvent, HostNavigationAction } from "@assistant/contracts";
 import { RobotOutlined, UserOutlined } from "@ant-design/icons";
 import { Actions, Bubble, Think } from "@ant-design/x";
 import { Avatar, Empty, Space } from "antd";
@@ -17,7 +17,9 @@ const bubbleRoles = {
     placement: "end" as const,
     variant: "filled" as const,
     shape: "corner" as const,
-    avatar: <Avatar style={{ backgroundColor: "#91caff", color: "#0958d9" }} icon={<UserOutlined />} />,
+    avatar: (
+      <Avatar style={{ backgroundColor: "#91caff", color: "#0958d9" }} icon={<UserOutlined />} />
+    ),
     styles: {
       content: {
         backgroundColor: "#e6f4ff",
@@ -63,10 +65,12 @@ function AssistantMessageBody({
   message,
   transport,
   onApproval,
+  onHostAction,
 }: {
   message: ChatMessage;
   transport: ChatAgentPort<AgUiEvent>;
   onApproval: (approval: ApprovalRequest, decision: "approved" | "rejected") => void;
+  onHostAction?: (action: HostNavigationAction) => void;
 }) {
   const answerText = message.content.trim();
   const isStreaming = message.status === "loading";
@@ -93,7 +97,11 @@ function AssistantMessageBody({
       ) : null}
       {showStructuredResults
         ? message.views.map((view) => (
-            <AssistantViewRenderer key={view.viewId} value={view} />
+            <AssistantViewRenderer
+              key={view.viewId}
+              value={view}
+              {...(onHostAction === undefined ? {} : { onHostAction })}
+            />
           ))
         : null}
       {message.approvals.map((approval) => (
@@ -113,6 +121,7 @@ export function MessageList({
   prompts,
   onPrompt,
   onApproval,
+  onHostAction,
 }: {
   messages: ChatMessage[];
   transport: ChatAgentPort<AgUiEvent>;
@@ -120,6 +129,7 @@ export function MessageList({
   prompts?: readonly string[];
   onPrompt?: (value: string) => void;
   onApproval: (approval: ApprovalRequest, decision: "approved" | "rejected") => void;
+  onHostAction?: (action: HostNavigationAction) => void;
 }) {
   if (messages.length === 0 && prompts !== undefined && onPrompt !== undefined)
     return (
@@ -165,14 +175,13 @@ export function MessageList({
           role: isAssistant ? "ai" : "user",
           status: message.status,
           streaming: message.status === "loading",
-          ...(showActions
-            ? { footer: <AssistantMessageActions content={message.content} /> }
-            : {}),
+          ...(showActions ? { footer: <AssistantMessageActions content={message.content} /> } : {}),
           content: isAssistant ? (
             <AssistantMessageBody
               message={message}
               transport={transport}
               onApproval={onApproval}
+              {...(onHostAction === undefined ? {} : { onHostAction })}
             />
           ) : (
             message.content

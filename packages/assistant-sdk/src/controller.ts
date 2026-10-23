@@ -1,5 +1,6 @@
 import type { AssistantColorTheme } from "@assistant/assistant-ui";
 import { AgUiChatAgentPort, AssistantApiTransport } from "@assistant/assistant-transport";
+import type { HostNavigationAction } from "@assistant/contracts";
 import { rawHostContextSchema, type RawHostContext } from "@assistant/context";
 
 export type AssistantPresentation = "floating" | "drawer" | "inline";
@@ -16,6 +17,7 @@ export interface AssistantSdkOptions {
   layout?: "default" | "panel";
   /** 主色（Ant Design `colorPrimary` 与聊天强调色）。默认 `#1677ff`。 */
   theme?: AssistantColorTheme;
+  onHostAction?: (action: HostNavigationAction) => void;
 }
 
 export interface AssistantSdkState {

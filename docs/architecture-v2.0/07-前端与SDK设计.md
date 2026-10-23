@@ -44,6 +44,7 @@ export interface AssistantSdkOptions {
   container?: HTMLElement;
   getAccessCredential(): Promise<string>; // 短期凭证
   getContext?(): RawHostContext | Promise<RawHostContext>;
+  onHostAction?(action: HostNavigationAction): void;
   onReady?(): void;
   onError?(error: Error): void;
 }
@@ -62,12 +63,17 @@ export interface AssistantInstance {
 ## 5. iframe 交互与安全
 
 Bridge Message 建议 `{protocol:'assistant-bridge', version:'1', channelId, requestId?, type, payload}`。  
-必需事件：`HOST_HELLO`、`ASSISTANT_READY`、`CONTEXT_UPDATE`、`OPEN`、`CLOSE`、`ASSISTANT_ERROR`。  
+必需事件：`HOST_HELLO`、`ASSISTANT_READY`、`CONTEXT_UPDATE`、`OPEN`、`CLOSE`、`ASSISTANT_ERROR`、
+`assistant.host-action`。
 安全检查：`event.origin` + `event.source` + 通道随机数 + 消息 Schema + 目标 origin 白名单；不要 `postMessage(..., '*')`；CSP `frame-ancestors` 限定允许宿主；短时一次性 embed ticket 由服务端兑换会话认证，不通过 URL 明文长期令牌。
 
 iframe 接入默认由平台提供的声明式 `assistant-loader.js` 完成。Loader 在隔离的 Shadow DOM 中统一创建悬浮按钮、固定面板和 iframe，并持有 Host Bridge；业务产品不得重复实现这套容器或样式。宿主入口 HTML 只声明 iframe URL、Ticket Endpoint、初始 Context 和非敏感外观参数。生产 Ticket Endpoint 必须根据宿主可信登录态签发一次性 Ticket；长期 Token 不得进入 HTML。动态页面对象通过标准 `enterprise-assistant:context` 事件更新后续请求 Context。
 
 **页面切换**：已有 Run 固定提问当时 ContextSnapshot，后续切换只更新下一次提问。**独立部署** 不等于跨产品共享 Context。
+
+**助手请求宿主导航**：`action.navigate` View 只携带不透明 target 和展示文案。用户点击后 iframe 才发送
+`assistant.host-action`；宿主必须用本地 allowlist 将 target 映射为内部路由，未知 target 忽略。模型、
+MCP 和 View 都不能提供可直接执行的 URL、路径、HTML 或脚本，Host Action 也不构成业务授权。
 
 ## 6. Shared Chat Store 状态
 
@@ -103,7 +109,10 @@ Human-in-the-loop 确认卡只由标准 AG-UI interrupt outcome 生成，不扫�
 
 ## 8. 结构化渲染与证据
 
-`AssistantView` 采用版本化判别联合类型：`text`、`metric`、`table`、`chart.line`、`references`。前端 `ViewRendererRegistry` 仅登记可信组件；Source 引用调用受控证据解析 API 返回允许用户访问的数据范围，不直接用未授权对象地址。
+`AssistantView` 采用版本化判别联合类型：`text`、`metric`、`table`、`chart.line`、`references`、
+`action.navigate`。前端 `ViewRendererRegistry` 仅登记可信组件；Source 引用调用受控证据解析 API 返回
+允许用户访问的数据范围，不直接用未授权对象地址。导航按钮只回调结构化 Host Action，不直接修改
+`window.location`。
 
 ## 9. UI 验收重点
 

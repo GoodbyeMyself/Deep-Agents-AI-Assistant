@@ -1,6 +1,7 @@
 export { createApiHandler, FixedWindowRateLimiter } from "./http/api.js";
 export { createAgentApplication } from "./composition/create-application.js";
 export { createAgentPlatformRuntime } from "./composition/runtime-bootstrap.js";
+export { importInstalledPlatformExtension } from "./composition/platform-extension-bootstrap.js";
 export { ContextService, MockContextAuthorizer } from "./modules/context/context-service.js";
 export { EmbedTicketService } from "./modules/embed/embed-ticket.js";
 export { MockIdentityProvider, type IdentityProvider } from "./modules/identity/identity.js";

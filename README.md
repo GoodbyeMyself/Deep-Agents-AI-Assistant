@@ -64,9 +64,10 @@ E:\Deep-Agents-AI-Assistant-MCP\
 Tool 注入 Deep Agents。Product A/B 页面、嵌入助手、独立助手及 MCP 的完整启动命令见
 [本地全链路启动说明](LOCAL-DEVELOPMENT-STARTUP.md)。
 
-完成三个仓库的一次性安装和构建后，可在主仓执行 `./start-local-development.ps1`，一键启动 Product
-A/B 的 Agent Server、Embed、Demo 和独立助手；加 `-OpenBrowser` 可同时打开页面。Windows 下也可
-直接双击 `start-local-development.cmd`。
+完成三个仓库的一次性安装和构建后，可在主仓执行 `./start-local-development.ps1`，默认一键启动
+Product A 的 Agent Server、Embed、Demo 与独立 Web 助手（`3411` / `5511` / `5411` / `5173`）；加
+`-IncludeProductB` 可再启动 B 链路。加 `-OpenBrowser` 可同时打开页面。Windows 下也可直接双击
+`start-local-development.cmd`。
 
 生产级 MCP 连接配置、生命周期、健康状态和密钥引用仍按
 [V2.2 架构](docs/architecture-v2.0/22-V2.2-一系统一MCP架构.md) 后续阶段实现。

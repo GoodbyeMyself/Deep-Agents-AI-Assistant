@@ -420,6 +420,26 @@
 .assistant-think {
   width: 100%;
 }
+.assistant-navigation-action .ant-card-body {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-left: 3px solid var(--assistant-brand);
+}
+.assistant-navigation-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+.assistant-navigation-copy strong {
+  color: var(--assistant-ink);
+  font-size: 13px;
+}
+.assistant-navigation-copy small {
+  color: var(--assistant-muted);
+  font-size: 11px;
+}
 .assistant-execution {
   width: 100%;
   margin: 0 0 2px;

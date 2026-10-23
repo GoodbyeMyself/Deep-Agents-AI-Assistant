@@ -1,6 +1,17 @@
 import { z } from "zod";
 
 const shortText = z.string().trim().min(1).max(300);
+const hostActionDescriptorSchema = z
+  .object({
+    target: z
+      .string()
+      .trim()
+      .min(3)
+      .max(120)
+      .regex(/^[a-z][a-z0-9]*(?:[._:-][a-z0-9]+)*$/),
+    label: z.string().trim().min(1).max(80),
+  })
+  .strict();
 
 export const rawHostContextSchema = z
   .object({
@@ -19,6 +30,7 @@ export const rawHostContextSchema = z
       })
       .optional(),
     business: z.object({ domain: shortText.optional(), module: shortText.optional() }).optional(),
+    hostActions: z.array(hostActionDescriptorSchema).max(20).optional(),
     metadata: z
       .record(z.string().max(64), z.union([z.string().max(500), z.number(), z.boolean()]))
       .optional(),
@@ -33,6 +45,7 @@ export const normalizedContextSchema = z.object({
     .optional(),
   object: z.object({ type: shortText, id: shortText, name: shortText.optional() }).optional(),
   business: z.object({ domain: shortText, module: shortText.optional() }).optional(),
+  hostActions: z.array(hostActionDescriptorSchema).max(20).optional(),
 });
 
 export const contextSnapshotSchema = z.object({

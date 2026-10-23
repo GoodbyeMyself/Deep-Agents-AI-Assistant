@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { AIMessage } from "@langchain/core/messages";
+
 import {
   AgentRunner,
   AgentService,
@@ -32,7 +34,10 @@ class InterruptingAgent {
   async stream(input) {
     this.streamCount += 1;
     if (this.streamCount > 1) this.resumedValue = input.resume;
-    return (async function* emptyStream() {})();
+    if (this.streamCount === 1) return (async function* emptyStream() {})();
+    return (async function* resumedStream() {
+      yield [[], [new AIMessage("订单质量报告已获批准并发布。")]];
+    })();
   }
 
   getState() {

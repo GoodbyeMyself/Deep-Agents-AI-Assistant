@@ -4,7 +4,7 @@
 import { rawHostContextSchema, type RawHostContext } from "@assistant/context";
 
 import { createIframeHostBridge } from "../bridge/host-bridge.js";
-import { ASSISTANT_CONTEXT_EVENT } from "./constants.js";
+import { ASSISTANT_CONTEXT_EVENT, ASSISTANT_HOST_ACTION_EVENT } from "./constants.js";
 import { canonicalOrigin, createEmbedTicket } from "./embed-ticket.js";
 import { loaderStylesheet } from "./loader-styles.js";
 import { attachPanelWidthResize } from "./panel-resize.js";
@@ -24,7 +24,10 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
   const host = document.createElement("enterprise-assistant-host");
   const shadow = host.attachShadow({ mode: "open" });
   const style = document.createElement("style");
-  style.textContent = loaderStylesheet(options.accent ?? "#58d8b1", options.zIndex ?? 2_147_483_000);
+  style.textContent = loaderStylesheet(
+    options.accent ?? "#58d8b1",
+    options.zIndex ?? 2_147_483_000,
+  );
 
   const launcher = document.createElement("button");
   launcher.type = "button";
@@ -90,6 +93,10 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
     onReady: () => {
       ready = true;
       status.hidden = true;
+    },
+    onHostAction: (action) => {
+      options.onHostAction?.(action);
+      window.dispatchEvent(new CustomEvent(ASSISTANT_HOST_ACTION_EVENT, { detail: action }));
     },
     onError: () => {
       status.hidden = false;

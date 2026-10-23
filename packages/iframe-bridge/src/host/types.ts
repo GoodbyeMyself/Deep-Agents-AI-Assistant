@@ -1,4 +1,5 @@
 import type { RawHostContext } from "@assistant/context";
+import type { HostNavigationAction } from "@assistant/contracts";
 
 export interface IframeAssistantHostOptions {
   readonly iframeUrl: string;
@@ -8,6 +9,7 @@ export interface IframeAssistantHostOptions {
   readonly title?: string;
   readonly accent?: string;
   readonly zIndex?: number;
+  readonly onHostAction?: (action: HostNavigationAction) => void;
 }
 
 export interface IframeAssistantHost {

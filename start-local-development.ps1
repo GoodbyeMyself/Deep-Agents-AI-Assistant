@@ -2,7 +2,9 @@
 param(
   [string]$McpRepository,
   [string]$DemoRepository,
+  [switch]$IncludeProductB,
   [switch]$IncludeSdkHost,
+  [switch]$SkipStandaloneWeb,
   [switch]$OpenBrowser,
   [switch]$DryRun
 )
@@ -159,7 +161,9 @@ Assert-RequiredPath -Path (Join-Path $mainRepository "package.json") -Descriptio
 Assert-RequiredPath -Path (Join-Path $mainRepository ".env") -Description "Main repository model configuration"
 Assert-RequiredPath -Path (Join-Path $McpRepository "package.json") -Description "MCP repository"
 Assert-RequiredPath -Path $productAEntry -Description "Built Product A MCP stdio entry"
-Assert-RequiredPath -Path $productBEntry -Description "Built Product B MCP stdio entry"
+if ($IncludeProductB) {
+  Assert-RequiredPath -Path $productBEntry -Description "Built Product B MCP stdio entry"
+}
 Assert-RequiredPath -Path (Join-Path $DemoRepository "package.json") -Description "Demo repository"
 
 if (-not (Get-Command pnpm.cmd -ErrorAction SilentlyContinue)) {
@@ -216,8 +220,24 @@ $productBServer = @{
 $productAConfig = ConvertTo-Json -InputObject @($productAServer) -Depth 8 -Compress
 $productBConfig = ConvertTo-Json -InputObject @($productBServer) -Depth 8 -Compress
 $combinedConfig = ConvertTo-Json -InputObject @($productAServer, $productBServer) -Depth 8 -Compress
+$productAPlatformExtensions = ConvertTo-Json -InputObject @(
+  @{
+    moduleSpecifier = "@assistant/platform-host-navigation-extension"
+    approval = @{
+      id = "host-navigation"
+      version = "1.0.0"
+      manifestDigest = "0c8645da7bb1745266ad75c45b0136df9e9048b6785b4a224dc9097da5447377"
+    }
+  }
+) -Depth 6 -Compress
 
-$ports = @(3411, 3412, 5511, 5512, 5411, 5412, 5173, 5174)
+$ports = @(3411, 5511, 5411)
+if (-not $SkipStandaloneWeb) {
+  $ports += 5173
+}
+if ($IncludeProductB) {
+  $ports += @(3412, 5512, 5412, 5174)
+}
 if ($IncludeSdkHost) {
   $ports += @(3310, 5314)
 }
@@ -239,13 +259,16 @@ Start-DevelopmentTerminal -Title "Product A Agent Server + MCP" -LogName "produc
   SERVER_PORT = "3411"
   DEPLOYMENT_ID = "local-product-a"
   MCP_SERVERS = $productAConfig
+  PLATFORM_EXTENSIONS = $productAPlatformExtensions
 }) -Command "pnpm.cmd dev:server"
 
-Start-DevelopmentTerminal -Title "Product B Agent Server + MCP" -LogName "product-b-agent-server" -WorkingDirectory $mainRepository -Environment ($serverBaseEnvironment + @{
-  SERVER_PORT = "3412"
-  DEPLOYMENT_ID = "local-product-b"
-  MCP_SERVERS = $productBConfig
-}) -Command "pnpm.cmd dev:server"
+if (-not $DryRun) {
+  Write-Host "Waiting for Product A Agent Server on http://127.0.0.1:3411 ..." -ForegroundColor Cyan
+  $agentReady = Wait-ForHttpPages -Urls @("http://127.0.0.1:3411/api/v1/openapi.json") -TimeoutSeconds 120
+  if ($agentReady.Pending.Count -gt 0) {
+    throw "Product A Agent Server did not become ready within 120 seconds. Check logs in $logDirectory\product-a-agent-server.log"
+  }
+}
 
 Start-DevelopmentTerminal -Title "Product A Embed" -LogName "product-a-embed" -WorkingDirectory $mainRepository -Environment @{
   ASSISTANT_EMBED_PORT = "5511"
@@ -253,24 +276,45 @@ Start-DevelopmentTerminal -Title "Product A Embed" -LogName "product-a-embed" -W
   ASSISTANT_HOST_ORIGIN = "http://127.0.0.1:5411"
 } -Command "pnpm.cmd dev:embed"
 
-Start-DevelopmentTerminal -Title "Product B Embed" -LogName "product-b-embed" -WorkingDirectory $mainRepository -Environment @{
-  ASSISTANT_EMBED_PORT = "5512"
-  ASSISTANT_API_TARGET = "http://127.0.0.1:3412"
-  ASSISTANT_HOST_ORIGIN = "http://127.0.0.1:5412"
-} -Command "pnpm.cmd dev:embed"
-
 Start-DevelopmentTerminal -Title "Product A Demo" -LogName "product-a-demo" -WorkingDirectory $DemoRepository -Environment @{} -Command "pnpm.cmd dev:product-a"
-Start-DevelopmentTerminal -Title "Product B Demo" -LogName "product-b-demo" -WorkingDirectory $DemoRepository -Environment @{} -Command "pnpm.cmd dev:product-b"
 
-Start-DevelopmentTerminal -Title "Standalone Assistant A" -LogName "standalone-assistant-a" -WorkingDirectory $mainRepository -Environment @{
-  ASSISTANT_API_TARGET = "http://127.0.0.1:3411"
-  ASSISTANT_WEB_PORT = "5173"
-} -Command "pnpm.cmd dev:web"
+if (-not $SkipStandaloneWeb) {
+  Start-DevelopmentTerminal -Title "Standalone Assistant A" -LogName "standalone-assistant-a" -WorkingDirectory $mainRepository -Environment @{
+    ASSISTANT_API_TARGET = "http://127.0.0.1:3411"
+    ASSISTANT_WEB_PORT = "5173"
+  } -Command "pnpm.cmd dev:web"
+}
 
-Start-DevelopmentTerminal -Title "Standalone Assistant B" -LogName "standalone-assistant-b" -WorkingDirectory $mainRepository -Environment @{
-  ASSISTANT_API_TARGET = "http://127.0.0.1:3412"
-  ASSISTANT_WEB_PORT = "5174"
-} -Command "pnpm.cmd dev:web"
+if ($IncludeProductB) {
+  Start-DevelopmentTerminal -Title "Product B Agent Server + MCP" -LogName "product-b-agent-server" -WorkingDirectory $mainRepository -Environment ($serverBaseEnvironment + @{
+    SERVER_PORT = "3412"
+    DEPLOYMENT_ID = "local-product-b"
+    MCP_SERVERS = $productBConfig
+  }) -Command "pnpm.cmd dev:server"
+
+  if (-not $DryRun) {
+    Write-Host "Waiting for Product B Agent Server on http://127.0.0.1:3412 ..." -ForegroundColor Cyan
+    $agentBReady = Wait-ForHttpPages -Urls @("http://127.0.0.1:3412/api/v1/openapi.json") -TimeoutSeconds 120
+    if ($agentBReady.Pending.Count -gt 0) {
+      throw "Product B Agent Server did not become ready within 120 seconds. Check logs in $logDirectory\product-b-agent-server.log"
+    }
+  }
+
+  Start-DevelopmentTerminal -Title "Product B Embed" -LogName "product-b-embed" -WorkingDirectory $mainRepository -Environment @{
+    ASSISTANT_EMBED_PORT = "5512"
+    ASSISTANT_API_TARGET = "http://127.0.0.1:3412"
+    ASSISTANT_HOST_ORIGIN = "http://127.0.0.1:5412"
+  } -Command "pnpm.cmd dev:embed"
+
+  Start-DevelopmentTerminal -Title "Product B Demo" -LogName "product-b-demo" -WorkingDirectory $DemoRepository -Environment @{} -Command "pnpm.cmd dev:product-b"
+
+  if (-not $SkipStandaloneWeb) {
+    Start-DevelopmentTerminal -Title "Standalone Assistant B" -LogName "standalone-assistant-b" -WorkingDirectory $mainRepository -Environment @{
+      ASSISTANT_API_TARGET = "http://127.0.0.1:3412"
+      ASSISTANT_WEB_PORT = "5174"
+    } -Command "pnpm.cmd dev:web"
+  }
+}
 
 if ($IncludeSdkHost) {
   Start-DevelopmentTerminal -Title "SDK Host Agent Server + A/B MCP" -LogName "sdk-host-agent-server" -WorkingDirectory $mainRepository -Environment ($serverBaseEnvironment + @{
@@ -282,12 +326,16 @@ if ($IncludeSdkHost) {
   Start-DevelopmentTerminal -Title "SDK Host Demo" -LogName "sdk-host-demo" -WorkingDirectory $DemoRepository -Environment @{} -Command "pnpm.cmd dev:sdk-host"
 }
 
-$urls = @(
-  "http://127.0.0.1:5411",
-  "http://127.0.0.1:5412",
-  "http://127.0.0.1:5173",
-  "http://127.0.0.1:5174"
-)
+$urls = @("http://127.0.0.1:5411")
+if (-not $SkipStandaloneWeb) {
+  $urls += "http://127.0.0.1:5173"
+}
+if ($IncludeProductB) {
+  $urls += "http://127.0.0.1:5412"
+  if (-not $SkipStandaloneWeb) {
+    $urls += "http://127.0.0.1:5174"
+  }
+}
 if ($IncludeSdkHost) {
   $urls += "http://127.0.0.1:5314"
 }
@@ -296,6 +344,13 @@ if ($DryRun) {
   Write-Host "Dry run passed. No process was started." -ForegroundColor Green
 } else {
   Write-Host "Local development processes were started in separate PowerShell windows." -ForegroundColor Green
+  Write-Host "Product A: Agent Server 3411, Embed 5511, Demo 5411" -ForegroundColor Cyan
+  if (-not $SkipStandaloneWeb) {
+    Write-Host "Standalone Web assistant: http://127.0.0.1:5173 (API -> 3411)" -ForegroundColor Cyan
+  }
+  if ($IncludeProductB) {
+    Write-Host "Product B: Agent Server 3412, Embed 5512, Demo 5412" -ForegroundColor Cyan
+  }
   Write-Host "Logs: $logDirectory" -ForegroundColor Cyan
 }
 

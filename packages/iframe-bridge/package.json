@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@assistant/context": "workspace:*",
+    "@assistant/contracts": "workspace:*",
     "zod": "catalog:"
   }
 }

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { platformExtension as diagnosticsExtension } from "../../packages/platform-diagnostics-extension/dist/index.js";
+import { platformExtension as diagnosticsExtension } from "../../extensions/platform-diagnostics/dist/index.js";
+import { platformExtension as hostNavigationExtension } from "../../extensions/host-navigation/dist/index.js";
 import {
   PlatformToolInvocationError,
   createApprovedPlatformExtensionSnapshot,
@@ -10,6 +11,7 @@ import {
   loadApprovedPlatformExtensions,
   readPlatformExtensionDeploymentConfig,
 } from "../../packages/platform-extension-runtime/dist/index.js";
+import { importInstalledPlatformExtension } from "../../apps/agent-server/dist/index.js";
 
 function approvalFor(extension = diagnosticsExtension) {
   return {
@@ -41,6 +43,30 @@ test("platform Tool execution uses a namespaced model name and JSON result", asy
   const result = await tools[0]?.invoke({});
   assert.equal(result.status, "success");
   assert.match(result.businessCapabilitiesMustUse, /system MCP/);
+});
+
+test("host navigation extension emits only a declarative host action", async () => {
+  const snapshot = createApprovedPlatformExtensionSnapshot(
+    [hostNavigationExtension],
+    [approvalFor(hostNavigationExtension)],
+  );
+  const [navigationTool] = createPlatformExtensionTools({ snapshot });
+  assert.equal(navigationTool.name, "platform_host-navigation_present_navigation");
+  const result = await navigationTool.invoke({
+    target: "demo.issue-list",
+    label: "查看问题工单",
+  });
+  assert.deepEqual(result, {
+    status: "success",
+    hostAction: {
+      type: "host.navigate",
+      target: "demo.issue-list",
+      label: "查看问题工单",
+    },
+  });
+  await assert.rejects(() =>
+    navigationTool.invoke({ target: "https://evil.example", label: "打开链接" }),
+  );
 });
 
 test("permission-bound Platform Tools fail closed without trusted scopes", async () => {
@@ -188,4 +214,11 @@ test("deployment configuration requires an exact installed package approval", ()
       }),
     /Invalid string|expected string to match|regular expression/i,
   );
+});
+
+test("agent-server composition root resolves an installed extension package", async () => {
+  const loaded = await importInstalledPlatformExtension(
+    "@assistant/platform-host-navigation-extension",
+  );
+  assert.equal(loaded.platformExtension.manifest.id, "host-navigation");
 });

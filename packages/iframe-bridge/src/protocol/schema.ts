@@ -1,4 +1,5 @@
 import { rawHostContextSchema } from "@assistant/context";
+import { hostNavigationActionSchema } from "@assistant/contracts";
 import { z } from "zod";
 
 import { BRIDGE_PROTOCOL, BRIDGE_VERSION } from "./constants.js";
@@ -25,6 +26,10 @@ export const bridgeMessageSchema = z.discriminatedUnion("type", [
   envelopeSchema.extend({ type: z.literal("host.close"), payload: z.object({}) }),
   envelopeSchema.extend({ type: z.literal("assistant.loaded"), payload: z.object({}) }),
   envelopeSchema.extend({ type: z.literal("assistant.ready"), payload: z.object({}) }),
+  envelopeSchema.extend({
+    type: z.literal("assistant.host-action"),
+    payload: hostNavigationActionSchema,
+  }),
   envelopeSchema.extend({
     type: z.literal("assistant.error"),
     payload: z.object({ code: z.string().max(80), message: z.string().max(500) }),

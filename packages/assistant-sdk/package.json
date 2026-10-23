@@ -15,6 +15,7 @@
   "dependencies": {
     "@assistant/assistant-transport": "workspace:*",
     "@assistant/assistant-ui": "workspace:*",
+    "@assistant/contracts": "workspace:*",
     "@assistant/context": "workspace:*",
     "antd": "6.6.6",
     "react": "19.3.0",

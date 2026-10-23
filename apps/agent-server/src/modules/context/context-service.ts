@@ -45,6 +45,9 @@ export class MockContextAuthorizer implements ContextAuthorizer {
               ...(raw.business.module === undefined ? {} : { module: raw.business.module }),
             },
           }),
+      ...(raw.hostActions === undefined
+        ? {}
+        : { hostActions: raw.hostActions.map((action) => ({ ...action })) }),
     });
   }
 }

@@ -44,22 +44,25 @@ function normalizePathname(pathname) {
 }
 function RuntimeStatus({ transport, isAdmin, }) {
     const [models, setModels] = useState([]);
-    const [capabilities, setCapabilities] = useState([]);
-    const [plugins, setPlugins] = useState([]);
+    const [mcpTools, setMcpTools] = useState([]);
+    const [mcpServers, setMcpServers] = useState([]);
+    const [platformExtensions, setPlatformExtensions] = useState([]);
     const [error, setError] = useState();
     useEffect(() => {
         let disposed = false;
         void Promise.all([
             transport.listModels(),
-            transport.listCapabilities(),
-            isAdmin ? transport.listPlugins() : Promise.resolve({ items: [] }),
+            transport.listMcpTools(),
+            isAdmin ? transport.listMcpServers() : Promise.resolve({ items: [] }),
+            isAdmin ? transport.listPlatformExtensions() : Promise.resolve({ items: [] }),
         ])
-            .then(([modelResult, capabilityResult, pluginResult]) => {
+            .then(([modelResult, toolResult, serverResult, extensionResult]) => {
             if (disposed)
                 return;
             setModels(modelResult.items);
-            setCapabilities(capabilityResult.items);
-            setPlugins(pluginResult.items);
+            setMcpTools(toolResult.items);
+            setMcpServers(serverResult.items);
+            setPlatformExtensions(extensionResult.items);
         })
             .catch((cause) => {
             if (!disposed)
@@ -73,18 +76,26 @@ function RuntimeStatus({ transport, isAdmin, }) {
     }, [transport, isAdmin]);
     return (_jsx(PageContainer, { header: {
             title: "运行状态",
-            subTitle: "仅显示安全的部署元数据；插件明细需要平台管理员权限。",
-        }, children: _jsxs("main", { id: "main-content", children: [error && _jsx(Alert, { type: "error", showIcon: true, title: error, style: { marginBottom: 16 } }), _jsxs("div", { className: "assistant-web-status-grid", children: [_jsx(ProCard, { title: "\u6A21\u578B\u914D\u7F6E", children: _jsx(Descriptions, { column: 1, children: models.map((item, index) => (_jsx(Descriptions.Item, { label: displayValue(item["provider"], "provider"), children: displayValue(item["model"], displayValue(item["id"])) }, index))) }) }), _jsx(ProCard, { title: "\u6807\u51C6\u80FD\u529B", children: _jsx(Table, { rowKey: (row) => displayValue(row["id"], "unknown-capability"), pagination: false, dataSource: capabilities, columns: [
-                                    { title: "能力", dataIndex: "id" },
-                                    { title: "版本", dataIndex: "version" },
-                                ] }) }), _jsx(ProCard, { title: "\u63D2\u4EF6\u72B6\u6001", children: isAdmin ? (_jsx(Table, { rowKey: (row) => displayValue(row["pluginId"], "unknown-plugin"), pagination: false, dataSource: plugins, columns: [
-                                    { title: "插件", dataIndex: "pluginId" },
+            subTitle: "仅显示安全的部署元数据；MCP Server 与平台扩展明细需要平台管理员权限。",
+        }, children: _jsxs("main", { id: "main-content", children: [error && _jsx(Alert, { type: "error", showIcon: true, title: error, style: { marginBottom: 16 } }), _jsxs("div", { className: "assistant-web-status-grid", children: [_jsx(ProCard, { title: "\u6A21\u578B\u914D\u7F6E", children: _jsx(Descriptions, { column: 1, children: models.map((item, index) => (_jsx(Descriptions.Item, { label: displayValue(item["provider"], "provider"), children: displayValue(item["model"], displayValue(item["id"])) }, index))) }) }), _jsx(ProCard, { title: "MCP Tools", children: _jsx(Table, { rowKey: (row) => displayValue(row["name"], "unknown-tool"), pagination: false, dataSource: mcpTools, columns: [
+                                    { title: "Tool", dataIndex: "name" },
+                                    { title: "MCP Server", dataIndex: "serverId" },
+                                ] }) }), _jsx(ProCard, { title: "MCP Server \u72B6\u6001", children: isAdmin ? (_jsx(Table, { rowKey: (row) => displayValue(row["serverId"], "unknown-mcp-server"), pagination: false, dataSource: mcpServers, columns: [
+                                    { title: "MCP Server", dataIndex: "serverId" },
                                     {
                                         title: "状态",
                                         dataIndex: "status",
-                                        render: (value) => (_jsx(Tag, { color: value === "active" ? "cyan" : "gold", children: String(value) })),
+                                        render: (value) => (_jsx(Tag, { color: value === "ready" ? "cyan" : "gold", children: String(value) })),
                                     },
-                                ] })) : (_jsx(Empty, { description: "\u7BA1\u7406\u5458\u53EF\u67E5\u770B\u63D2\u4EF6\u8FD0\u884C\u660E\u7EC6" })) })] })] }) }));
+                                ] })) : (_jsx(Empty, { description: "\u7BA1\u7406\u5458\u53EF\u67E5\u770B MCP Server \u8FD0\u884C\u660E\u7EC6" })) }), _jsx(ProCard, { title: "Platform Extensions", children: isAdmin ? (_jsx(Table, { rowKey: (row) => displayValue(row["id"], "unknown-platform-extension"), pagination: false, dataSource: platformExtensions, columns: [
+                                    { title: "Extension", dataIndex: "id" },
+                                    { title: "版本", dataIndex: "version" },
+                                    {
+                                        title: "状态",
+                                        dataIndex: "status",
+                                        render: (value) => _jsx(Tag, { color: "cyan", children: String(value) }),
+                                    },
+                                ] })) : (_jsx(Empty, { description: "\u7BA1\u7406\u5458\u53EF\u67E5\u770B\u5E73\u53F0\u6269\u5C55\u8FD0\u884C\u660E\u7EC6" })) })] })] }) }));
 }
 function SessionsPage({ transport }) {
     const [sessions, setSessions] = useState([]);

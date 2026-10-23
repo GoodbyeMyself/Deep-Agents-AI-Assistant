@@ -5,6 +5,11 @@
 import { z } from "zod";
 
 export { assistantViewSchema, type AssistantView } from "./views.js";
+export {
+  hostActionParametersSchema,
+  hostNavigationActionSchema,
+  type HostNavigationAction,
+} from "./host-actions.js";
 export * from "./interrupts.js";
 
 // --- HTTP API：统一错误与写操作请求体 ---

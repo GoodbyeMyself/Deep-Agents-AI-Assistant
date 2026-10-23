@@ -3,7 +3,7 @@
  */
 export { createIframeAssistantBridge } from "./bridge/assistant-bridge.js";
 export { createIframeHostBridge } from "./bridge/host-bridge.js";
-export { ASSISTANT_CONTEXT_EVENT } from "./host/constants.js";
+export { ASSISTANT_CONTEXT_EVENT, ASSISTANT_HOST_ACTION_EVENT } from "./host/constants.js";
 export { mountIframeAssistant } from "./host/mount-iframe-assistant.js";
 export type { IframeAssistantHost, IframeAssistantHostOptions } from "./host/types.js";
 export { BRIDGE_PROTOCOL, BRIDGE_VERSION } from "./protocol/constants.js";

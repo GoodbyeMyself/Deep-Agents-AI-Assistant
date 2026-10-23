@@ -39,6 +39,9 @@ importers:
       '@eslint/js':
         specifier: 9.39.2
         version: 9.39.2
+      '@langchain/core':
+        specifier: 'catalog:'
+        version: 1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6))
       '@types/node':
         specifier: 26.1.0
         version: 26.1.0
@@ -86,7 +89,10 @@ importers:
         version: link:../../packages/mcp-client-runtime
       '@assistant/platform-diagnostics-extension':
         specifier: workspace:*
-        version: link:../../packages/platform-diagnostics-extension
+        version: link:../../extensions/platform-diagnostics
+      '@assistant/platform-host-navigation-extension':
+        specifier: workspace:*
+        version: link:../../extensions/host-navigation
       '@assistant/platform-extension-runtime':
         specifier: workspace:*
         version: link:../../packages/platform-extension-runtime
@@ -280,6 +286,9 @@ importers:
       '@assistant/assistant-ui':
         specifier: workspace:*
         version: link:../assistant-ui
+      '@assistant/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       '@assistant/context':
         specifier: workspace:*
         version: link:../../core/context
@@ -363,6 +372,9 @@ importers:
       '@assistant/context':
         specifier: workspace:*
         version: link:../../core/context
+      '@assistant/contracts':
+        specifier: workspace:*
+        version: link:../contracts
       zod:
         specifier: 4.3.6
         version: 4.3.6
@@ -376,11 +388,20 @@ importers:
         specifier: 'catalog:'
         version: 2.3.1
 
-  packages/platform-diagnostics-extension:
+  extensions/platform-diagnostics:
     dependencies:
       '@assistant/platform-extension-runtime':
         specifier: workspace:*
-        version: link:../platform-extension-runtime
+        version: link:../../packages/platform-extension-runtime
+
+  extensions/host-navigation:
+    dependencies:
+      '@assistant/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
+      '@assistant/platform-extension-runtime':
+        specifier: workspace:*
+        version: link:../../packages/platform-extension-runtime
 
   packages/platform-extension-runtime:
     dependencies:

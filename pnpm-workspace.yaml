@@ -2,6 +2,7 @@ packages:
   - "apps/*"
   - "packages/*"
   - "core/*"
+  - "extensions/*"
 
 catalog:
   "@modelcontextprotocol/client": 2.3.1

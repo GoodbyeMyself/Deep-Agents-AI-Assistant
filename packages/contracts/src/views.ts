@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { hostNavigationActionSchema } from "./host-actions.js";
+
 const viewBaseSchema = z.object({
   viewId: z.string().uuid(),
   schemaVersion: z.literal("1"),
@@ -50,6 +52,10 @@ export const assistantViewSchema = z.discriminatedUnion("viewType", [
     data: z.object({
       items: z.array(z.object({ referenceId: z.string(), title: z.string().optional() })),
     }),
+  }),
+  viewBaseSchema.extend({
+    viewType: z.literal("action.navigate"),
+    data: hostNavigationActionSchema,
   }),
 ]);
 

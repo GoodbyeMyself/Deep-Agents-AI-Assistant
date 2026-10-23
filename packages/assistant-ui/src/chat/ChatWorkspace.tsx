@@ -4,7 +4,7 @@ import type {
   MessageDto,
   SessionDto,
 } from "@assistant/assistant-transport";
-import type { AgUiEvent } from "@assistant/contracts";
+import type { AgUiEvent, HostNavigationAction } from "@assistant/contracts";
 import type { RawHostContext } from "@assistant/context";
 import {
   FolderOutlined,
@@ -79,6 +79,7 @@ export function ChatWorkspace({
   workspaceClassName,
   sidebarFooter,
   layout = "default",
+  onHostAction,
 }: {
   transport: ChatAgentPort<AgUiEvent>;
   selectedObject?: SelectedBusinessObject;
@@ -88,6 +89,7 @@ export function ChatWorkspace({
   workspaceClassName?: string;
   sidebarFooter?: ReactNode;
   layout?: "default" | "panel";
+  onHostAction?: (action: HostNavigationAction) => void;
 }) {
   const resolvedHeading =
     headingTitle ?? (mode === "standalone" ? "数据证据工作台" : "业务智能助手");
@@ -206,10 +208,7 @@ export function ChatWorkspace({
     if (state.activeRunId !== undefined) void transport.cancelRun(state.activeRunId);
   };
 
-  const resolveApproval = async (
-    approval: ApprovalRequest,
-    decision: "approved" | "rejected",
-  ) => {
+  const resolveApproval = async (approval: ApprovalRequest, decision: "approved" | "rejected") => {
     setError(undefined);
     dispatch({ type: "approval-status", interruptId: approval.id, status: "submitting" });
     try {
@@ -418,6 +417,7 @@ export function ChatWorkspace({
               {...(selectedObject?.name ? { objectName: selectedObject.name } : {})}
               {...(panelLayout ? { prompts, onPrompt: (value) => void submit(value) } : {})}
               onApproval={(approval, decision) => void resolveApproval(approval, decision)}
+              {...(onHostAction === undefined ? {} : { onHostAction })}
             />
           )}
         </div>

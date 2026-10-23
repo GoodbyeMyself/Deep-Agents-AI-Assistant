@@ -8,7 +8,7 @@ import { AssistantApiTransport } from "@assistant/assistant-transport";
 import type { RawHostContext } from "@assistant/context";
 import { createIframeAssistantBridge } from "@assistant/iframe-bridge";
 import { Alert, Spin } from "antd";
-import { StrictMode, useEffect, useMemo, useState } from "react";
+import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 function EmbedApp() {
@@ -18,6 +18,7 @@ function EmbedApp() {
   const [credential, setCredential] = useState<string>();
   const [context, setContext] = useState<RawHostContext>({});
   const [error, setError] = useState<string>();
+  const bridgeRef = useRef<ReturnType<typeof createIframeAssistantBridge> | undefined>(undefined);
 
   useEffect(() => {
     if (hostOrigin.length === 0 || channelId.length === 0) {
@@ -37,8 +38,12 @@ function EmbedApp() {
       onContext: setContext,
       onError: () => setError("嵌入式助手初始化失败。"),
     });
+    bridgeRef.current = bridge;
     bridge.start();
-    return () => bridge.destroy();
+    return () => {
+      bridge.destroy();
+      bridgeRef.current = undefined;
+    };
   }, [channelId, hostOrigin]);
 
   if (error !== undefined) return <Alert type="error" showIcon title={error} />;
@@ -52,6 +57,7 @@ function EmbedApp() {
           initialContext: context,
           title: "业务智能助手",
           layout: "panel",
+          onHostAction: (action) => bridgeRef.current?.requestHostAction(action),
         }}
       />
     </div>

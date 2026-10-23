@@ -1,5 +1,6 @@
-import { assistantViewSchema } from "@assistant/contracts";
-import { Alert, Card, Statistic, Table, Tag } from "antd";
+import { assistantViewSchema, type HostNavigationAction } from "@assistant/contracts";
+import { ArrowRightOutlined } from "@ant-design/icons";
+import { Alert, Button, Card, Statistic, Table, Tag } from "antd";
 
 import { LineChartView } from "./LineChartView.js";
 import { SafeContent } from "./SafeContent.js";
@@ -10,7 +11,13 @@ function displayScalar(value: unknown): string {
     : "—";
 }
 
-export function AssistantViewRenderer({ value }: { value: unknown }) {
+export function AssistantViewRenderer({
+  value,
+  onHostAction,
+}: {
+  value: unknown;
+  onHostAction?: (action: HostNavigationAction) => void;
+}) {
   const parsed = assistantViewSchema.safeParse(value);
   if (!parsed.success) return <Alert type="warning" showIcon title="此结构化结果无法安全显示" />;
   const view = parsed.data;
@@ -51,6 +58,24 @@ export function AssistantViewRenderer({ value }: { value: unknown }) {
           <li key={item.referenceId}>{item.title ?? item.referenceId}</li>
         ))}
       </ul>
+    );
+  if (view.viewType === "action.navigate")
+    return (
+      <Card size="small" className="assistant-view-card assistant-navigation-action">
+        <div className="assistant-navigation-copy">
+          <strong>{view.title ?? "在业务系统中继续"}</strong>
+          <small>跳转由当前业务系统确认并执行</small>
+        </div>
+        <Button
+          type="primary"
+          icon={<ArrowRightOutlined />}
+          iconPosition="end"
+          disabled={onHostAction === undefined}
+          onClick={() => onHostAction?.(view.data)}
+        >
+          {view.data.label}
+        </Button>
+      </Card>
     );
 
   return <LineChartView title={view.title} rows={view.data.rows} />;

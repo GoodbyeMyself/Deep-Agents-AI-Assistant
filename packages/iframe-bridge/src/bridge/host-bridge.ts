@@ -1,4 +1,5 @@
 import { rawHostContextSchema, type RawHostContext } from "@assistant/context";
+import type { HostNavigationAction } from "@assistant/contracts";
 
 import { createBridgeEnvelope } from "../protocol/envelope.js";
 import { parseTrustedBridgeEvent } from "../protocol/parse.js";
@@ -15,6 +16,7 @@ export function createIframeHostBridge(options: {
   getTicket: () => string | Promise<string>;
   getContext: () => RawHostContext | Promise<RawHostContext>;
   onReady?: () => void;
+  onHostAction?: (action: HostNavigationAction) => void;
   onError?: (error: { code: string; message: string }) => void;
 }) {
   let started = false;
@@ -50,6 +52,7 @@ export function createIframeHostBridge(options: {
     if (message !== undefined) seenRequestIds.add(message.requestId);
     if (message?.type === "assistant.loaded") requestHello();
     if (message?.type === "assistant.ready") options.onReady?.();
+    if (message?.type === "assistant.host-action") options.onHostAction?.(message.payload);
     if (message?.type === "assistant.error") options.onError?.(message.payload);
   };
   const loadListener = requestHello;

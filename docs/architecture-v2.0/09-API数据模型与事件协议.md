@@ -139,6 +139,26 @@ data: {"version":"1","eventId":"evt-000012","sequence":12,"sessionId":"s1","runI
 
 `rows:[]` 表示示例空数据，不得被客户端自行解释为评分零。Renderer 按受信任类型渲染，不执行外部 JS。
 
+导航联动使用同一个 `view.created` 事实事件，并投影为企业 AG-UI `CUSTOM` View：
+
+```json
+{
+  "viewId": "view-nav-001",
+  "viewType": "action.navigate",
+  "schemaVersion": "1",
+  "title": "可执行操作",
+  "data": {
+    "type": "host.navigate",
+    "target": "host.issue-list",
+    "label": "打开问题列表"
+  }
+}
+```
+
+`target` 是宿主私有 allowlist 使用的不透明键，不是 URL 或路由。只有经批准的 Platform Tool 输出能被
+Runner 提升为该 View；普通文本、MCP Tool Result 和客户端 Context 都不能直接创建它。按钮点击后通过
+受校验 iframe Bridge 通知宿主，由宿主决定是否映射和导航；该动作不授予权限，也不自动执行业务操作。
+
 ## 10. Contract Testing
 
 所有 API 产生 OpenAPI 文档与 Zod Validator；前端代码应从共享契约使用类型或由生成器生成客户端。集成测试必须覆盖 API 正常、401、403、404、409、429、5xx、超时、数据不足、SSE 重连、并发 Run 与幂等请求。

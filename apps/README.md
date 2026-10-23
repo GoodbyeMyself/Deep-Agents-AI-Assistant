@@ -16,7 +16,7 @@
 
 ## 依赖边界
 
-- `agent-server` 可以在组合根依赖 `core/*` 和 `packages/*`，但不得按 Product A/B/C
+- `agent-server` 可以在组合根依赖 `core/*`、`packages/*` 和经部署批准的 `extensions/*`，但不得按 Product A/B/C
   编写运行时路由分支。
 - `assistant-web` 和 `assistant-embed` 复用 `assistant-ui`、`assistant-sdk`、
   `assistant-transport` 与 `iframe-bridge`，不得直接访问业务数据库或产品 API。

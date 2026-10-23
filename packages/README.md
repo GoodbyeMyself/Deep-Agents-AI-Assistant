@@ -10,7 +10,6 @@
 | `agent-runtime/` | 官方 Deep Agents 的薄封装、运行策略和诊断去敏 |
 | `mcp-client-runtime/` | 外部 MCP 连接、Tool 发现/批准快照和 LangChain Tool 安全适配；不理解业务 Schema 语义 |
 | `platform-extension-runtime/` | 纯平台 Extension 的批准、Tool 包装和 Skill 隔离启动快照 |
-| `platform-diagnostics-extension/` | 无业务语义的只读 Platform Extension 参考实现 |
 | `contracts/` | REST、SSE、Assistant View 等跨端公共协议 |
 | `assistant-transport/` | Session/Run/Evidence 客户端和 SSE 断流续传 |
 | `assistant-ui/` | 独立 Web 与嵌入模式共享的 React Chat Core |
@@ -24,8 +23,9 @@
 - UI、SDK 和 Transport 只消费受控 API/View 契约，不直接访问业务 API 或密钥。
 - V2.2 中，每个系统的 MCP 独立拥有自己的 Tool、Schema、权限和业务 API。主仓不保留
   `domains/*`、`adapters/*`、业务 `skills/*`、业务模板或 Plugin SDK/Runtime。
-- Platform Extension 只能扩展纯平台能力；即使以 Plugin 命名，也不能重新引入业务 Catalog、Adapter
-  或产品契约。业务 Tool 必须继续通过批准的系统 MCP 进入 Agent Runtime。
+- Platform Extension Runtime 只提供平台扩展契约和治理机制；具体 Extension 必须位于独立的
+  `extensions/<extension-id>/` 目录。即使以 Plugin 命名，也不能重新引入业务 Catalog、Adapter 或产品
+  契约。业务 Tool 必须继续通过批准的系统 MCP 进入 Agent Runtime。
 
 ## 新增 Package
 

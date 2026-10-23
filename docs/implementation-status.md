@@ -448,8 +448,9 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 
 ## PEX-1：受治理的平台扩展最小闭环
 
-状态：实现完成；用户已完成 `pnpm install`，并确认标准 `pnpm test:platform-extensions` 8/8 与
-`pnpm lint` 通过；typecheck/build/全量 test 门禁待执行。详见
+状态：完成并通过工程阶段退出门禁；用户已确认 `pnpm install`、标准
+`pnpm test:platform-extensions` 8/8、`pnpm test:ag-ui-hitl`、`pnpm lint`、全量 `pnpm test` 和
+`pnpm typecheck`（包含全量 build）全部通过。详见
 [平台扩展机制](architecture-v2.0/23-平台扩展机制.md)、ADR-028 和
 [PEX-1 验收报告](acceptance/evolution/platform-extension-pex-1-acceptance-report.md)。
 
@@ -459,8 +460,8 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   校验；模型参数不能提供主体、租户或权限。非 JSON 和超大结果失败关闭。
 - Skill 使用扩展根目录内相对路径，拒绝路径逃逸、符号链接、异常文件和超限内容；校验 SHA-256 后
   复制到 OS 临时目录。Agent Backend 只读 `/skills/**`，拒绝其他读取和所有写入。
-- 新增 `@assistant/platform-diagnostics-extension` 参考实现，只提供平台扩展边界说明 Tool/Skill，不包含
-  Product A/B/C 业务语义。
+- 新增独立目录 `extensions/platform-diagnostics`，以 `@assistant/platform-diagnostics-extension` 包提供
+  平台扩展边界说明 Tool/Skill，不包含 Product A/B/C 业务语义；具体 Extension 不再混入 `packages/*`。
 - Agent Server Composition Root 合并批准的 MCP Tool 与 Platform Tool，并把 Skill 启动快照交给
   官方 Deep Agents `skills`/`FilesystemBackend`/`permissions` 公共参数；未改写 Agent Loop。
 - 新增 `test:platform-extensions` 专项测试。Codex 使用现有锁定依赖和临时只读模块解析完成定向 TypeScript
@@ -474,3 +475,41 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 2026-10-23 用户首次执行 `pnpm lint` 时，既有 `.mjs` 测试因 ESLint 未声明 Node/Web 全局变量产生
   9 个 `no-undef`；统一补充测试环境 globals，并移除 4 个已冗余的文件级 global 注释后，Codex 使用
   ESLint 底层入口验证 0 error，用户重跑标准 `pnpm lint` 确认通过。
+- 2026-10-23 按“一 Extension 一独立目录”收紧工程结构：参考实现从 `packages/*` 迁移到
+  `extensions/platform-diagnostics`，新增 `extensions/*` workspace 类型；包名、Manifest 摘要和部署
+  批准契约未变。Codex 直接执行 ESLint、该 Extension TypeScript 检查和 Node 专项回归，均通过，专项
+  测试 8/8；迁移后的标准 pnpm 门禁待用户复验。
+- 2026-10-23 用户全量测试发现既有 AG-UI HITL 假 Agent 在恢复后返回空流，触发可信答案校验
+  `ANSWER_EMPTY`，导致 2 项恢复测试失败。测试夹具已改为在恢复后输出合法 `AIMessage`，未放宽空答案
+  失败关闭、所有权或幂等校验；Codex 直接复验 HITL 2/2 通过。用户随后重新执行 `pnpm install`、
+  `pnpm test:ag-ui-hitl` 和全量 `pnpm test`，三条命令均确认通过。
+- 2026-10-23 用户执行 `pnpm typecheck` 成功；该根脚本先完成全量 `pnpm build`，再执行各 workspace
+  TypeScript `--noEmit` 检查，因此 build 与 typecheck 两项门禁均通过。
+
+## AG-UI Host Action：回答后联动 Product A 页面
+
+状态：实现完成，本次变更的标准 pnpm 门禁和真实浏览器联动待用户验证；详见
+[AG-UI Host Action 验收报告](acceptance/evolution/ag-ui-host-action-acceptance-report.md) 和 ADR-029。
+
+- 新增通用 `host.navigate` 契约与 `action.navigate` Assistant View；只允许不透明 target、展示 label
+  和有限标量参数，明确拒绝 URL、路径、HTML 与脚本。
+- 新增独立 `extensions/host-navigation` Platform Extension。Runner 只从该 Extension 的固定 Tool Result
+  提取 Host Action，普通模型文本、其他 Platform Tool 和 MCP Tool Result 不能生成导航按钮。
+- ContextSnapshot 可携带宿主声明的可用动作；模型只能在用户明确提出导航需求时选择其中 target，动作
+  描述与 Tool 输出均不作为授权依据。Runner 再次匹配 Snapshot target 并采用宿主声明的 label，拒绝
+  未声明 target 和模型自定义文案。
+- Shared Chat Core、SDK 与 iframe Bridge 已贯通按钮点击回调；Bridge 继续校验 origin、source、channel、
+  requestId 与 Schema，不直接执行导航。
+- Product A 的 target → hash route allowlist 位于独立 Demo 仓，平台主仓不包含其路由表。真实业务 API、
+  业务 Schema、业务权限和页面数据继续由对应 MCP 与原系统负责。
+- Codex 已完成 contracts、context、agent-runtime、agent-server 与 Product A 定向 TypeScript 检查，并
+  直接执行 Product A allowlist Node 测试 2/2 通过；新增 workspace 链接、标准专项测试、lint、全量
+  typecheck/build 和浏览器验收仍待用户通过 pnpm 启动链路验证。
+- `start-local-development.ps1` 已把 `host-navigation@1.0.0` 的固定 Manifest 摘要批准注入 Product A
+  Agent Server；一键启动不再依赖用户手工设置 `PLATFORM_EXTENSIONS`。默认只启动 Product A 全链路
+  （Agent Server `3411`、Embed `5511`、Demo `5411`、独立 Web `5173`），在 Agent Server OpenAPI 就绪后再
+  拉起依赖服务；`-IncludeProductB` 可选启动 B。Product B 与 SDK Host 未声明对应宿主动作，因此不自动
+  加载该 Extension。
+- 修复 pnpm 隔离布局下的 Extension 解析：bare package 由 Agent Server Composition Root 从自身依赖
+  解析后交给通用 Loader 校验，避免 Runtime 包目录无法看到消费方 Extension；专项测试覆盖真实已安装
+  `host-navigation` 包解析。

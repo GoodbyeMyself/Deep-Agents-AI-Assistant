@@ -10,6 +10,7 @@ import {
   connectApprovedDevelopmentMcps,
   readDevelopmentMcpDeploymentConfig,
 } from "./composition/mcp-bootstrap.js";
+import { importInstalledPlatformExtension } from "./composition/platform-extension-bootstrap.js";
 import { createNodeHttpServer } from "./http/node-http.js";
 
 function envValue(name: string): string | undefined {
@@ -46,10 +47,12 @@ const extensionConfig = readPlatformExtensionDeploymentConfig(process.env);
 const extensionRuntime =
   extensionConfig === undefined
     ? undefined
-    : await loadApprovedPlatformExtensions(extensionConfig).catch(async (error: unknown) => {
-        await mcpRuntime?.close();
-        throw error;
-      });
+    : await loadApprovedPlatformExtensions(extensionConfig, importInstalledPlatformExtension).catch(
+        async (error: unknown) => {
+          await mcpRuntime?.close();
+          throw error;
+        },
+      );
 const tools = [...(mcpRuntime?.tools ?? []), ...(extensionRuntime?.tools ?? [])];
 const toolNames = new Set<string>();
 for (const tool of tools) {

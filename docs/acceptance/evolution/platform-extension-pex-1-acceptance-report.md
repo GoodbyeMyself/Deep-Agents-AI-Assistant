@@ -1,8 +1,8 @@
 # PEX-1 · 受治理的平台扩展最小闭环验收报告
 
 - 日期：2026-10-23
-- 状态：代码与测试已实现，用户 `pnpm install`、标准 `pnpm test:platform-extensions` 与 `pnpm lint`
-  已通过；typecheck/build/全量 test 门禁待执行
+- 状态：通过工程阶段退出门禁；用户 `pnpm install`、标准 `pnpm test:platform-extensions`、
+  `pnpm test:ag-ui-hitl`、`pnpm lint`、全量 `pnpm test` 与 `pnpm typecheck`（包含全量 build）均已通过
 - 决策：ADR-028
 
 ## 目标与范围
@@ -16,7 +16,7 @@ Provider SPI。
 ## 代码变更
 
 - `packages/platform-extension-runtime`：Manifest、Approval Snapshot、Loader、Tool Factory、Skill Snapshot。
-- `packages/platform-diagnostics-extension`：纯平台参考 Tool 与 Skill。
+- `extensions/platform-diagnostics`：独立目录中的纯平台参考 Tool 与 Skill。
 - `apps/agent-server/src/composition/*`、`server-main.ts`：运行时装配入口。
 - `tests/platform-extensions/platform-extension-runtime.test.mjs`：专项回归。
 
@@ -66,7 +66,18 @@ pnpm test
 - 2026-10-23：首次 `pnpm lint` 发现 9 个 `no-undef`，均来自既有 Node `.mjs` 测试的 `process` 和
   `AbortController` 环境声明缺失。统一修正 `eslint.config.js` 的测试 globals，并移除 4 个冗余文件级
   global 注释后，用户重跑 `pnpm lint` 确认通过。
+- 2026-10-23：参考 Extension 从 `packages/platform-diagnostics-extension` 迁移到独立目录
+  `extensions/platform-diagnostics`。Codex 直接执行 ESLint、Extension TypeScript `--noEmit` 与 Node
+  专项测试，结果均通过，专项测试 8/8；迁移后的 workspace 链接和标准命令仍待用户复验。
+- 2026-10-23：用户全量测试运行至 AG-UI HITL 时有 2 项失败。根因为测试假 Agent 在恢复后返回空流，
+  被现有可信答案校验按 `ANSWER_EMPTY` 正确拒绝；修正夹具使其输出合法 `AIMessage`，不改变生产恢复
+  逻辑或安全策略。Codex 直接复验 HITL 2/2 通过。
+- 2026-10-23：用户在修复后重新执行 `pnpm install`、`pnpm test:ag-ui-hitl` 与全量 `pnpm test`，确认
+  三条命令全部通过；迁移后的 workspace 链接和 HITL/全量回归已完成真实复验。
+- 2026-10-23：用户执行 `pnpm typecheck` 并确认通过。根脚本包含前置全量 `pnpm build`，因此全量
+  build 和各 workspace typecheck 均已完成真实验证。
 
 ## Exit Criteria
 
-当前结论：**未通过**。安装、专项测试和 lint 已通过；typecheck、build 与全量 test 尚未由用户执行。
+当前结论：**通过**。安装、平台扩展专项测试、HITL、lint、全量 test、build 与 typecheck 均已由用户
+执行并确认成功。该结论表示 PEX-1 本地工程门禁通过，不等同于未经部署审批的生产扩展上线批准。

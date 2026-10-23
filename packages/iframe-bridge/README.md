@@ -29,7 +29,7 @@ src/
 
 - iframe 主动发送 `assistant.loaded`，避免错过快速加载事件。
 - Host 使用一次性票据和初始 Context 完成 hello 握手。
-- 支持 Context 更新、打开、关闭、ready 和错误事件。
+- 支持 Context 更新、打开、关闭、ready、错误事件和受控 Host Action 回传。
 - 使用 requestId 防止重复消息处理。
 
 ## 主要导出
@@ -41,10 +41,14 @@ src/
 | `parseTrustedBridgeEvent`、`bridgeMessageSchema` | 消息校验与类型。 |
 | `BRIDGE_PROTOCOL`、`BRIDGE_VERSION` | 协议标识。 |
 | `ASSISTANT_CONTEXT_EVENT` | 宿主 `CustomEvent` 更新 Context 的事件名。 |
+| `ASSISTANT_HOST_ACTION_EVENT` | 宿主接收已校验 `host.navigate` 动作的事件名。 |
 
 ## 安全校验
 
 所有消息必须同时匹配 Origin、`event.source`、channelId、协议版本和 Zod Schema。不得在 URL 或消息中发送模型 Key、长期业务 Token 或未过滤权限数据。
+
+`assistant.host-action` 只接受不透明 target，不接受 URL、路径、HTML 或脚本。宿主必须再用自己的
+allowlist 映射 target；未知 target 忽略，动作本身不构成授权。
 
 ## 验证
 

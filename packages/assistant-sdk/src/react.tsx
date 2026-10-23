@@ -74,6 +74,9 @@ function AssistantSurfaceContent() {
       transport={controller.chatTransport}
       mode="assistant"
       getContext={() => controller.getContext()}
+      {...(controller.options.onHostAction === undefined
+        ? {}
+        : { onHostAction: controller.options.onHostAction })}
       {...(controller.options.layout === undefined ? {} : { layout: controller.options.layout })}
       {...(controller.options.title === undefined
         ? {}

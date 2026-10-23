@@ -1,4 +1,5 @@
 import type { RawHostContext } from "@assistant/context";
+import { hostNavigationActionSchema, type HostNavigationAction } from "@assistant/contracts";
 
 import { createBridgeEnvelope } from "../protocol/envelope.js";
 import { parseTrustedBridgeEvent } from "../protocol/parse.js";
@@ -32,7 +33,11 @@ export function createIframeAssistantBridge(options: {
     if (message.type === "host.hello") {
       void Promise.resolve(options.onHello(message.payload.ticket, message.payload.context))
         .then(() =>
-          send({ ...createBridgeEnvelope(options.channelId), type: "assistant.ready", payload: {} }),
+          send({
+            ...createBridgeEnvelope(options.channelId),
+            type: "assistant.ready",
+            payload: {},
+          }),
         )
         .catch((error: unknown) => {
           options.onError?.(error);
@@ -51,6 +56,13 @@ export function createIframeAssistantBridge(options: {
     start() {
       window.addEventListener("message", listener);
       send({ ...createBridgeEnvelope(options.channelId), type: "assistant.loaded", payload: {} });
+    },
+    requestHostAction(action: HostNavigationAction) {
+      send({
+        ...createBridgeEnvelope(options.channelId),
+        type: "assistant.host-action",
+        payload: hostNavigationActionSchema.parse(action),
+      });
     },
     destroy() {
       window.removeEventListener("message", listener);

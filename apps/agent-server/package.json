@@ -18,6 +18,7 @@
     "@assistant/evidence": "workspace:*",
     "@assistant/mcp-client-runtime": "workspace:*",
     "@assistant/platform-diagnostics-extension": "workspace:*",
+    "@assistant/platform-host-navigation-extension": "workspace:*",
     "@assistant/platform-extension-runtime": "workspace:*",
     "@langchain/core": "catalog:",
     "@langchain/langgraph": "catalog:",
