@@ -39,6 +39,12 @@ export default tseslint.config(
     },
   },
   {
+    files: ["tests/**/*.{js,mjs,cjs}"],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
+  {
     files: ["**/*.vue"],
     plugins: {
       "@typescript-eslint": tseslint.plugin,

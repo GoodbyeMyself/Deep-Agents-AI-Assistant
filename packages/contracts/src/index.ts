@@ -107,5 +107,8 @@ export const openApiDocument = {
     "/api/v1/models": { get: { summary: "List safe model metadata for this deployment" } },
     "/api/v1/mcp/servers": { get: { summary: "List configured MCP server status" } },
     "/api/v1/mcp/tools": { get: { summary: "List approved MCP tools" } },
+    "/api/v1/platform/extensions": {
+      get: { summary: "List approved Platform Extensions for administrators" },
+    },
   },
 } as const;

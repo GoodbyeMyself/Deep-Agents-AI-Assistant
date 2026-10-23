@@ -445,3 +445,32 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
   管理状态 API、Web 状态页与部署打包均切换为 MCP 术语和平台边界。
 - MCP 仓已新增独立 `product-b-mcp/`，提供 `list_open_work_orders` 只读 Tool，用于验证挂载不同业务
   能力；它不依赖 Product A Schema。当前工单数据、站点授权和 Evidence 均为 Mock。
+
+## PEX-1：受治理的平台扩展最小闭环
+
+状态：实现完成；用户已完成 `pnpm install`，并确认标准 `pnpm test:platform-extensions` 8/8 与
+`pnpm lint` 通过；typecheck/build/全量 test 门禁待执行。详见
+[平台扩展机制](architecture-v2.0/23-平台扩展机制.md)、ADR-028 和
+[PEX-1 验收报告](acceptance/evolution/platform-extension-pex-1-acceptance-report.md)。
+
+- 新增 `@assistant/platform-extension-runtime`，提供严格 Manifest、版本与规范化摘要批准、已安装包名
+  限制、不可变启动 Snapshot、声明/实现一致性校验和全局 Tool 名冲突防护。
+- Platform Tool 首版只允许 `read` 风险，权限从服务端 Runtime Context 的 `permissionScopes` 逐调用
+  校验；模型参数不能提供主体、租户或权限。非 JSON 和超大结果失败关闭。
+- Skill 使用扩展根目录内相对路径，拒绝路径逃逸、符号链接、异常文件和超限内容；校验 SHA-256 后
+  复制到 OS 临时目录。Agent Backend 只读 `/skills/**`，拒绝其他读取和所有写入。
+- 新增 `@assistant/platform-diagnostics-extension` 参考实现，只提供平台扩展边界说明 Tool/Skill，不包含
+  Product A/B/C 业务语义。
+- Agent Server Composition Root 合并批准的 MCP Tool 与 Platform Tool，并把 Skill 启动快照交给
+  官方 Deep Agents `skills`/`FilesystemBackend`/`permissions` 公共参数；未改写 Agent Loop。
+- 新增 `test:platform-extensions` 专项测试。Codex 使用现有锁定依赖和临时只读模块解析完成定向 TypeScript
+  静态诊断，并直接执行 Node 专项回归 8/8 通过；该诊断不替代用户执行 `pnpm install` 后的标准
+  `pnpm test:platform-extensions`、lint、typecheck、build 或全量测试门禁。
+- 2026-10-23 用户执行 `pnpm install` 成功：识别 16 个 workspace projects，resolved 868、reused 817、
+  downloaded 0、added 0；`pnpm-lock.yaml` 已记录新增 Platform Extension workspace 依赖。registry 请求
+  耗时和 `hast@1.0.0` deprecated 均为非阻断 warning。
+- 2026-10-23 用户执行 `pnpm test:platform-extensions` 成功：Runtime 与参考 Extension 构建完成，Node
+  专项测试共 8 项，pass 8、fail 0、cancelled 0、skipped 0、todo 0，测试时长约 710 ms。
+- 2026-10-23 用户首次执行 `pnpm lint` 时，既有 `.mjs` 测试因 ESLint 未声明 Node/Web 全局变量产生
+  9 个 `no-undef`；统一补充测试环境 globals，并移除 4 个已冗余的文件级 global 注释后，Codex 使用
+  ESLint 底层入口验证 0 error，用户重跑标准 `pnpm lint` 确认通过。

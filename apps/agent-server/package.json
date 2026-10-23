@@ -17,10 +17,13 @@
     "@assistant/contracts": "workspace:*",
     "@assistant/evidence": "workspace:*",
     "@assistant/mcp-client-runtime": "workspace:*",
+    "@assistant/platform-diagnostics-extension": "workspace:*",
+    "@assistant/platform-extension-runtime": "workspace:*",
     "@langchain/core": "catalog:",
     "@langchain/langgraph": "catalog:",
     "@langchain/langgraph-checkpoint": "catalog:",
     "@langchain/openai": "catalog:",
+    "deepagents": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

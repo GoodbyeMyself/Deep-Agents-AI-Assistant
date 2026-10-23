@@ -84,6 +84,12 @@ importers:
       '@assistant/mcp-client-runtime':
         specifier: workspace:*
         version: link:../../packages/mcp-client-runtime
+      '@assistant/platform-diagnostics-extension':
+        specifier: workspace:*
+        version: link:../../packages/platform-diagnostics-extension
+      '@assistant/platform-extension-runtime':
+        specifier: workspace:*
+        version: link:../../packages/platform-extension-runtime
       '@langchain/core':
         specifier: 'catalog:'
         version: 1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6))
@@ -96,6 +102,9 @@ importers:
       '@langchain/openai':
         specifier: 'catalog:'
         version: 1.6.2(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))(undici@8.11.2)
+      deepagents:
+        specifier: 'catalog:'
+        version: 1.14.2(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))(@langchain/langgraph-checkpoint@1.1.5(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6))))(@langchain/langgraph-sdk@1.9.31(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vue@3.5.22(typescript@5.9.3)))(@langchain/langgraph@1.4.10(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vue@3.5.22(typescript@5.9.3))(zod@4.3.6))(langchain@1.5.10(@langchain/core@1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))(openai@7.32.0(undici@8.11.2)(zod@4.3.6))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vue@3.5.22(typescript@5.9.3)))(langsmith@0.9.0(openai@7.32.0(undici@8.11.2)(zod@4.3.6)))
       zod:
         specifier: 4.3.6
         version: 4.3.6
@@ -366,6 +375,21 @@ importers:
       '@modelcontextprotocol/client':
         specifier: 'catalog:'
         version: 2.3.1
+
+  packages/platform-diagnostics-extension:
+    dependencies:
+      '@assistant/platform-extension-runtime':
+        specifier: workspace:*
+        version: link:../platform-extension-runtime
+
+  packages/platform-extension-runtime:
+    dependencies:
+      '@langchain/core':
+        specifier: 'catalog:'
+        version: 1.2.14(openai@7.32.0(undici@8.11.2)(zod@4.3.6))
+      zod:
+        specifier: 4.3.6
+        version: 4.3.6
 
 packages:
 

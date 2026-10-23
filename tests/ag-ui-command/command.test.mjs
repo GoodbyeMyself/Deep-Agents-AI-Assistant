@@ -1,5 +1,3 @@
-/* global AbortController, fetch, Request, setTimeout, TextDecoder */
-
 import assert from "node:assert/strict";
 import test from "node:test";
 

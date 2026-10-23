@@ -189,6 +189,10 @@ export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
     return this.#request("/mcp/tools");
   }
 
+  listPlatformExtensions(): Promise<{ items: JsonObject[] }> {
+    return this.#request("/platform/extensions");
+  }
+
   createEmbedTicket(targetOrigin: string): Promise<{ ticket: string; expiresAt: string }> {
     return this.#request("/embed/tickets", {
       method: "POST",
@@ -349,10 +353,7 @@ export class AgUiChatAgentPort implements ChatAgentPort<AgUiEvent> {
     return this.transport.listSessions();
   }
 
-  createSession(input: {
-    title?: string;
-    mode: "assistant" | "standalone";
-  }): Promise<SessionDto> {
+  createSession(input: { title?: string; mode: "assistant" | "standalone" }): Promise<SessionDto> {
     return this.transport.createSession(input);
   }
 

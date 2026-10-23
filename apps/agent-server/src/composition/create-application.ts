@@ -2,6 +2,7 @@ import type { AgentRuntimePolicyInput } from "@assistant/agent-runtime";
 import type { BaseLanguageModel } from "@langchain/core/language_models/base";
 import type { StructuredToolInterface } from "@langchain/core/tools";
 import { MemorySaver } from "@langchain/langgraph";
+import type { FilesystemPermission } from "deepagents";
 
 import { createApiHandler } from "../http/api.js";
 import { ContextService, MockContextAuthorizer } from "../modules/context/context-service.js";
@@ -12,11 +13,15 @@ import { AgentService } from "../modules/session/service.js";
 import { InMemoryAgentStore } from "../modules/session/store.js";
 import { createAgentPlatformRuntime } from "./runtime-bootstrap.js";
 
-export async function createAgentApplication(options: {
+export function createAgentApplication(options: {
   model: BaseLanguageModel;
   tools?: readonly StructuredToolInterface[];
+  workspaceRoot?: string;
+  skills?: string[];
+  permissions?: readonly FilesystemPermission[];
   mcpServers?: readonly Record<string, unknown>[];
   mcpTools?: readonly Record<string, unknown>[];
+  platformExtensions?: readonly Record<string, unknown>[];
   modelConfig?: {
     readonly id: string;
     readonly provider: string;
@@ -37,6 +42,9 @@ export async function createAgentApplication(options: {
     model: options.model,
     checkpointer,
     ...(options.tools === undefined ? {} : { tools: options.tools }),
+    ...(options.workspaceRoot === undefined ? {} : { workspaceRoot: options.workspaceRoot }),
+    ...(options.skills === undefined ? {} : { skills: options.skills }),
+    ...(options.permissions === undefined ? {} : { permissions: options.permissions }),
     ...(options.runtimePolicy === undefined ? {} : { runtimePolicy: options.runtimePolicy }),
   });
   const runner = new AgentRunner(
@@ -48,11 +56,12 @@ export async function createAgentApplication(options: {
     models: [{ ...modelConfig, enabled: true }],
     mcpServers: options.mcpServers ?? [],
     mcpTools: options.mcpTools ?? [],
+    platformExtensions: options.platformExtensions ?? [],
   });
   const identity = new MockIdentityProvider();
   const embedTickets = new EmbedTicketService(identity);
   const handler = createApiHandler({ identity, service, embedTickets });
-  return {
+  return Promise.resolve({
     ...boot,
     checkpointer,
     dispose: () => Promise.resolve(),
@@ -62,5 +71,5 @@ export async function createAgentApplication(options: {
     runner,
     service,
     store,
-  };
+  });
 }

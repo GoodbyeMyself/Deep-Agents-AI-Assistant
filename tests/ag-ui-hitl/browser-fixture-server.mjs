@@ -1,5 +1,3 @@
-/* global console, process */
-
 import {
   AgentService,
   ContextService,

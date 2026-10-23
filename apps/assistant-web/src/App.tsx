@@ -74,6 +74,7 @@ function RuntimeStatus({
   const [models, setModels] = useState<Record<string, unknown>[]>([]);
   const [mcpTools, setMcpTools] = useState<Record<string, unknown>[]>([]);
   const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
+  const [platformExtensions, setPlatformExtensions] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<string>();
   useEffect(() => {
     let disposed = false;
@@ -81,12 +82,14 @@ function RuntimeStatus({
       transport.listModels(),
       transport.listMcpTools(),
       isAdmin ? transport.listMcpServers() : Promise.resolve({ items: [] }),
+      isAdmin ? transport.listPlatformExtensions() : Promise.resolve({ items: [] }),
     ])
-      .then(([modelResult, toolResult, serverResult]) => {
+      .then(([modelResult, toolResult, serverResult, extensionResult]) => {
         if (disposed) return;
         setModels(modelResult.items);
         setMcpTools(toolResult.items);
         setMcpServers(serverResult.items);
+        setPlatformExtensions(extensionResult.items);
       })
       .catch((cause: unknown) => {
         if (!disposed)
@@ -105,7 +108,7 @@ function RuntimeStatus({
     <PageContainer
       header={{
         title: "运行状态",
-        subTitle: "仅显示安全的部署元数据；MCP Server 明细需要平台管理员权限。",
+        subTitle: "仅显示安全的部署元数据；MCP Server 与平台扩展明细需要平台管理员权限。",
       }}
     >
       <main id="main-content">
@@ -150,6 +153,26 @@ function RuntimeStatus({
               />
             ) : (
               <Empty description="管理员可查看 MCP Server 运行明细" />
+            )}
+          </ProCard>
+          <ProCard title="Platform Extensions">
+            {isAdmin ? (
+              <Table
+                rowKey={(row) => displayValue(row["id"], "unknown-platform-extension")}
+                pagination={false}
+                dataSource={platformExtensions}
+                columns={[
+                  { title: "Extension", dataIndex: "id" },
+                  { title: "版本", dataIndex: "version" },
+                  {
+                    title: "状态",
+                    dataIndex: "status",
+                    render: (value) => <Tag color="cyan">{String(value)}</Tag>,
+                  },
+                ]}
+              />
+            ) : (
+              <Empty description="管理员可查看平台扩展运行明细" />
             )}
           </ProCard>
         </div>

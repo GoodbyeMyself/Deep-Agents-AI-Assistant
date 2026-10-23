@@ -30,7 +30,8 @@ export class AgentService {
       readonly models: readonly Record<string, unknown>[];
       readonly mcpServers: readonly Record<string, unknown>[];
       readonly mcpTools: readonly Record<string, unknown>[];
-    } = { models: [], mcpServers: [], mcpTools: [] },
+      readonly platformExtensions: readonly Record<string, unknown>[];
+    } = { models: [], mcpServers: [], mcpTools: [], platformExtensions: [] },
   ) {}
 
   async createSnapshot(

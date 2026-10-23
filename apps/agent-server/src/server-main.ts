@@ -1,4 +1,9 @@
 import { ChatOpenAI } from "@langchain/openai";
+import {
+  loadApprovedPlatformExtensions,
+  readPlatformExtensionDeploymentConfig,
+} from "@assistant/platform-extension-runtime";
+import type { FilesystemPermission } from "deepagents";
 
 import { createAgentApplication } from "./composition/create-application.js";
 import {
@@ -37,14 +42,41 @@ const model = new ChatOpenAI({
 const mcpConfig = readDevelopmentMcpDeploymentConfig(process.env, process.execPath);
 const mcpRuntime =
   mcpConfig === undefined ? undefined : await connectApprovedDevelopmentMcps(mcpConfig);
+const extensionConfig = readPlatformExtensionDeploymentConfig(process.env);
+const extensionRuntime =
+  extensionConfig === undefined
+    ? undefined
+    : await loadApprovedPlatformExtensions(extensionConfig).catch(async (error: unknown) => {
+        await mcpRuntime?.close();
+        throw error;
+      });
+const tools = [...(mcpRuntime?.tools ?? []), ...(extensionRuntime?.tools ?? [])];
+const toolNames = new Set<string>();
+for (const tool of tools) {
+  if (toolNames.has(tool.name)) {
+    await Promise.all([mcpRuntime?.close(), extensionRuntime?.close()]);
+    throw new Error(`Model Tool name conflict for '${tool.name}'.`);
+  }
+  toolNames.add(tool.name);
+}
+const skillPermissions: readonly FilesystemPermission[] = [
+  { operations: ["read"], paths: ["/skills", "/skills/**"], mode: "allow" },
+  { operations: ["read"], paths: ["/**"], mode: "deny" },
+  { operations: ["write"], paths: ["/**"], mode: "deny" },
+];
 const application = await createAgentApplication({
   model,
+  ...(tools.length === 0 ? {} : { tools }),
   ...(mcpRuntime === undefined
     ? {}
+    : { mcpServers: mcpRuntime.serverStatuses, mcpTools: mcpRuntime.toolStatuses }),
+  ...(extensionRuntime === undefined ? {} : { platformExtensions: extensionRuntime.statuses }),
+  ...(extensionRuntime?.workspaceRoot === undefined
+    ? {}
     : {
-        tools: mcpRuntime.tools,
-        mcpServers: mcpRuntime.serverStatuses,
-        mcpTools: mcpRuntime.toolStatuses,
+        workspaceRoot: extensionRuntime.workspaceRoot,
+        skills: [...extensionRuntime.skills],
+        permissions: skillPermissions,
       }),
   modelConfig: {
     id: "default",
@@ -53,7 +85,7 @@ const application = await createAgentApplication({
     version: "1",
   },
 }).catch(async (error: unknown) => {
-  await mcpRuntime?.close();
+  await Promise.all([mcpRuntime?.close(), extensionRuntime?.close()]);
   throw error;
 });
 const server = createNodeHttpServer(application.handler);
@@ -61,7 +93,7 @@ let disposed = false;
 async function dispose(): Promise<void> {
   if (disposed) return;
   disposed = true;
-  await Promise.all([application.dispose(), mcpRuntime?.close()]);
+  await Promise.all([application.dispose(), mcpRuntime?.close(), extensionRuntime?.close()]);
 }
 function disposeSafely(): void {
   void dispose().catch((error: unknown) => {
@@ -80,7 +112,10 @@ server.listen(port, host, () =>
     `Agent Server listening for deployment '${process.env["DEPLOYMENT_ID"] ?? "local"}' on http://${host}:${port}` +
       (mcpConfig === undefined
         ? " without MCP Servers"
-        : ` with MCP Servers '${mcpConfig.servers.map((server) => server.serverId).join(", ")}'`),
+        : ` with MCP Servers '${mcpConfig.servers.map((server) => server.serverId).join(", ")}'`) +
+      (extensionConfig === undefined
+        ? " without Platform Extensions"
+        : ` with Platform Extensions '${extensionConfig.map((item) => item.approval.id).join(", ")}'`),
   ),
 );
 for (const signal of ["SIGINT", "SIGTERM"] as const) {

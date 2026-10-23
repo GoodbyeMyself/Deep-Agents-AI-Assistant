@@ -170,6 +170,11 @@ export function createApiHandler(options: {
       }
       if (url.pathname === "/api/v1/mcp/tools" && request.method === "GET")
         return json({ items: options.service.runtimeInfo.mcpTools });
+      if (url.pathname === "/api/v1/platform/extensions" && request.method === "GET") {
+        if (!principal.permissionScopes.includes("platform:admin"))
+          throw new ServiceError("FORBIDDEN", "Access denied.", 403);
+        return json({ items: options.service.runtimeInfo.platformExtensions });
+      }
 
       const sessionMatch = url.pathname.match(/^\/api\/v1\/sessions\/([0-9a-f-]+)$/i);
       if (sessionMatch?.[1] !== undefined) {
