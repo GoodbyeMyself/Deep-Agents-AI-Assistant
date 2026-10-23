@@ -9,7 +9,7 @@ import {
 } from "@assistant/contracts";
 
 import { ServiceError } from "../shared/errors.js";
-import type { InMemoryAgentStore } from "../modules/session/store.js";
+import type { AgentStore } from "../modules/session/agent-store.js";
 
 interface PreparedProjection {
   readonly events: readonly AgUiEvent[];
@@ -55,16 +55,16 @@ function projectStoredEvents(
 }
 
 /**
- * 使用同一已鉴权 AssistantEvent 日志生成 AG-UI 流。准备阶段同步验证游标，确保错误仍以 HTTP
+ * 使用同一已鉴权 AssistantEvent 日志生成 AG-UI 流。准备阶段等待数据库并验证游标，确保错误仍以 HTTP
  * 409 返回，而不是在已经发送 200 后才破坏 SSE 流。
  */
-export function createAgUiEventStream(
-  store: InMemoryAgentStore,
+export async function createAgUiEventStream(
+  store: AgentStore,
   runId: string,
   principal: VerifiedPrincipal,
   cursor?: string,
-): AsyncGenerator<AgUiEvent> {
-  const prepared = projectStoredEvents(store.listEvents(runId, principal), cursor);
+): Promise<AsyncGenerator<AgUiEvent>> {
+  const prepared = projectStoredEvents(await store.listEvents(runId, principal), cursor);
 
   return (async function* streamProjectedEvents() {
     let state = prepared.state;

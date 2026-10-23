@@ -1,1 +1,1 @@
-packages/platform-diagnostics-extension/skills/** text eol=lf
+extensions/*/skills/** text eol=lf

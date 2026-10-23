@@ -1,4 +1,5 @@
 import { ChatOpenAI } from "@langchain/openai";
+import { readFileSync } from "node:fs";
 import {
   loadApprovedPlatformExtensions,
   readPlatformExtensionDeploymentConfig,
@@ -12,6 +13,7 @@ import {
 } from "./composition/mcp-bootstrap.js";
 import { importInstalledPlatformExtension } from "./composition/platform-extension-bootstrap.js";
 import { createNodeHttpServer } from "./http/node-http.js";
+import { connectApprovedHttpMcps, readHttpMcpDeploymentConfig } from "./composition/http-mcp-bootstrap.js";
 
 function envValue(name: string): string | undefined {
   const value = process.env[name]?.trim();
@@ -40,9 +42,18 @@ const model = new ChatOpenAI({
   ...(deepSeekKey === undefined ? {} : { modelKwargs: { thinking: { type: "disabled" } } }),
   ...(baseURL === undefined ? {} : { configuration: { baseURL } }),
 });
-const mcpConfig = readDevelopmentMcpDeploymentConfig(process.env, process.execPath);
+const developmentMcpConfig = readDevelopmentMcpDeploymentConfig(process.env, process.execPath);
+const httpMcpFile = envValue("MCP_HTTP_CONFIG_FILE");
+if (httpMcpFile !== undefined && envValue("MCP_HTTP_SERVERS") !== undefined)
+  throw new Error("Use either MCP_HTTP_CONFIG_FILE or MCP_HTTP_SERVERS.");
+const httpMcpConfig = readHttpMcpDeploymentConfig(httpMcpFile === undefined ? process.env
+  : { ...process.env, MCP_HTTP_SERVERS: readFileSync(httpMcpFile, "utf8") });
+if (developmentMcpConfig !== undefined && httpMcpConfig !== undefined)
+  throw new Error("Configure either stdio or HTTP MCP, not both.");
+const mcpConfig = httpMcpConfig ?? developmentMcpConfig;
 const mcpRuntime =
-  mcpConfig === undefined ? undefined : await connectApprovedDevelopmentMcps(mcpConfig);
+  httpMcpConfig !== undefined ? await connectApprovedHttpMcps(httpMcpConfig)
+    : developmentMcpConfig === undefined ? undefined : await connectApprovedDevelopmentMcps(developmentMcpConfig);
 const extensionConfig = readPlatformExtensionDeploymentConfig(process.env);
 const extensionRuntime =
   extensionConfig === undefined
@@ -69,6 +80,7 @@ const skillPermissions: readonly FilesystemPermission[] = [
 ];
 const application = await createAgentApplication({
   model,
+  ...(envValue("DATABASE_URL") === undefined ? {} : { databaseUrl: envValue("DATABASE_URL")! }),
   ...(tools.length === 0 ? {} : { tools }),
   ...(mcpRuntime === undefined
     ? {}
@@ -124,5 +136,7 @@ server.listen(port, host, () =>
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
     server.close();
+    server.closeAllConnections();
+    disposeSafely();
   });
 }

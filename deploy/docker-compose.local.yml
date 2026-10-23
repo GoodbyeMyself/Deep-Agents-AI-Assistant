@@ -1,0 +1,55 @@
+name: assistant-${DEPLOYMENT_ID:-local}
+
+services:
+  agent-server:
+    environment:
+      DATABASE_URL: postgresql://assistant:${POSTGRES_PASSWORD:?Database password is required}@postgres:5432/assistant
+      ASSISTANT_LOCAL_DEMO: "true"
+      MCP_DELEGATION_SECRET: ${MCP_DELEGATION_SECRET:?Initialize the local environment first}
+      MCP_HTTP_CONFIG_FILE: /opt/assistant/local-mcp-approval.json
+      PLATFORM_EXTENSIONS: ${PLATFORM_EXTENSIONS:?Initialize the local environment first}
+    volumes:
+      - ./out/local-mcp-approval.json:/opt/assistant/local-mcp-approval.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      product-a-mcp:
+        condition: service_healthy
+    stop_grace_period: 40s
+    ports:
+      - "127.0.0.1:3411:3000"
+
+  assistant-embed:
+    environment:
+      FRAME_ANCESTORS: http://127.0.0.1:5411
+      ASSISTANT_HOST_ORIGIN: http://127.0.0.1:5411
+    ports: !override
+      - "127.0.0.1:5511:8080"
+
+  product-a-mcp:
+    build:
+      context: .
+      dockerfile: docker/mcp.Dockerfile
+    image: assistant-product-a-mcp:${IMAGE_TAG:-local}
+    environment:
+      PRODUCT_A_MCP_REQUIRE_AUTH: "true"
+      PRODUCT_A_MCP_ALLOWED_HOSTS: product-a-mcp,localhost,127.0.0.1
+      PRODUCT_A_LOCAL_DEMO: "true"
+      PRODUCT_A_MCP_DELEGATION_SECRET: ${MCP_DELEGATION_SECRET:?Initialize the local environment first}
+    init: true
+    restart: unless-stopped
+
+  product-a-demo:
+    build:
+      context: .
+      dockerfile: docker/demo.Dockerfile
+    image: assistant-product-a-demo:${IMAGE_TAG:-local}
+    ports:
+      - "127.0.0.1:5411:8080"
+    depends_on:
+      agent-server:
+        condition: service_healthy
+      assistant-embed:
+        condition: service_started
+    init: true
+    restart: unless-stopped

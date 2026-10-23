@@ -92,11 +92,11 @@ function exposeRequestedRunIdentity(
   return { ...event, threadId: input.threadId, runId: input.runId } as AgUiEvent;
 }
 
-export function createAgUiRun(
+export async function createAgUiRun(
   service: AgentService,
   principal: VerifiedPrincipal,
   value: unknown,
-): { readonly runId: string; readonly events: AsyncGenerator<AgUiEvent> } {
+): Promise<{ readonly runId: string; readonly events: AsyncGenerator<AgUiEvent> }> {
   let input: AgUiRunAgentInput;
   try {
     input = parseAgUiRunAgentInput(value);
@@ -107,7 +107,7 @@ export function createAgUiRun(
   const resume = input.resume?.[0];
   const run =
     resume === undefined
-      ? service.createRun(
+      ? await service.createRun(
           input.threadId,
           {
             message: extractLatestUserText(input),
@@ -116,7 +116,7 @@ export function createAgUiRun(
           },
           principal,
         )
-      : (() => {
+      : await (async () => {
           const parsedResponse = resumeRunRequestSchema.safeParse({
             interruptId: resume.interruptId,
             status: resume.status,
@@ -126,14 +126,14 @@ export function createAgUiRun(
           if (!parsedResponse.success)
             throw invalidInput("AG-UI resume does not satisfy the governed approval contract.");
           const response = parsedResponse.data;
-          const pending = service.store.findPendingInterrupt(
+          const pending = await service.store.findPendingInterrupt(
             input.threadId,
             response.interruptId,
             principal,
           );
           return service.resumeRun(pending.runId, response, principal);
         })();
-  const events = createAgUiEventStream(service.store, run.id, principal);
+  const events = await createAgUiEventStream(service.store, run.id, principal);
 
   return {
     runId: run.id,

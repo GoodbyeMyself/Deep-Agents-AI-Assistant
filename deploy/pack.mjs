@@ -50,7 +50,7 @@ requireFile(resolve(stagingDir, "web/index.html"));
 requireFile(resolve(stagingDir, "embed/index.html"));
 
 const server = await import(
-  pathToFileURL(resolve(stagingDir, "server/dist/application/bootstrap.js")).href
+  pathToFileURL(resolve(stagingDir, "server/dist/composition/create-application.js")).href
 );
 if (typeof server.createAgentApplication !== "function")
   throw new Error("Deployed Agent Server did not load.");

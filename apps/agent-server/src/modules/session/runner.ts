@@ -13,7 +13,8 @@ import { AIMessage, HumanMessage, ToolMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
 import { randomUUID } from "node:crypto";
 
-import type { InMemoryAgentStore, RunRecord } from "./store.js";
+import type { RunRecord } from "./store.js";
+import type { AgentStore } from "./agent-store.js";
 import { AnswerValidationError, validateAnswer } from "./answer-validator.js";
 
 export interface StreamingAgent {
@@ -112,7 +113,7 @@ export class AgentRunner {
 
   constructor(
     private readonly agent: StreamingAgent,
-    private readonly store: InMemoryAgentStore,
+    private readonly store: AgentStore,
     private readonly runtimePolicy: AgentRuntimePolicy = defaultAgentRuntimePolicy,
   ) {}
 
@@ -133,22 +134,27 @@ export class AgentRunner {
   ): void {
     const controller = new AbortController();
     this.#controllers.set(run.id, controller);
-    const completion = this.#execute(run, principal, controller.signal, input).finally(() =>
-      this.#controllers.delete(run.id),
-    );
+    const completion = this.#execute(run, principal, controller.signal, input)
+      .catch(() => { console.error("Agent execution could not persist its terminal state."); })
+      .finally(() => this.#controllers.delete(run.id));
     this.#completions.set(run.id, completion);
+    void completion.then(() => this.#completions.delete(run.id));
   }
 
   wait(runId: string): Promise<void> {
     return this.#completions.get(runId) ?? Promise.resolve();
   }
 
-  cancel(runId: string, principal: VerifiedPrincipal): void {
-    const run = this.store.requireRun(runId, principal);
+  async close(): Promise<void> {
+    for (const controller of this.#controllers.values()) controller.abort();
+    await Promise.all(this.#completions.values());
+  }
+
+  async cancel(runId: string, principal: VerifiedPrincipal): Promise<void> {
+    const run = await this.store.requireRun(runId, principal);
     if (run.status !== "queued" && run.status !== "running") return;
     this.#controllers.get(runId)?.abort();
-    this.store.setRunStatus(runId, "cancelled");
-    this.store.appendEvent(runId, "run.cancelled", { reason: "user_requested" });
+    await this.store.finishRun(runId, "cancelled", { reason: "user_requested" });
   }
 
   async #execute(
@@ -159,10 +165,11 @@ export class AgentRunner {
       | { readonly type: "message" }
       | { readonly type: "resume"; readonly response: ResumeRunRequest },
   ): Promise<void> {
-    const session = this.store.requireSession(run.sessionId, principal);
-    const snapshot = this.store.requireSnapshot(run.contextSnapshotId, principal);
-    this.store.setRunStatus(run.id, "running");
-    this.store.appendEvent(run.id, "run.started", {
+    if (signal.aborted) return;
+    const session = await this.store.requireSession(run.sessionId, principal);
+    const snapshot = await this.store.requireSnapshot(run.contextSnapshotId, principal);
+    await this.store.setRunStatus(run.id, "running");
+    await this.store.appendEvent(run.id, "run.started", {
       modelConfigVersion: run.modelConfigVersion,
       ...(run.resumedFromRunId === undefined ? {} : { resumedFromRunId: run.resumedFromRunId }),
     });
@@ -219,14 +226,14 @@ export class AgentRunner {
         const subagent = item.namespace.find((part) => part.startsWith("tools:"));
         if (subagent !== undefined && !subagentNamespaces.has(subagent)) {
           subagentNamespaces.add(subagent);
-          this.store.appendEvent(run.id, "subagent.started", { namespace: subagent });
+          await this.store.appendEvent(run.id, "subagent.started", { namespace: subagent });
         }
         if (AIMessage.isInstance(item.message)) {
           for (const call of item.message.tool_calls ?? []) {
             const callId = call.id ?? `${call.name}:unknown`;
             if (!toolCallIds.has(callId)) {
               toolCallIds.add(callId);
-              this.store.appendEvent(run.id, "tool.started", {
+              await this.store.appendEvent(run.id, "tool.started", {
                 toolCallId: callId,
                 toolName: call.name,
               });
@@ -248,15 +255,15 @@ export class AgentRunner {
               parsed?.status === "error")
           )
             capabilityStatuses.push(parsed.status);
-          this.store.appendEvent(
+          await this.store.appendEvent(
             run.id,
             parsed?.status === "error" ? "tool.failed" : "tool.completed",
             { toolCallId: item.message.tool_call_id, toolName },
           );
           for (const evidence of parsed?.evidence ?? []) {
-            this.store.addEvidence(run, evidence);
+            await this.store.addEvidence(run, evidence);
             evidenceRefs.add(evidence.referenceId);
-            this.store.appendEvent(run.id, "evidence.added", {
+            await this.store.appendEvent(run.id, "evidence.added", {
               referenceId: evidence.referenceId,
               sourceType: evidence.source.type,
             });
@@ -271,7 +278,7 @@ export class AgentRunner {
               data: { xField: "time", yField: "value", rows },
               evidenceIds: [...evidenceRefs],
             });
-            this.store.appendEvent(run.id, "view.created", view);
+            await this.store.appendEvent(run.id, "view.created", view);
           }
           if (hostAction !== undefined) {
             const view = assistantViewSchema.parse({
@@ -282,26 +289,27 @@ export class AgentRunner {
               data: hostAction,
               evidenceIds: [...evidenceRefs],
             });
-            this.store.appendEvent(run.id, "view.created", view);
+            await this.store.appendEvent(run.id, "view.created", view);
           }
         }
       }
       for (const namespace of subagentNamespaces)
-        this.store.appendEvent(run.id, "subagent.completed", { namespace });
+        await this.store.appendEvent(run.id, "subagent.completed", { namespace });
       if (signal.aborted) return;
       if (timeoutSignal.aborted) throw new Error("RUN_TIMEOUT");
       const interrupts = await this.#readInterrupts(config);
       if (interrupts.length > 0) {
         if (assistantText.length > 0) {
-          const answer = this.#validateAnswer(
+          const answer = await this.#validateAnswer(
             run,
             principal,
             assistantText,
             evidenceRefs,
             capabilityStatuses,
           );
-          this.store.appendEvent(run.id, "message.delta", { delta: answer.text });
-          this.store.addMessage({
+          if (signal.aborted) return;
+          await this.store.appendEvent(run.id, "message.delta", { delta: answer.text });
+          await this.store.addMessage({
             sessionId: session.id,
             runId: run.id,
             role: "assistant",
@@ -309,30 +317,29 @@ export class AgentRunner {
             evidenceRefs: answer.evidenceRefs,
           });
         }
-        this.store.registerInterrupts(run.id, interrupts);
+        await this.store.registerInterrupts(run.id, interrupts);
         for (const interrupt of interrupts)
-          this.store.appendEvent(run.id, "approval.required", interrupt);
-        this.store.setRunStatus(run.id, "interrupted");
-        this.store.appendEvent(run.id, "run.interrupted", { interrupts });
+          await this.store.appendEvent(run.id, "approval.required", interrupt);
+        await this.store.finishRun(run.id, "interrupted", { interrupts });
         return;
       }
-      const answer = this.#validateAnswer(
+      const answer = await this.#validateAnswer(
         run,
         principal,
         assistantText,
         evidenceRefs,
         capabilityStatuses,
       );
-      this.store.appendEvent(run.id, "message.delta", { delta: answer.text });
-      this.store.addMessage({
+      if (signal.aborted) return;
+      await this.store.appendEvent(run.id, "message.delta", { delta: answer.text });
+      await this.store.addMessage({
         sessionId: session.id,
         runId: run.id,
         role: "assistant",
         content: answer.text,
         evidenceRefs: answer.evidenceRefs,
       });
-      this.store.setRunStatus(run.id, "completed");
-      this.store.appendEvent(run.id, "run.completed", {
+      await this.store.finishRun(run.id, "completed", {
         evidenceRefs: answer.evidenceRefs,
         partial: answer.partial,
       });
@@ -341,25 +348,30 @@ export class AgentRunner {
       const failure = timeoutSignal.aborted
         ? { code: "RUN_TIMEOUT", message: "The agent run exceeded its time limit." }
         : this.#classifyFailure(error);
-      this.store.setRunStatus(run.id, "failed", failure.code);
-      this.store.appendEvent(run.id, "run.failed", {
+      await this.store.finishRun(run.id, "failed", {
         code: failure.code,
         message: failure.message,
-      });
+      }, failure.code);
     }
   }
 
-  #validateAnswer(
+  async #validateAnswer(
     run: RunRecord,
     principal: VerifiedPrincipal,
     text: string,
     evidenceRefs: ReadonlySet<string>,
     capabilityStatuses: readonly ("success" | "partial" | "error")[],
   ) {
+    try {
+      for (const referenceId of evidenceRefs)
+        await this.store.requireEvidenceForRun(referenceId, run.id, principal);
+    } catch {
+      throw new AnswerValidationError("EVIDENCE_INVALID");
+    }
     return validateAnswer(
       { text, evidenceRefs: [...evidenceRefs], capabilityStatuses },
       this.runtimePolicy.answerValidation,
-      (referenceId) => this.store.requireEvidenceForRun(referenceId, run.id, principal),
+      () => undefined,
     );
   }
 

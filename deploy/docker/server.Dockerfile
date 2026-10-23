@@ -3,6 +3,8 @@ FROM node:22-bookworm-slim
 WORKDIR /opt/assistant/server
 
 COPY out/server/ ./
+COPY docker/normalize-deploy-links.cjs /opt/normalize-deploy-links.cjs
+RUN node /opt/normalize-deploy-links.cjs /opt/assistant/server
 
 ENV NODE_ENV=production \
     SERVER_HOST=0.0.0.0 \

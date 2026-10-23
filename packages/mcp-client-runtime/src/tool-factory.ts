@@ -21,6 +21,11 @@ export interface CreateMcpLangChainToolsOptions {
   readonly approvedTools: readonly ApprovedMcpTool[];
   readonly callTimeoutMs?: number;
   readonly maxResultBytes?: number;
+  readonly invokeTool?: (
+    request: Parameters<McpClientPort["callTool"]>[0],
+    options: NonNullable<Parameters<McpClientPort["callTool"]>[1]>,
+    context: unknown,
+  ) => ReturnType<McpClientPort["callTool"]>;
 }
 
 function modelToolName(serverId: string, toolName: string): string {
@@ -57,13 +62,16 @@ export function createMcpLangChainTools(options: CreateMcpLangChainToolsOptions)
       description: approved.description,
       schema: approved.inputSchema,
       func: async (input, _runManager, config) => {
-        const result = await options.client.callTool(
+        const invoke: NonNullable<CreateMcpLangChainToolsOptions["invokeTool"]> = options.invokeTool
+          ?? ((request, callOptions) => options.client.callTool(request, callOptions));
+        const result = await invoke(
           { name: approved.name, arguments: input },
           {
             timeout: options.callTimeoutMs ?? 30_000,
             toolDefinition: approved.definition,
             ...(config?.signal === undefined ? {} : { signal: config.signal }),
           },
+          (config as unknown as { context?: unknown } | undefined)?.context,
         );
         if (result.isError === true) {
           throw new McpToolInvocationError(

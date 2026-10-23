@@ -9,7 +9,7 @@ import {
 import type { ContextService } from "../context/context-service.js";
 import { ServiceError } from "../../shared/errors.js";
 import type { AgentRunner } from "./runner.js";
-import type { InMemoryAgentStore } from "./store.js";
+import type { AgentStore } from "./agent-store.js";
 
 function parseOrThrow<T>(
   schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
@@ -23,7 +23,7 @@ function parseOrThrow<T>(
 
 export class AgentService {
   constructor(
-    readonly store: InMemoryAgentStore,
+    readonly store: AgentStore,
     private readonly contexts: ContextService,
     readonly runner: AgentRunner,
     readonly runtimeInfo: {
@@ -40,7 +40,7 @@ export class AgentService {
     principal: VerifiedPrincipal,
   ): Promise<ContextSnapshot> {
     const snapshot = await this.contexts.create(body, mode, principal);
-    this.store.saveSnapshot(snapshot);
+    await this.store.saveSnapshot(snapshot);
     return snapshot;
   }
 
@@ -57,16 +57,16 @@ export class AgentService {
     });
   }
 
-  createRun(sessionId: string, body: unknown, principal: VerifiedPrincipal) {
+  async createRun(sessionId: string, body: unknown, principal: VerifiedPrincipal) {
     const input = parseOrThrow(createRunRequestSchema, body);
-    const result = this.store.createRun({ principal, sessionId, ...input });
+    const result = await this.store.createRun({ principal, sessionId, ...input });
     if (result.created) this.runner.start(result.run, principal);
     return result.run;
   }
 
-  resumeRun(runId: string, body: unknown, principal: VerifiedPrincipal) {
+  async resumeRun(runId: string, body: unknown, principal: VerifiedPrincipal) {
     const input = parseOrThrow(resumeRunRequestSchema, body);
-    const result = this.store.createResumeRun({
+    const result = await this.store.createResumeRun({
       principal,
       interruptedRunId: runId,
       response: input,

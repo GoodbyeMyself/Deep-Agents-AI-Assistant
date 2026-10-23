@@ -1,6 +1,37 @@
 # 实施状态
 
-更新日期：2026-10-22
+更新日期：2026-10-24
+
+## Docker / PostgreSQL 持久化（实施中）
+
+**最终本地状态（2026-10-24）：六服务已启动，本地持久化与真实模型恢复验收通过。**
+详见 [本地 Docker 验收报告](acceptance/evolution/local-docker-acceptance-report.md)。
+Product A HTTP MCP、Agent Server、PostgreSQL 健康；三个前端首页和 API 返回 200。
+PostgreSQL 与后端容器重建后，同 Session 历史、事件和真实模型 Checkpoint 记忆均恢复。
+实际模型调用 HTTP MCP 并解析 Mock Evidence 成功，数据库备份成功。下面保留实施过程记录。
+
+- 用户已安装 pg 8.23.1、@types/pg 8.23.1、官方 checkpoint-postgres 1.0.6。
+- 新增异步 AgentStore、PostgreSQL Store/平台建表迁移、事务化 Run 幂等/终态/事件序号、平台审计和
+  官方 PostgresSaver 装配；Service、Runner、HTTP 和 AG-UI 调用方已等待数据库提交。
+- DATABASE_URL 显式启用数据库；未配置时保留现有内存测试路径。数据库故障不回退内存。
+- 单实例数据库租约与启动恢复避免重复执行；遗留 Run 以 SERVER_RESTARTED 失败，不自动续跑。
+- 新增真实数据库专项 tests/postgres/persistence.test.mjs 和用户命令 pnpm test:postgres。
+- 本地 Docker PostgreSQL 已真实启动并健康：127.0.0.1:55432，assistant 应用库及 assistant_test 测试库，
+  命名卷 assistant-local_postgres-data；密码随机生成到已忽略的 deploy/.env.local，未输出凭证。
+- 本次 lint/typecheck/build、PostgreSQL 专项、现有全量回归及容器重建后实际对话均未执行，待用户验证。
+- 用户随后提供 pnpm test 输出：Agent Server 与依赖构建通过，MCP 测试 11/11；平台扩展 8/10，
+  后续测试因脚本串联未执行。两项失败已定位为中文诊断文案断言过时和迁移后 Skill LF 属性路径失效；
+  已同步断言、修正 Git 属性并归一化当前文件换行，保留原摘要与漂移阻断规则，待用户重新运行验证。
+- 用户已确认上述修复后的质量门禁与 PostgreSQL 专项全部通过；该结果适用于存储模块版本，不覆盖后续 HTTP MCP 新增代码。
+- 后续新增 HTTP MCP Client、本地 HMAC 短期委托与 Product A 验签/Host/健康检查、三仓打包、六服务 Compose、
+  启停和备份脚本。配置静态校验通过；本轮标准 pnpm 门禁、HTTP MCP 专项、镜像构建和整套应用部署待执行。
+- 用户已在主仓 .env 配置 DeepSeek；部署加载主仓模型设置，不输出或写入镜像。只有 PostgreSQL 已启动，
+  尚未宣称整套应用部署完成。
+- 用户随后确认 typecheck/lint/test/pack:local 完成，五个应用镜像已构建。启动时发现 Windows pnpm
+  绝对 junction 在 Linux 镜像失效；新增构建阶段链接转换后，又检测到包自身指向源码目录的链接。
+  检查器按预期拒绝该未处理链接，未放宽逃逸校验。按用户循环保护停止后续自动修复，待确认定向处理
+  与 package.json.name 一致的自引用链接；完整应用未启动，模型与重建恢复验收未执行。
+- 设计依据 ADR-030；身份与业务 API 仍为 Mock，数据库持久化不代表生产集成完成。
 
 > 当前架构以 V2.2“一系统一 MCP”为准。M0～E5 章节是已经退出运行路径的历史实施记录，不代表
 > 当前目录仍存在。主仓的 Adapter、Domain、业务 Skill/Template、Plugin SDK/Runtime、Capability

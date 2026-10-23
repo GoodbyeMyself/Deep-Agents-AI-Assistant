@@ -65,7 +65,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ["deploy/**/*.mjs"],
+    files: ["deploy/**/*.{mjs,cjs}"],
     languageOptions: { globals: globals.node },
   },
   eslintConfigPrettier,

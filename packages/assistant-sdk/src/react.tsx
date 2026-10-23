@@ -4,7 +4,6 @@ import {
   createContext,
   useContext,
   useEffect,
-  useMemo,
   useRef,
   useSyncExternalStore,
   type CSSProperties,

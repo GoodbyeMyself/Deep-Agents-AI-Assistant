@@ -35,6 +35,7 @@ services:
     image: assistant-embed:${IMAGE_TAG:-local}
     environment:
       FRAME_ANCESTORS: ${FRAME_ANCESTORS:-http://127.0.0.1:8080}
+      ASSISTANT_HOST_ORIGIN: ${ASSISTANT_HOST_ORIGIN:-http://127.0.0.1:8080}
     ports:
       - "${WEB_BIND:-127.0.0.1}:${EMBED_PORT:-8081}:8080"
     depends_on:

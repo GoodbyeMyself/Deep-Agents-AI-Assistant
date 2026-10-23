@@ -42,7 +42,7 @@ test("platform Tool execution uses a namespaced model name and JSON result", asy
   assert.equal(tools[0]?.name, "platform_platform-diagnostics_extension_boundary");
   const result = await tools[0]?.invoke({});
   assert.equal(result.status, "success");
-  assert.match(result.businessCapabilitiesMustUse, /system MCP/);
+  assert.match(result.businessCapabilitiesMustUse, /系统 MCP/);
 });
 
 test("host navigation extension emits only a declarative host action", async () => {

@@ -21,6 +21,7 @@ cache
 .temp
 deploy/out/
 deploy/.pack-tmp/
+deploy/backups/
 /源码 Deep agents/
 
 # Editor directories and files

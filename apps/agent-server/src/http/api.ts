@@ -136,7 +136,7 @@ export function createApiHandler(options: {
         );
       }
       if (url.pathname === "/api/v1/ag-ui" && request.method === "POST") {
-        const run = createAgUiRun(options.service, principal, await body(request));
+        const run = await createAgUiRun(options.service, principal, await body(request));
         return eventStreamResponse(
           run.events,
           (event: AgUiEvent) => sseFrame(getAgUiEventCursor(event), event.type, event),
@@ -158,9 +158,9 @@ export function createApiHandler(options: {
         });
       }
       if (url.pathname === "/api/v1/sessions" && request.method === "POST")
-        return json(options.service.createSession(await body(request), principal), 201);
+        return json(await options.service.createSession(await body(request), principal), 201);
       if (url.pathname === "/api/v1/sessions" && request.method === "GET")
-        return json({ items: options.service.store.listSessions(principal) });
+        return json({ items: await options.service.store.listSessions(principal) });
       if (url.pathname === "/api/v1/models" && request.method === "GET")
         return json({ items: options.service.runtimeInfo.models });
       if (url.pathname === "/api/v1/mcp/servers" && request.method === "GET") {
@@ -180,20 +180,20 @@ export function createApiHandler(options: {
       if (sessionMatch?.[1] !== undefined) {
         const id = sessionMatch[1];
         if (request.method === "GET")
-          return json(options.service.store.requireSession(id, principal));
+          return json(await options.service.store.requireSession(id, principal));
         if (request.method === "PATCH")
-          return json(options.service.patchSession(id, await body(request), principal));
+          return json(await options.service.patchSession(id, await body(request), principal));
         if (request.method === "DELETE") {
-          options.service.store.deleteSession(id, principal);
+          await options.service.store.deleteSession(id, principal);
           return new Response(null, { status: 204 });
         }
       }
       const messagesMatch = url.pathname.match(/^\/api\/v1\/sessions\/([0-9a-f-]+)\/messages$/i);
       if (messagesMatch?.[1] !== undefined && request.method === "GET")
         return json({
-          items: options.service.store.listMessages(messagesMatch[1], principal),
-          pendingInterrupts: options.service.store
-            .listPendingInterrupts(messagesMatch[1], principal)
+          items: await options.service.store.listMessages(messagesMatch[1], principal),
+          pendingInterrupts: (await options.service.store
+            .listPendingInterrupts(messagesMatch[1], principal))
             .map((interrupt) => ({
               id: interrupt.id,
               runId: interrupt.runId,
@@ -204,7 +204,7 @@ export function createApiHandler(options: {
         });
       const createRunMatch = url.pathname.match(/^\/api\/v1\/sessions\/([0-9a-f-]+)\/runs$/i);
       if (createRunMatch?.[1] !== undefined && request.method === "POST") {
-        const run = options.service.createRun(createRunMatch[1], await body(request), principal);
+        const run = await options.service.createRun(createRunMatch[1], await body(request), principal);
         return json(
           {
             runId: run.id,
@@ -218,12 +218,12 @@ export function createApiHandler(options: {
       }
       const runMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)$/i);
       if (runMatch?.[1] !== undefined && request.method === "GET")
-        return json(options.service.store.requireRun(runMatch[1], principal));
+        return json(await options.service.store.requireRun(runMatch[1], principal));
       const eventsMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)\/events$/i);
       if (eventsMatch?.[1] !== undefined && request.method === "GET") {
         const cursor =
           request.headers.get("last-event-id") ?? url.searchParams.get("cursor") ?? undefined;
-        options.service.store.listEvents(eventsMatch[1], principal, cursor);
+        await options.service.store.listEvents(eventsMatch[1], principal, cursor);
         const events = options.service.store.streamEvents(eventsMatch[1], principal, cursor);
         return eventStreamResponse(events, (event: AssistantEvent) =>
           sseFrame(event.eventId, event.type, event),
@@ -233,7 +233,7 @@ export function createApiHandler(options: {
       if (agUiEventsMatch?.[1] !== undefined && request.method === "GET") {
         const cursor =
           request.headers.get("last-event-id") ?? url.searchParams.get("cursor") ?? undefined;
-        const events = createAgUiEventStream(
+        const events = await createAgUiEventStream(
           options.service.store,
           agUiEventsMatch[1],
           principal,
@@ -245,12 +245,12 @@ export function createApiHandler(options: {
       }
       const cancelMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)\/cancel$/i);
       if (cancelMatch?.[1] !== undefined && request.method === "POST") {
-        options.service.runner.cancel(cancelMatch[1], principal);
+        await options.service.runner.cancel(cancelMatch[1], principal);
         return json({ status: "cancelled" }, 202);
       }
       const resumeMatch = url.pathname.match(/^\/api\/v1\/runs\/([0-9a-f-]+)\/resume$/i);
       if (resumeMatch?.[1] !== undefined && request.method === "POST") {
-        const run = options.service.resumeRun(resumeMatch[1], await body(request), principal);
+        const run = await options.service.resumeRun(resumeMatch[1], await body(request), principal);
         return json(
           {
             runId: run.id,
@@ -265,7 +265,7 @@ export function createApiHandler(options: {
       const evidenceMatch = url.pathname.match(/^\/api\/v1\/evidence\/(.+)$/);
       if (evidenceMatch?.[1] !== undefined && request.method === "GET")
         return json(
-          options.service.store.getEvidence(decodeURIComponent(evidenceMatch[1]), principal),
+          await options.service.store.getEvidence(decodeURIComponent(evidenceMatch[1]), principal),
         );
       throw new ServiceError("NOT_FOUND", "Resource not found.", 404);
     } catch (error) {

@@ -254,6 +254,15 @@ export class InMemoryAgentStore {
     }
   }
 
+  finishRun(id: string, status: "interrupted" | "completed" | "failed" | "cancelled",
+    data: Record<string, unknown>, errorCode?: string): void {
+    const run = this.#runs.get(id);
+    if (run === undefined) throw notFound();
+    if (["interrupted", "completed", "failed", "cancelled"].includes(run.status)) return;
+    this.setRunStatus(id, status, errorCode);
+    this.appendEvent(id, `run.${status}`, data);
+  }
+
   requireInterrupt(
     runId: string,
     interruptId: string,
