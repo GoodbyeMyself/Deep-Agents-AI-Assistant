@@ -34,7 +34,7 @@ const toMessage = (message: MessageDto): ChatMessage => ({
   status: "success",
   executionSteps: [],
   evidenceIds: [...message.evidenceRefs],
-  views: [],
+  views: [...(message.views ?? [])],
   approvals: [],
 });
 
@@ -99,6 +99,10 @@ export function ChatWorkspace({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
+  const canCompose = selectedObject !== undefined || getContext !== undefined;
+  const composerObjectName =
+    selectedObject?.name ??
+    (getContext !== undefined ? "当前页面" : "业务对象");
 
   const refreshSessions = useCallback(async () => {
     const result = await transport.listSessions();
@@ -107,11 +111,17 @@ export function ChatWorkspace({
   }, [transport]);
 
   const createSession = useCallback(async () => {
-    const session = await transport.createSession({ title: "数据质量分析", mode });
-    setSessions((current) => [session, ...current]);
-    setActiveSessionId(session.id);
-    dispatch({ type: "reset", messages: [] });
-    return session.id;
+    setError(undefined);
+    try {
+      const session = await transport.createSession({ title: "数据质量分析", mode });
+      setSessions((current) => [session, ...current]);
+      setActiveSessionId(session.id);
+      dispatch({ type: "reset", messages: [] });
+      return session.id;
+    } catch {
+      setError("无法创建新会话，请检查登录状态或刷新助手。");
+      return undefined;
+    }
   }, [mode, transport]);
 
   useEffect(() => {
@@ -121,7 +131,7 @@ export function ChatWorkspace({
         if (disposed) return;
         const active = items.find((item) => item.status === "active");
         const id = active?.id ?? (await createSession());
-        if (!disposed) setActiveSessionId(id);
+        if (!disposed && id !== undefined) setActiveSessionId(id);
       })
       .catch(() => setError("无法加载会话，请检查 Agent Server。"))
       .finally(() => setLoading(false));
@@ -145,10 +155,11 @@ export function ChatWorkspace({
   }, [activeSessionId, transport]);
 
   const submit = async (message: string) => {
-    if (selectedObject === undefined) return;
+    if (!canCompose) return;
     setError(undefined);
     try {
       const sessionId = activeSessionId ?? (await createSession());
+      if (sessionId === undefined) return;
       const localId = crypto.randomUUID();
       dispatch({
         type: "submit",
@@ -178,9 +189,9 @@ export function ChatWorkspace({
           ? {
               page: { type: "standalone-assistant", route: "/assistant", title: "企业数据助手" },
               object: {
-                type: selectedObject.type,
-                rawId: selectedObject.id,
-                name: selectedObject.name,
+                type: selectedObject!.type,
+                rawId: selectedObject!.id,
+                name: selectedObject!.name,
               },
               business: { domain: "data-governance", module: "quality" },
             }
@@ -423,8 +434,8 @@ export function ChatWorkspace({
         </div>
         <ChatComposer
           loading={state.activeRunId !== undefined}
-          disabled={selectedObject === undefined || hasPendingApproval}
-          objectName={selectedObject?.name ?? "业务对象"}
+          disabled={!canCompose || hasPendingApproval}
+          objectName={composerObjectName}
           {...(panelLayout ? { placeholder: "发消息..." } : {})}
           onSubmit={(value) => void submit(value)}
           onCancel={cancel}

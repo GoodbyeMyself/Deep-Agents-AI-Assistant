@@ -51,6 +51,10 @@ export function createIframeHostBridge(options: {
     if (message !== undefined && seenRequestIds.has(message.requestId)) return;
     if (message !== undefined) seenRequestIds.add(message.requestId);
     if (message?.type === "assistant.loaded") requestHello();
+    if (message?.type === "assistant.bootstrap-required") {
+      helloSent = false;
+      requestHello();
+    }
     if (message?.type === "assistant.ready") options.onReady?.();
     if (message?.type === "assistant.host-action") options.onHostAction?.(message.payload);
     if (message?.type === "assistant.error") options.onError?.(message.payload);

@@ -18,6 +18,7 @@ export interface AssistantSdkOptions {
   /** 主色（Ant Design `colorPrimary` 与聊天强调色）。默认 `#1677ff`。 */
   theme?: AssistantColorTheme;
   onHostAction?: (action: HostNavigationAction) => void;
+  onUnauthenticated?: () => void | Promise<void>;
 }
 
 export interface AssistantSdkState {
@@ -50,6 +51,9 @@ export class AssistantController {
     this.transport = new AssistantApiTransport({
       ...(options.apiBaseUrl === undefined ? {} : { apiBaseUrl: options.apiBaseUrl }),
       getAccessCredential: options.getAccessCredential,
+      ...(options.onUnauthenticated === undefined
+        ? {}
+        : { onUnauthenticated: options.onUnauthenticated }),
     });
     this.chatTransport = new AgUiChatAgentPort(this.transport);
   }

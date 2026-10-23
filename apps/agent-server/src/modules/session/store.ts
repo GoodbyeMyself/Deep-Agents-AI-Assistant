@@ -1,10 +1,12 @@
 import type { Evidence } from "@assistant/evidence";
 import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
-import type {
-  AssistantEvent,
-  AssistantEventType,
-  AssistantInterrupt,
-  ResumeRunRequest,
+import {
+  assistantViewSchema,
+  type AssistantEvent,
+  type AssistantEventType,
+  type AssistantInterrupt,
+  type AssistantView,
+  type ResumeRunRequest,
 } from "@assistant/contracts";
 import { resolveEvidence, type EvidenceRecord } from "@assistant/evidence";
 import { randomUUID } from "node:crypto";
@@ -54,6 +56,22 @@ export interface MessageRecord {
   readonly content: string;
   readonly evidenceRefs: readonly string[];
   readonly createdAt: string;
+  /** Populated when listing messages; replayed from the run's `view.created` events. */
+  readonly views?: readonly AssistantView[];
+}
+
+function viewsForRun(
+  runId: string,
+  eventsByRun: ReadonlyMap<string, readonly AssistantEvent[]>,
+): AssistantView[] {
+  const events = eventsByRun.get(runId) ?? [];
+  const views: AssistantView[] = [];
+  for (const event of events) {
+    if (event.type !== "view.created") continue;
+    const parsed = assistantViewSchema.safeParse(event.data);
+    if (parsed.success) views.push(parsed.data);
+  }
+  return views;
 }
 
 export class InMemoryAgentStore {
@@ -343,7 +361,14 @@ export class InMemoryAgentStore {
     this.requireSession(sessionId, principal);
     return this.#messages
       .filter((item) => item.sessionId === sessionId)
-      .map((item) => structuredClone(item));
+      .map((item) => {
+        const message = structuredClone(item);
+        if (message.role !== "assistant") return message;
+        return {
+          ...message,
+          views: viewsForRun(message.runId, this.#events),
+        };
+      });
   }
 
   listPendingInterrupts(

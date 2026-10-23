@@ -239,10 +239,13 @@ export class AgentRunner {
           const rawResult = jsonContent(item.message.content);
           const parsed = capabilityResult(rawResult);
           const hostAction = platformHostAction(rawResult, toolName, snapshot.context.hostActions);
+          const hostNavigationPresentation =
+            toolName === "platform_host-navigation_present_navigation" && hostAction !== undefined;
           if (
-            parsed?.status === "success" ||
-            parsed?.status === "partial" ||
-            parsed?.status === "error"
+            !hostNavigationPresentation &&
+            (parsed?.status === "success" ||
+              parsed?.status === "partial" ||
+              parsed?.status === "error")
           )
             capabilityStatuses.push(parsed.status);
           this.store.appendEvent(

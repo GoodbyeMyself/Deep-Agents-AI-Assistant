@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useSyncExternalStore,
   type CSSProperties,
   type ReactNode,
@@ -27,10 +28,16 @@ export function AssistantProvider({
   controller?: AssistantController;
   children: ReactNode;
 }) {
-  const value = useMemo(
-    () => controller ?? new AssistantController(options!),
-    [controller, options],
-  );
+  const controllerRef = useRef<AssistantController | undefined>(undefined);
+  if (controller !== undefined) {
+    controllerRef.current = controller;
+  } else if (options !== undefined && controllerRef.current === undefined) {
+    controllerRef.current = new AssistantController(options);
+  }
+  const value = controllerRef.current;
+  if (value === undefined) {
+    throw new Error("AssistantProvider requires either options or controller.");
+  }
   return <ControllerContext.Provider value={value}>{children}</ControllerContext.Provider>;
 }
 
@@ -162,9 +169,16 @@ export function AssistantSurface() {
   );
 }
 
-export function AssistantReact({ options }: { options: AssistantSdkOptions }) {
+export function AssistantReact({
+  options,
+  children,
+}: {
+  options: AssistantSdkOptions;
+  children?: ReactNode;
+}) {
   return (
     <AssistantProvider options={options}>
+      {children}
       <AssistantSurface />
     </AssistantProvider>
   );

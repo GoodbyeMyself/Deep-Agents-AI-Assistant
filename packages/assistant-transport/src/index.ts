@@ -4,6 +4,7 @@ import {
   getAgUiEventCursor,
   type AgUiEvent,
   type AssistantEvent,
+  type AssistantView,
   type ResumeRunRequest,
 } from "@assistant/contracts";
 
@@ -23,6 +24,7 @@ export interface MessageDto {
   content: string;
   evidenceRefs: readonly string[];
   createdAt: string;
+  views?: readonly AssistantView[];
 }
 
 export interface PendingInterruptDto {
@@ -71,6 +73,8 @@ export class AssistantApiError extends Error {
 export interface AssistantTransportOptions {
   apiBaseUrl?: string;
   getAccessCredential: () => string | Promise<string>;
+  /** Called once when the API returns 401; may refresh credentials before a single retry. */
+  onUnauthenticated?: () => void | Promise<void>;
   fetchImpl?: typeof fetch;
   reconnectAttempts?: number;
 }
@@ -104,12 +108,14 @@ const terminalStatuses = new Set(["interrupted", "completed", "failed", "cancell
 export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
   readonly #baseUrl: string;
   readonly #credential: AssistantTransportOptions["getAccessCredential"];
+  readonly #onUnauthenticated: AssistantTransportOptions["onUnauthenticated"];
   readonly #fetch: typeof fetch;
   readonly #reconnectAttempts: number;
 
   constructor(options: AssistantTransportOptions) {
     this.#baseUrl = (options.apiBaseUrl ?? "/api/v1").replace(/\/$/, "");
     this.#credential = options.getAccessCredential;
+    this.#onUnauthenticated = options.onUnauthenticated;
     this.#fetch = options.fetchImpl ?? ((input, init) => fetch(input, init));
     this.#reconnectAttempts = options.reconnectAttempts ?? 2;
   }
@@ -318,7 +324,7 @@ export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
     }
   }
 
-  async #request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  async #request<T>(path: string, init: RequestInit = {}, allowAuthRetry = true): Promise<T> {
     const token = await this.#credential();
     const response = await this.#fetch(`${this.#baseUrl}${path}`, {
       ...init,
@@ -329,6 +335,14 @@ export class AssistantApiTransport implements ChatAgentPort<AssistantEvent> {
         ...init.headers,
       },
     });
+    if (
+      response.status === 401 &&
+      allowAuthRetry &&
+      this.#onUnauthenticated !== undefined
+    ) {
+      await this.#onUnauthenticated();
+      return this.#request(path, init, false);
+    }
     if (!response.ok) await this.#throwResponse(response);
     if (response.status === 204) return undefined as T;
     return (await response.json()) as T;

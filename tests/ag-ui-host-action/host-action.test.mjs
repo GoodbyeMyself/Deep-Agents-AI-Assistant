@@ -97,11 +97,16 @@ async function runNavigationAgent(agent, clientRequestId) {
   runner.start(run, principal);
   await runner.wait(run.id);
 
-  return { store, run, events: store.listEvents(run.id, principal) };
+  return {
+    store,
+    session,
+    run,
+    events: store.listEvents(run.id, principal),
+  };
 }
 
 test("model tool output becomes a replayable AG-UI navigation view", async () => {
-  const { store, run, events } = await runNavigationAgent(
+  const { store, session, run, events } = await runNavigationAgent(
     new NavigationAgent(),
     "host-action-test",
   );
@@ -112,6 +117,13 @@ test("model tool output becomes a replayable AG-UI navigation view", async () =>
   assert.equal(view?.data.data.target, "demo.issue-list");
   assert.equal(view?.data.data.label, "打开问题列表");
   assert.equal(JSON.stringify(view).includes("https://"), false);
+
+  const assistantMessage = store
+    .listMessages(session.id, principal)
+    .find((message) => message.role === "assistant");
+  assert.equal(assistantMessage?.views?.length, 1);
+  assert.equal(assistantMessage?.views?.[0]?.viewType, "action.navigate");
+  assert.equal(assistantMessage?.views?.[0]?.data.target, "demo.issue-list");
 });
 
 test("other platform and MCP tools cannot create host action views", async () => {
@@ -144,7 +156,7 @@ test("the navigation tool cannot create a view for an unadvertised target", asyn
 test("iframe bridge accepts opaque actions and rejects URL targets", () => {
   const base = {
     protocol: "enterprise-assistant-bridge",
-    version: "1",
+    version: 1,
     channelId: "22222222-2222-4222-8222-222222222222",
     requestId: "33333333-3333-4333-8333-333333333333",
     type: "assistant.host-action",

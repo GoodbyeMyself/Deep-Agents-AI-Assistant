@@ -64,6 +64,13 @@ export function createIframeAssistantBridge(options: {
         payload: hostNavigationActionSchema.parse(action),
       });
     },
+    requestBootstrap() {
+      send({
+        ...createBridgeEnvelope(options.channelId),
+        type: "assistant.bootstrap-required",
+        payload: {},
+      });
+    },
     destroy() {
       window.removeEventListener("message", listener);
     },

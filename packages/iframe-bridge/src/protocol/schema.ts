@@ -25,6 +25,10 @@ export const bridgeMessageSchema = z.discriminatedUnion("type", [
   envelopeSchema.extend({ type: z.literal("host.open"), payload: z.object({}) }),
   envelopeSchema.extend({ type: z.literal("host.close"), payload: z.object({}) }),
   envelopeSchema.extend({ type: z.literal("assistant.loaded"), payload: z.object({}) }),
+  envelopeSchema.extend({
+    type: z.literal("assistant.bootstrap-required"),
+    payload: z.object({}),
+  }),
   envelopeSchema.extend({ type: z.literal("assistant.ready"), payload: z.object({}) }),
   envelopeSchema.extend({
     type: z.literal("assistant.host-action"),
