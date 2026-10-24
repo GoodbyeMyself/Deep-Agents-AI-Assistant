@@ -16,6 +16,8 @@ import { randomUUID } from "node:crypto";
 import type { RunRecord } from "./store.js";
 import type { AgentStore } from "./agent-store.js";
 import { AnswerValidationError, validateAnswer } from "./answer-validator.js";
+import { McpToolConfirmationCancelled } from "../mcp/tool-confirmation.js";
+import { McpToolInvocationError } from "@assistant/mcp-client-runtime";
 
 export interface StreamingAgent {
   stream(input: unknown, config: unknown): Promise<AsyncIterable<unknown>>;
@@ -135,7 +137,9 @@ export class AgentRunner {
     const controller = new AbortController();
     this.#controllers.set(run.id, controller);
     const completion = this.#execute(run, principal, controller.signal, input)
-      .catch(() => { console.error("Agent execution could not persist its terminal state."); })
+      .catch(() => {
+        console.error("Agent execution could not persist its terminal state.");
+      })
       .finally(() => this.#controllers.delete(run.id));
     this.#completions.set(run.id, completion);
     void completion.then(() => this.#completions.delete(run.id));
@@ -345,13 +349,36 @@ export class AgentRunner {
       });
     } catch (error) {
       if (signal.aborted) return;
+      // Only our trusted confirmation signal represents cancellation; unrelated errors still fail.
+      let cause: unknown = error;
+      for (let depth = 0; depth < 5 && cause instanceof Error; depth += 1) {
+        if (cause instanceof McpToolConfirmationCancelled) {
+          const content = "操作已取消，未执行本次业务写入。";
+          await this.store.appendEvent(run.id, "message.delta", { delta: content });
+          await this.store.addMessage({
+            sessionId: session.id,
+            runId: run.id,
+            role: "assistant",
+            content,
+            evidenceRefs: [],
+          });
+          await this.store.finishRun(run.id, "cancelled", { reason: "approval_rejected" });
+          return;
+        }
+        cause = cause.cause;
+      }
       const failure = timeoutSignal.aborted
         ? { code: "RUN_TIMEOUT", message: "The agent run exceeded its time limit." }
         : this.#classifyFailure(error);
-      await this.store.finishRun(run.id, "failed", {
-        code: failure.code,
-        message: failure.message,
-      }, failure.code);
+      await this.store.finishRun(
+        run.id,
+        "failed",
+        {
+          code: failure.code,
+          message: failure.message,
+        },
+        failure.code,
+      );
     }
   }
 
@@ -383,6 +410,8 @@ export class AgentRunner {
 
     let current = error;
     for (let depth = 0; depth < 5 && current instanceof Error; depth += 1) {
+      if (current instanceof McpToolInvocationError && current.code === "MCP_BUSINESS_REJECTED")
+        return { code: current.code, message: current.message };
       if (current.name === "ToolCallLimitExceededError")
         return {
           code: "TOOL_CALL_LIMIT_EXCEEDED",

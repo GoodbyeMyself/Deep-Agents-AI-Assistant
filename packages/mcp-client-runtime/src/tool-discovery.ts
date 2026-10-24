@@ -1,3 +1,4 @@
+import type { McpToolRiskLevel } from "./tool-execution-policy.js";
 import { createHash } from "node:crypto";
 
 import type { Tool } from "@modelcontextprotocol/client";
@@ -15,7 +16,7 @@ export interface McpToolCandidate {
   readonly inputSchema: McpJsonObjectSchema;
   readonly outputSchema: McpJsonObjectSchema;
   readonly schemaDigest: string;
-  readonly riskLevel: "read";
+  readonly riskLevel: McpToolRiskLevel;
   readonly definition: Tool;
 }
 
@@ -23,7 +24,7 @@ export interface McpToolApproval {
   readonly serverId: string;
   readonly toolName: string;
   readonly schemaDigest: string;
-  readonly riskLevel: "read";
+  readonly riskLevel: McpToolRiskLevel;
 }
 
 export type ApprovedMcpTool = McpToolCandidate;
@@ -68,18 +69,24 @@ function schemaDigest(inputSchema: McpJsonObjectSchema, outputSchema: McpJsonObj
     .digest("hex");
 }
 
-function readOnlyRisk(tool: Tool): "read" {
+function governedRisk(tool: Tool): "read" | "write" | "destructive" {
   const governance = tool._meta?.[PLATFORM_GOVERNANCE_META_KEY];
+  if (!isRecord(governance) || governance["protocolVersion"] !== "1")
+    throw new Error("Invalid MCP governance metadata.");
+  const risk = governance["riskLevel"];
   if (
-    !isRecord(governance) ||
-    governance["protocolVersion"] !== "1" ||
-    governance["riskLevel"] !== "read" ||
-    tool.annotations?.readOnlyHint !== true ||
-    tool.annotations?.destructiveHint === true
-  ) {
-    throw new Error(`MCP Tool '${tool.name}' is not an approved read-only governance shape.`);
-  }
-  return "read";
+    risk === "read" &&
+    tool.annotations?.readOnlyHint === true &&
+    tool.annotations?.destructiveHint !== true
+  )
+    return risk;
+  if (
+    (risk === "write" || risk === "destructive") &&
+    tool.annotations?.readOnlyHint === false &&
+    tool.annotations?.destructiveHint === (risk === "destructive")
+  )
+    return risk;
+  throw new Error(`MCP Tool '${tool.name}' has inconsistent governance risk annotations.`);
 }
 
 function validateServerId(serverId: string): void {
@@ -106,7 +113,7 @@ export async function discoverMcpTools(
       definition.outputSchema,
       `MCP Tool '${definition.name}' outputSchema`,
     );
-    const riskLevel = readOnlyRisk(definition);
+    const riskLevel = governedRisk(definition);
     return Object.freeze({
       serverId: options.serverId,
       name: definition.name,
@@ -128,7 +135,8 @@ export function createApprovedMcpToolSnapshot(
   const approvalByKey = new Map<string, McpToolApproval>();
   for (const approval of approvals) {
     const key = `${approval.serverId}\u0000${approval.toolName}`;
-    if (approvalByKey.has(key)) throw new Error(`Duplicate MCP Tool approval '${approval.toolName}'.`);
+    if (approvalByKey.has(key))
+      throw new Error(`Duplicate MCP Tool approval '${approval.toolName}'.`);
     approvalByKey.set(key, approval);
   }
 
@@ -152,7 +160,9 @@ export function createApprovedMcpToolSnapshot(
   }
 
   if (approvalByKey.size > 0) {
-    throw new Error(`Approved MCP Tool is missing: '${[...approvalByKey.keys()][0]?.split("\u0000").join("/")}'.`);
+    throw new Error(
+      `Approved MCP Tool is missing: '${[...approvalByKey.keys()][0]?.split("\u0000").join("/")}'.`,
+    );
   }
 
   return Object.freeze({

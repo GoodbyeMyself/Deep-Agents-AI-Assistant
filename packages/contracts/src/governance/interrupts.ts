@@ -21,7 +21,10 @@ export const resumeRunRequestSchema = z.discriminatedUnion("status", [
     .object({
       interruptId: z.string().trim().min(1).max(200),
       status: z.literal("cancelled"),
-      payload: z.object({ approved: z.literal(false) }).strict().optional(),
+      payload: z
+        .object({ approved: z.literal(false) })
+        .strict()
+        .optional(),
       clientRequestId: z.string().trim().min(1).max(200),
     })
     .strict(),
@@ -32,7 +35,7 @@ export const enterpriseApprovalInterruptValueSchema = z
   .object({
     type: z.literal("approval"),
     reason: z.string().trim().min(1).max(100),
-    message: z.string().trim().min(1).max(1_000),
+    message: z.string().trim().min(1).max(6_000),
     toolCallId: z.string().trim().min(1).max(200).optional(),
     responseSchema: z.record(z.string(), z.unknown()).optional(),
     expiresAt: z.iso.datetime({ offset: true }).optional(),
@@ -44,7 +47,7 @@ export const assistantInterruptSchema = z
   .object({
     id: z.string().min(1).max(200),
     reason: z.string().min(1).max(100),
-    message: z.string().min(1).max(1_000).optional(),
+    message: z.string().min(1).max(6_000).optional(),
     toolCallId: z.string().min(1).max(200).optional(),
     responseSchema: z.record(z.string(), z.unknown()).optional(),
     expiresAt: z.iso.datetime({ offset: true }).optional(),

@@ -5,10 +5,7 @@ import {
   initialAgUiProjectionState,
   projectAssistantEventToAgUi,
 } from "../../packages/contracts/dist/index.js";
-import {
-  chatReducer,
-  initialChatState,
-} from "../../packages/assistant-ui/dist/chat/store.js";
+import { chatReducer, initialChatState } from "../../packages/assistant-ui/dist/chat/store.js";
 
 const sessionId = "11111111-1111-4111-8111-111111111111";
 const runId = "22222222-2222-4222-8222-222222222222";
@@ -100,7 +97,10 @@ test("reduces AG-UI text, tools, subagents, evidence, views, and completion", ()
   assert.equal(assistant.status, "success");
   assert.deepEqual(assistant.evidenceIds, ["evidence-1"]);
   assert.equal(assistant.views.length, 1);
-  assert.equal(assistant.executionSteps.find((step) => step.key === "tool:tool-1").status, "success");
+  assert.equal(
+    assistant.executionSteps.find((step) => step.key === "tool:tool-1").status,
+    "success",
+  );
   assert.equal(
     assistant.executionSteps.find((step) => step.key === "subagent:quality-analyst").status,
     "success",
@@ -114,10 +114,8 @@ test("deduplicates projected AG-UI events by the enterprise projection cursor", 
     assistantEvent(10, "message.delta", { delta: "只追加一次" }),
   );
   let state = submittedState();
-  for (const event of projected.events)
-    state = chatReducer(state, { type: "event", event });
-  for (const event of projected.events)
-    state = chatReducer(state, { type: "event", event });
+  for (const event of projected.events) state = chatReducer(state, { type: "event", event });
+  for (const event of projected.events) state = chatReducer(state, { type: "event", event });
 
   assert.equal(state.messages.at(-1).content, "只追加一次");
   assert.equal(state.seenEventIds.size, 2);
@@ -135,6 +133,21 @@ test("maps AG-UI cancellation and failure to terminal chat states", () => {
   assert.equal(failed.messages.at(-1).content, "Agent 执行失败，请重试。");
   assert.equal(failed.messages.at(-1).executionSteps.at(-1).detail, "UPSTREAM_TIMEOUT");
   assert.equal(failed.activeRunId, undefined);
+});
+
+test("public business rejection survives the resumed-run failure fallback", () => {
+  let state = reduceSourceEvents([
+    assistantEvent(15, "run.failed", {
+      code: "MCP_BUSINESS_REJECTED",
+      message: "请先解除关联后再删除。",
+    }),
+  ]);
+  state = chatReducer(state, { type: "failed", message: "Agent 恢复执行失败，请重试。" });
+  assert.equal(state.messages.at(-1).content, "请先解除关联后再删除。");
+  assert.equal(
+    state.messages.at(-1).executionSteps.find((step) => step.key === "run").detail,
+    "请先解除关联后再删除。",
+  );
 });
 
 test("renders a standard AG-UI interrupt and prepares the resumed run", () => {

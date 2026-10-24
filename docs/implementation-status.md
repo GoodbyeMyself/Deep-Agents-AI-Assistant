@@ -1,6 +1,35 @@
 # 实施状态
 
-更新日期：2026-10-24
+更新日期：2026-10-25
+
+## 安全业务拒绝提示（ADR-042）
+
+- MCP 对已知数据源引用冲突返回固定安全提示；平台只验证和传递通用公共错误元数据，共享聊天保留明确原因。删除保护、审批与回执去重不变。MCP 16/16、平台相关回归 26/26、类型检查/构建通过；打包与部署进行中。本次不重试用户失败删除、不修改原数据或历史 pending 回执；上游错误采用 Mock 409 验证。
+
+## 平台通用二次确认策略（ADR-041）
+
+- 自然语言写操作编排修正：真实 Run 86b7d044-bc66-4064-ac0a-52c96f9626ce 未调用工具，只输出聊天确认。运行时通用提示补齐：明确写请求在解析唯一目标和必需参数后调用已批准写工具，交给平台 AG-UI 确认，不用聊天式确认代替。权限与强制中断边界不变。18/18 相关回归、类型检查/构建和 lint 通过；部署时 pack:local 最后目录重命名遇到 Windows EPERM；经核对暂存产物已完成校验后手动提升目录并恢复相同 MCP 批准文件，随后 Agent Server 镜像更新、健康检查和 verify-local 通过。使用原话“将 页面验收数据源删除掉”验收，Run ca40104f-49b6-4083-84db-386c5c457a42 查询后调用 delete_data_source(id=2)，触发 approval.required 并停在 interrupted；页面刷新后加载真实 AG-UI 确认/拒绝卡片。测试点击拒绝，MySQL 确认 id=2 保留。
+
+- 规则收敛到平台 mcp-client-runtime/tool-execution-policy.ts；read 直接执行，write/destructive 必须确认，未知风险拒绝。HTTP/开发 stdio 复用统一 LangGraph/AG-UI 确认模块，缺少处理器不能暴露写工具。MCP 保留风险声明、确认断言验签和回执防重放，不拥有平台确认策略。
+- 相关回归 36/36 通过，包含 8 项真实 LangGraph 图与策略测试及 AG-UI、身份、HTTP 回归（业务网络使用测试夹具）；2026-10-25 再次执行确认策略测试 8/8。pnpm typecheck（含构建）、pnpm lint、pnpm pack:local、deploy/verify-local.mjs 均通过，agent-server 镜像已更新且健康。未修改 MCP 业务映射或数据库结构。
+- 真实浏览器：list_data_sources 直接查询成功，无确认卡片（Run 16591257-5ec6-48f6-b483-8b2a7c020351）；delete_data_source(id=4) 出现工具/准确参数/删除风险确认卡片（Run 35e6a5e2-c249-4b8e-9e92-5ce9ac7d8729），点击拒绝后停止，原始 MySQL 查询确认 id=4 仍存在。此前一次模型连接错误发生在工具执行前，未造成写入。
+- 2026-10-25 修复拒绝被误判执行失败：确认模块提供专用取消信号，运行器持久化“操作已取消，未执行本次业务写入。”并记录 run.cancelled；复用现有 AG-UI 和共享 UI 取消状态，不新增协议。17/17 相关测试通过，包含真实 LangGraph 拒绝/取消到 Runner/AG-UI 的集成及伪装取消名的异常仍失败；类型检查/构建和 lint 通过。pack:local、agent-server 镜像更新和 deploy/verify-local.mjs 通过。真实浏览器拒绝删除后显示“执行已取消”及上述取消说明；恢复 Run cacc75d8-6293-4c4c-b07c-70d8d4d5aec9 为 cancelled，只有 run.started/message.delta/run.cancelled，无 run.failed、无 MCP 调用，MySQL 确认 id=4 仍存在，完整交互验收通过。历史失败 Run 62b5d19b-5304-40f0-b110-bf9f1f8d3222 保留原审计结果，不改写。
+
+
+## Product A 服务/资源路径迁移（ADR-040）
+
+- Demo 的四个业务服务迁移为服务名/资源路径，网关、Controller、Nginx、开发代理、页面及 MCP YAML/内容批准已同步。平台业务边界、MCP Schema/风险批准不变。
+- 旧 /api 业务入口撤除；网关显式保护新前缀，新增鉴权回归 14/14；数据源测试 4/4、Maven 打包、双前端类型检查和构建、宿主回归 7/7、MCP 类型检查及测试 15/15 通过。
+- Demo 六个相关服务镜像和 MCP 镜像已更新，容器健康。网关/管理端/门户三入口各通过新接口 6/6、匿名拒绝 6/6、旧路径撤除 4/4；IoT 两个 Swagger 文档入口正常。真实 MCP 四类 CRUD、部分更新、回执去重及统计全部通过，临时记录已清理。浏览器数据源页面读取及编辑成功，助手重新调用查询返回现有编号 2、4 两条记录；旧有业务数据和回执卷保留。
+
+
+## MCP CRUD 与逐微服务 YAML（ADR-039）
+
+- MCP 仓拆为 data-source、data-metadata、iot-device、iot-collection 四个 YAML，22 个工具；模型不接触密码、设备密钥或内部配置。
+- 平台接入通用 write/destructive 风险、持久 interrupt 审批和签名断言；业务映射未进入平台。回执卷防止同调用重复写入，未知状态拒绝重发。
+- 已通过：MCP 15/15、Product B 7/7、平台相关回归 20/20（含真实 LangGraph 审批/取消）、主仓类型检查/构建和 lint、MCP 类型检查，以及 Docker 中真实 MCP CRUD/部分更新/去重/删除后不存在。
+- MCP/agents 已更新并健康。真实浏览器完成 create_data_source 审批中断、点击确认、恢复写入和 host-navigation 跳转；数据源编号 4（MCP页面审批验收-20261024）已在页面显示。中断 Run 5303fbd9-541a-4175-a6f1-7e20b2f4e079，恢复 Run 3270a019-1e73-4a90-91cf-2085d35db02d。保留该非敏感测试记录供体验，其他接口临时记录已清理。
+
 
 ## 用户提供的助手 SVG（待用户构建验证）
 
@@ -610,3 +639,10 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - Product A MCP移除旧四个Mock实现及假身份回退，扩为七个真实YAML工具；源码和发布文件清单明确隔离协议测试夹具。平台Compose传入host-navigation固定批准，Product A声明五个真实路由动作白名单。
 - 管理端、门户真实验证码登录与工作台展示已在浏览器完成；嵌入助手真实查询、action.navigate生成及实际跳转数据源管理通过，成功Run为`56550c45-8d16-4794-b04e-d5fc8c081d52`。MCP11/11、Product B7/7、平台扩展10/10、AG-UI导航4/4、宿主回归4/4通过，双前端类型/构建、平台lint、打包和部署检查通过。
 - 数据仍为空；首次浏览器模型请求失败、同会话重试成功，根因未从现有安全日志确定。完整证据、边界和执行命令见[真实导航验收记录](acceptance/evolution/product-a-real-navigation-2026-10-24.md)。
+
+## Product A入口脚本挂载（ADR-038）
+
+- 按用户确认移除Govern布局中的EnterpriseAssistant组件；由Umi headScripts注入独立静态ES Module，名称配置为“Copilot AI · 业务智能助手”。登录/退出/路由只通过薄事件桥通知；脚本集中管理挂载、异步竞态、Context和本产品导航白名单，无业务页面逐页修改。
+- 通用Loader公开mountIframeAssistant模块导出，Vite设置preserveEntrySignatures=exports-only确保产物保留该导出；原HTML声明式自动挂载保持兼容，未改MCP业务契约、权限或认证路径。身份通知仅控制UI，授权仍由服务端及原业务系统校验。
+- 实际命令：宿主node --test测试7/7，Govern typecheck/build，平台pnpm typecheck（含build）与lint，以及Embed独立typecheck/build均通过。更新Embed与业务Web两个镜像；HTTP确认入口脚本MIME、HTML配置、Loader导出和部署健康检查通过。本轮未重跑平台全量test，服务端与MCP未改。
+- 浏览器：真实退出和验证码重新登录后助手恢复且仅一个入口；SPA切页保持同一iframe，按钮跳转成功。新会话Run `ab225a4c-5166-4674-8b92-c933204a89fa`完成真实元数据任务查询并生成导航视图，实际跳转`/data-governance/metadata-collection`；事件包含两个tool.completed、view.created、run.completed。详细接入和更新方法见Demo仓product-a/deploy/README.md。

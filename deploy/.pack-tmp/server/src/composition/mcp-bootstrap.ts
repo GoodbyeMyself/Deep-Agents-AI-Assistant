@@ -1,3 +1,4 @@
+import { requireMcpToolConfirmation } from "../modules/mcp/tool-confirmation.js";
 import { isAbsolute } from "node:path";
 
 import {
@@ -90,10 +91,15 @@ function parseApprovals(
     if (typeof schemaDigest !== "string" || !SHA256_PATTERN.test(schemaDigest)) {
       throw new Error(`${approvalLabel}.schemaDigest must be a SHA-256 digest.`);
     }
-    if (record["riskLevel"] !== "read") {
-      throw new Error(`${approvalLabel}.riskLevel must be 'read'.`);
+    if (!["read", "write", "destructive"].includes(String(record["riskLevel"]))) {
+      throw new Error(`${approvalLabel}.riskLevel must be read, write, or destructive.`);
     }
-    return Object.freeze({ serverId, toolName, schemaDigest, riskLevel: "read" });
+    return Object.freeze({
+      serverId,
+      toolName,
+      schemaDigest,
+      riskLevel: record["riskLevel"] as McpToolApproval["riskLevel"],
+    });
   });
   return Object.freeze(approvals);
 }
@@ -178,7 +184,11 @@ async function connectApprovedDevelopmentMcp(
       );
     }
     const tools = Object.freeze(
-      createMcpLangChainTools({ client: connection.client, approvedTools: snapshot.approved }),
+      createMcpLangChainTools({
+        client: connection.client,
+        approvedTools: snapshot.approved,
+        approveWrite: requireMcpToolConfirmation,
+      }),
     );
     const serverStatus = Object.freeze({
       serverId: config.serverId,

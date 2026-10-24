@@ -17,5 +17,16 @@ export {
   type McpClientConnection,
 } from "./transports/stdio.js";
 export { PLATFORM_GOVERNANCE_META_KEY, type McpClientPort } from "./types.js";
-export { connectApprovedHttpMcp, createRestrictedMcpFetch, validateHttpMcpEndpoint,
-  type ApprovedHttpMcpEndpoint } from "./transports/http.js";
+export {
+  connectApprovedHttpMcp,
+  createRestrictedMcpFetch,
+  validateHttpMcpEndpoint,
+  type ApprovedHttpMcpEndpoint,
+} from "./transports/http.js";
+
+export {
+  MCP_TOOL_EXECUTION_POLICY,
+  resolveMcpToolExecutionDecision,
+  type McpToolRiskLevel,
+  type McpToolExecutionDecision,
+} from "./tool-execution-policy.js";

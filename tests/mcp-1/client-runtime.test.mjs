@@ -45,6 +45,29 @@ function fakeClient(toolDefinitions = [definition()]) {
   };
 }
 
+test("only validated public error metadata is released; raw MCP errors remain hidden", async () => {
+  for (const safe of [true, false]) {
+    const client = fakeClient();
+    client.callTool = async () => ({
+      isError: true,
+      content: [{ type: "text", text: "private upstream response" }],
+      _meta: {
+        "com.deep-agents.platform/public-error": safe
+          ? { code: "CONFLICT", message: "请先解除关联。" }
+          : { code: "CONFLICT", message: "bad\nmessage" },
+      },
+    });
+    const candidates = await discoverMcpTools(client, { serverId: "demo-a" });
+    const [tool] = createMcpLangChainTools({ client, approvedTools: candidates });
+    await assert.rejects(tool.invoke({ tableId: "orders" }), (error) => {
+      assert.equal(error.code, safe ? "MCP_BUSINESS_REJECTED" : "MCP_TOOL_ERROR");
+      assert.equal(error.message.includes("private upstream"), false);
+      if (safe) assert.equal(error.message, "请先解除关联。");
+      return true;
+    });
+  }
+});
+
 test("discovery creates a deterministic, read-only candidate without business imports", async () => {
   const client = fakeClient();
   const first = await discoverMcpTools(client, { serverId: "demo-a" });
@@ -83,7 +106,7 @@ test("only exact server, tool, risk and Schema digest approvals enter the snapsh
   );
 });
 
-test("unapproved or non-read-only remote tools are never exposed", async () => {
+test("unapproved or inconsistent remote tools are never exposed", async () => {
   const candidates = await discoverMcpTools(fakeClient(), { serverId: "demo-a" });
   const snapshot = createApprovedMcpToolSnapshot(candidates, []);
   assert.equal(snapshot.approved.length, 0);
@@ -101,7 +124,7 @@ test("unapproved or non-read-only remote tools are never exposed", async () => {
         ]),
         { serverId: "demo-a" },
       ),
-    /not an approved read-only governance shape/,
+    /inconsistent governance risk annotations/,
   );
 });
 
@@ -150,7 +173,6 @@ test("Tool execution errors are sanitized before entering the model context", as
   const tools = createMcpLangChainTools({ client, approvedTools: [candidate] });
   await assert.rejects(
     () => tools[0]?.invoke({ tableId: "orders" }),
-    (error) =>
-      error?.code === "MCP_TOOL_ERROR" && !String(error.message).includes("secret-token"),
+    (error) => error?.code === "MCP_TOOL_ERROR" && !String(error.message).includes("secret-token"),
   );
 });

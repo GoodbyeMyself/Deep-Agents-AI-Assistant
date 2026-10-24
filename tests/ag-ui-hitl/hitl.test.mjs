@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { AIMessage } from "@langchain/core/messages";
+import { McpToolInvocationError } from "../../packages/mcp-client-runtime/dist/index.js";
 
 import {
   AgentRunner,
@@ -70,9 +71,8 @@ class InterruptingAgent {
   }
 }
 
-function fixture() {
+function fixture(agent = new InterruptingAgent()) {
   const store = new InMemoryAgentStore();
-  const agent = new InterruptingAgent();
   const runner = new AgentRunner(agent, store);
   const service = new AgentService(store, {}, runner);
   const session = store.createSession(principalA, "standalone", "HITL test");
@@ -107,6 +107,21 @@ function fixture() {
     store,
   };
 }
+
+test("runner releases a public MCP rejection through the actual AG-UI endpoint", async () => {
+  const { handler, session, snapshotId } = fixture({
+    async stream() {
+      throw new Error("tool wrapper", {
+        cause: new McpToolInvocationError("MCP_BUSINESS_REJECTED", "请先解除关联后再删除。"),
+      });
+    },
+  });
+  const response = await request(handler, "token-a", "/ag-ui", agUiInput(session.id, snapshotId));
+  const frames = parseFrames(await response.text());
+  assert.equal(frames.at(-1).type, "RUN_ERROR");
+  assert.equal(frames.at(-1).code, "MCP_BUSINESS_REJECTED");
+  assert.equal(frames.at(-1).message, "请先解除关联后再删除。");
+});
 
 function request(handler, token, path, body) {
   return handler(
@@ -153,12 +168,7 @@ function parseFrames(text) {
 
 test("AG-UI interrupt outcome can be resumed with RunAgentInput.resume", async () => {
   const { agent, handler, session, snapshotId } = fixture();
-  const first = await request(
-    handler,
-    "token-a",
-    "/ag-ui",
-    agUiInput(session.id, snapshotId),
-  );
+  const first = await request(handler, "token-a", "/ag-ui", agUiInput(session.id, snapshotId));
   assert.equal(first.status, 200);
   const interrupted = parseFrames(await first.text());
   const terminal = interrupted.at(-1);

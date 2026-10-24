@@ -80,9 +80,7 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
       messages: state.messages.map((message) => ({
         ...message,
         approvals: message.approvals.map((approval) =>
-          approval.id === action.interruptId
-            ? { ...approval, status: action.status }
-            : approval,
+          approval.id === action.interruptId ? { ...approval, status: action.status } : approval,
         ),
       })),
     };
@@ -116,7 +114,11 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         executionSteps: upsertStep(message.executionSteps, {
           key: "run",
           title: "执行失败",
-          detail: action.message,
+          detail:
+            message.status === "error"
+              ? (message.executionSteps.find((step) => step.key === "run")?.detail ??
+                action.message)
+              : action.message,
           status: "error",
         }),
       })),
@@ -222,16 +224,17 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     messages = updateLastAssistant({ ...state, messages }, (message) => ({
       ...message,
       status: cancelled ? "abort" : "success",
-      approvals: interrupts === undefined
-        ? message.approvals
-        : interrupts.map((interrupt) => ({
-            id: interrupt.id,
-            runId: event.runId,
-            reason: interrupt.reason,
-            ...(interrupt.message === undefined ? {} : { message: interrupt.message }),
-            ...(interrupt.expiresAt === undefined ? {} : { expiresAt: interrupt.expiresAt }),
-            status: "pending" as const,
-          })),
+      approvals:
+        interrupts === undefined
+          ? message.approvals
+          : interrupts.map((interrupt) => ({
+              id: interrupt.id,
+              runId: event.runId,
+              reason: interrupt.reason,
+              ...(interrupt.message === undefined ? {} : { message: interrupt.message }),
+              ...(interrupt.expiresAt === undefined ? {} : { expiresAt: interrupt.expiresAt }),
+              status: "pending" as const,
+            })),
       executionSteps: upsertStep(message.executionSteps, {
         key: "run",
         title: cancelled ? "已取消" : interrupted ? "等待你的确认" : "分析完成",
@@ -243,12 +246,17 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   if (event.type === EventType.RUN_ERROR) {
     messages = updateLastAssistant({ ...state, messages }, (message) => ({
       ...message,
-      content: message.content || "Agent 执行失败，请重试。",
+      content:
+        event.code === "MCP_BUSINESS_REJECTED"
+          ? event.message
+          : message.content || "Agent 执行失败，请重试。",
       status: "error",
       executionSteps: upsertStep(message.executionSteps, {
         key: "run",
         title: "执行失败",
-        ...(event.code === undefined ? {} : { detail: event.code }),
+        ...(event.code === undefined
+          ? {}
+          : { detail: event.code === "MCP_BUSINESS_REJECTED" ? event.message : event.code }),
         status: "error",
       }),
     }));

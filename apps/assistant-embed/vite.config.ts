@@ -49,6 +49,7 @@ export default defineConfig(() => {
       target: "es2022",
       sourcemap: true,
       rolldownOptions: {
+        preserveEntrySignatures: "exports-only",
         input: {
           main: fileURLToPath(new URL("./index.html", import.meta.url)),
           "assistant-loader": fileURLToPath(new URL("./src/host-loader.ts", import.meta.url)),

@@ -9,16 +9,6 @@
     "authentication": "current-user",
     "approvals": [
       {
-        "toolName": "list_data_sources",
-        "schemaDigest": "92ad7e272b0c4893307e2dc56f8b078a2c652d8c3bb0dc24ed289b9a309a64a4",
-        "riskLevel": "read"
-      },
-      {
-        "toolName": "get_data_source",
-        "schemaDigest": "8c39aa1da154f515dea9f494e4cfbfc4b1104a19157c4a4495f7c989bbb35345",
-        "riskLevel": "read"
-      },
-      {
         "toolName": "list_metadata_tasks",
         "schemaDigest": "596749ad9c9a15cf17aa6998f218e880300bc8772950c5270f8dc912fe2ffbc4",
         "riskLevel": "read"
@@ -29,8 +19,78 @@
         "riskLevel": "read"
       },
       {
+        "toolName": "create_metadata_task",
+        "schemaDigest": "e5e987dbbaa61fa2378f088142ee9811610d363ffbac6ce43bb31cca236626d2",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "update_metadata_task",
+        "schemaDigest": "3a9a1b8f93ac7ebcaf8bb1eab5f922f3bd7a7acc25aa4a4ec6fc3b94d9029ab9",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "delete_metadata_task",
+        "schemaDigest": "4e2ce81475c28ed49e8419477763006d0455e87b756fdcc3bec9c6cb7afccfcc",
+        "riskLevel": "destructive"
+      },
+      {
         "toolName": "get_workbench_overview",
         "schemaDigest": "e9ad1cdc20d05db14d2d2b83fdafab3050a45872878accc96cc66e046beb1cda",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "list_data_sources",
+        "schemaDigest": "92ad7e272b0c4893307e2dc56f8b078a2c652d8c3bb0dc24ed289b9a309a64a4",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "get_data_source",
+        "schemaDigest": "8c39aa1da154f515dea9f494e4cfbfc4b1104a19157c4a4495f7c989bbb35345",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "create_data_source",
+        "schemaDigest": "6dce82b0d8b8064b419b26e612485de223683dcd65a560397185b10fe8cdc1e8",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "update_data_source",
+        "schemaDigest": "ef1388bf1eb58eed43ec41502f0d38e0dc3c00c8d9d1a7f0f3a24c81d975a756",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "delete_data_source",
+        "schemaDigest": "4e2ce81475c28ed49e8419477763006d0455e87b756fdcc3bec9c6cb7afccfcc",
+        "riskLevel": "destructive"
+      },
+      {
+        "toolName": "list_device_collection_tasks",
+        "schemaDigest": "8a6b324275adbb6b1b60e152020464d2c82d6ba710804c96f63b1b8934928b2c",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "get_device_collection_task",
+        "schemaDigest": "df1433f3e5dfc5098bf442691fe19611b71728af30bdb174a72e1524a7bc913d",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "create_device_collection_task",
+        "schemaDigest": "d0fa80664ca8a68fd9a56f96450f730fc6e5d3444602f0f1d190ab7263f15b18",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "update_device_collection_task",
+        "schemaDigest": "12e7d63cc3d3f8534bf0d67fe2372f16b541cbeb5d40f38179c246cb68ece68f",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "delete_device_collection_task",
+        "schemaDigest": "4e2ce81475c28ed49e8419477763006d0455e87b756fdcc3bec9c6cb7afccfcc",
+        "riskLevel": "destructive"
+      },
+      {
+        "toolName": "get_telemetry_overview",
+        "schemaDigest": "3bfaa2265c7790754648399e423944d5affe6a8e19e6b0a2f7358492e8431401",
         "riskLevel": "read"
       },
       {
@@ -39,9 +99,24 @@
         "riskLevel": "read"
       },
       {
-        "toolName": "list_device_collection_tasks",
-        "schemaDigest": "8a6b324275adbb6b1b60e152020464d2c82d6ba710804c96f63b1b8934928b2c",
+        "toolName": "get_device",
+        "schemaDigest": "621eb8ea6f1b527969f037bfe3c89120c92adcb9f4edc57ba05346565dbea0c5",
         "riskLevel": "read"
+      },
+      {
+        "toolName": "create_device",
+        "schemaDigest": "3167b471a966c724d8d04579f68abb29bd8c667d4c3a5c8a9c0a9f968fd43aed",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "update_device",
+        "schemaDigest": "97769bcdae0405d6c4a89e6b205e776fa153d5f3215749c119eefbabe951af56",
+        "riskLevel": "write"
+      },
+      {
+        "toolName": "delete_device",
+        "schemaDigest": "4e2ce81475c28ed49e8419477763006d0455e87b756fdcc3bec9c6cb7afccfcc",
+        "riskLevel": "destructive"
       }
     ]
   }

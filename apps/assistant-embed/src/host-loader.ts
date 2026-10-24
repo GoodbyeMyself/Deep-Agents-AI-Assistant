@@ -5,6 +5,10 @@ import {
 } from "@assistant/iframe-bridge";
 import { rawHostContextSchema } from "@assistant/context";
 
+// Entry-script integrations can explicitly remount after an SPA login/logout.
+// Declarative HTML integrations below continue to bootstrap automatically.
+export { mountIframeAssistant };
+
 console.log("[assistant-loader] 构建信息", import.meta.env["VITE_BUILD_INFO"]);
 
 declare global {

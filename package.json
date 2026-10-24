@@ -27,7 +27,7 @@
     "test:identity-http": "pnpm --filter @assistant/agent-server... build && node --test tests/identity/http-profile-identity.test.mjs",
     "test": "pnpm test:mcp-1 && pnpm test:mcp-http && pnpm test:platform-extensions && pnpm test:runtime-policy && pnpm test:ag-ui-poc && pnpm test:ag-ui-endpoint && pnpm test:ag-ui-command && pnpm test:ag-ui-hitl && pnpm test:ag-ui-host-action && pnpm test:ag-ui-chat-core && pnpm test:copilotkit-spike",
     "test:postgres": "pnpm --filter @assistant/agent-server... build && node --env-file=deploy/.env.local --test tests/postgres/persistence.test.mjs",
-    "test:mcp-1": "pnpm --filter @assistant/agent-server... build && node --test tests/mcp-1/client-runtime.test.mjs tests/mcp-1/agent-server-mcp-config.test.mjs",
+    "test:mcp-1": "pnpm --filter @assistant/agent-server... build && node --test tests/mcp-1/client-runtime.test.mjs tests/mcp-1/agent-server-mcp-config.test.mjs tests/mcp-1/write-approval.test.mjs",
     "test:mcp-http": "pnpm --filter @assistant/agent-server... build && node --test tests/mcp-1/http-runtime.test.mjs",
     "test:mcp-1:stdio": "pnpm --filter @assistant/agent-server... build && node --test tests/mcp-1/stdio-integration.test.mjs",
     "test:mcp-1:stdio:multi": "pnpm --filter @assistant/agent-server... build && node --test tests/mcp-1/multi-stdio-integration.test.mjs",
