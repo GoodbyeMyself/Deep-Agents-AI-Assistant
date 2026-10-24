@@ -8,6 +8,8 @@ import type { AgUiEvent, HostNavigationAction } from "@assistant/contracts";
 import type { RawHostContext } from "@assistant/context";
 import {
   FolderOutlined,
+  DeleteOutlined,
+  EditOutlined,
   MoreOutlined,
   PlusOutlined,
   UnorderedListOutlined,
@@ -20,6 +22,8 @@ import { ChatComposer } from "./ChatComposer.js";
 import { MessageList } from "./MessageList.js";
 import { chatReducer, initialChatState } from "./store.js";
 import type { ApprovalRequest, ChatMessage } from "./types.js";
+import { SessionActionDialog, type SessionAction } from "./SessionActionDialog.js";
+import { AssistantBrandIcon } from "../AssistantBrandIcon.js";
 
 export interface SelectedBusinessObject {
   id: string;
@@ -98,8 +102,10 @@ export function ChatWorkspace({
   const [sessionListOpen, setSessionListOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [sessionAction, setSessionAction] = useState<SessionAction>();
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
   const canCompose = selectedObject !== undefined || getContext !== undefined;
+  const sessionBusy = state.activeRunId !== undefined || state.messages.some((message) => message.status === "loading");
   const composerObjectName =
     selectedObject?.name ??
     (getContext !== undefined ? "当前页面" : "业务对象");
@@ -279,6 +285,35 @@ export function ChatWorkspace({
   ];
   const activeSessionTitle =
     sessions.find((session) => session.id === activeSessionId)?.title ?? "新会话";
+  const renameSession = async (sessionId: string, title: string) => {
+    const updated = await transport.updateSession(sessionId, { title });
+    setSessions((current) => current.map((session) => session.id === sessionId ? updated : session));
+  };
+  const deleteSession = async (sessionId: string) => {
+    if (sessionBusy) throw new Error("Session execution is active.");
+    await transport.deleteSession(sessionId);
+    const remaining = sessions.filter((session) => session.id !== sessionId);
+    setSessions(remaining);
+    if (sessionId === activeSessionId) {
+      dispatch({ type: "reset", messages: [] });
+      setActiveSessionId(remaining[0]?.id);
+    }
+  };
+  const sessionItems = sessions.map((session) => ({ key: session.id, label: session.title,
+    disabled: sessionBusy || sessionAction !== undefined }));
+  const sessionMenu = (conversation: { key: string }) => ({
+    trigger: <Button type="text" size="small" icon={<MoreOutlined />} aria-label={`会话操作：${sessions.find((session) => session.id === conversation.key)?.title ?? "会话"}`} />,
+    items: [
+      { key: "rename", label: "重命名", icon: <EditOutlined /> },
+      { key: "delete", label: "删除", icon: <DeleteOutlined />, danger: true },
+    ],
+    onClick: ({ key }: { key: string }) => {
+      const session = sessions.find((item) => item.id === conversation.key);
+      if (session === undefined || (key !== "rename" && key !== "delete")) return;
+      setSessionListOpen(false);
+      setSessionAction({ type: key, session });
+    },
+  });
   const hasPendingApproval = state.messages.some((message) =>
     message.approvals.some(
       (approval) => approval.status === "pending" || approval.status === "submitting",
@@ -303,13 +338,15 @@ export function ChatWorkspace({
               type="text"
               icon={<PlusOutlined />}
               aria-label="新建会话"
+              disabled={sessionBusy || sessionAction !== undefined}
               onClick={() => void createSession()}
             />
           </div>
           <div className="assistant-conversations-body">
             <Conversations
               {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
-              items={sessions.map((session) => ({ key: session.id, label: session.title }))}
+              items={sessionItems}
+              menu={sessionMenu}
               onActiveChange={setActiveSessionId}
             />
           </div>
@@ -345,22 +382,24 @@ export function ChatWorkspace({
                   type="text"
                   icon={<PlusOutlined />}
                   aria-label="新建会话"
+                  disabled={sessionBusy || sessionAction !== undefined}
                   onClick={() => void createSession()}
                 />
               </div>
             </>
           ) : panelLayout ? (
             <>
-              <h1 className="assistant-sr-only">{resolvedHeading}</h1>
-              <span className="assistant-heading-mark" aria-hidden="true">
-                AI
-              </span>
+              <div className="assistant-panel-brand">
+                <span className="assistant-heading-mark" aria-hidden="true"><AssistantBrandIcon /></span>
+                <h1 className="assistant-panel-brand-name" title={resolvedHeading}>{resolvedHeading}</h1>
+              </div>
               <div className="assistant-header-actions">
                 <Button
                   type="text"
                   className="assistant-header-icon"
                   icon={<PlusOutlined />}
                   aria-label="新建会话"
+                  disabled={sessionBusy || sessionAction !== undefined}
                   onClick={() => void createSession()}
                 />
                 <Popover
@@ -376,10 +415,8 @@ export function ChatWorkspace({
                       ) : (
                         <Conversations
                           {...(activeSessionId === undefined ? {} : { activeKey: activeSessionId })}
-                          items={sessions.map((session) => ({
-                            key: session.id,
-                            label: session.title,
-                          }))}
+                          items={sessionItems}
+                          menu={sessionMenu}
                           onActiveChange={(key) => {
                             setActiveSessionId(key);
                             setSessionListOpen(false);
@@ -434,13 +471,18 @@ export function ChatWorkspace({
         </div>
         <ChatComposer
           loading={state.activeRunId !== undefined}
-          disabled={!canCompose || hasPendingApproval}
+          disabled={!canCompose || hasPendingApproval || sessionAction !== undefined}
           objectName={composerObjectName}
           {...(panelLayout ? { placeholder: "发消息..." } : {})}
           onSubmit={(value) => void submit(value)}
           onCancel={cancel}
         />
       </section>
+      {sessionAction !== undefined && (
+        <SessionActionDialog key={`${sessionAction.type}:${sessionAction.session.id}`}
+          action={sessionAction} onRename={renameSession} onDelete={deleteSession}
+          onClose={() => setSessionAction(undefined)} />
+      )}
     </div>
   );
 }

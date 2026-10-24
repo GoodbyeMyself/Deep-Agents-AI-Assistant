@@ -39,6 +39,10 @@ CSP 一致。生产域名需要另配 TLS，不能直接复用本地 HTTP 例外
 源码变更后由用户重新打包，再构建 Docker。验收应确认模型 Tool 调用、消息/事件/审计/Checkpoint 入库，
 以及重建 Agent Server 后相同 Session 可继续对话；脚本实现不代表这些验收已经通过。
 
+本地 pack:local 为 Loader 注入独立页地址 http://127.0.0.1:8080/assistant，可用构建变量
+VITE_ASSISTANT_WEB_URL 覆盖；宿主 HTML 的 data-standalone-url 优先。新标签页不传递 Token。
+2026-10-24 用户已单独授权本轮 UI 更新由 Codex 执行 pnpm；其他任务仍按当次用户授权和仓库规则执行。
+
 以下为平台三服务单独打包说明。
 
 `deploy/` 只构建和发布 Agent Server、独立 Web 与 iframe Embed，不发现、构建或复制任何业务
@@ -79,3 +83,21 @@ Product ID 动态路由业务能力。
 - UI Context、Prompt 和 Tool 参数不能授予权限。
 - MCP Server 与原业务 API 必须执行最终对象、行、列权限和脱敏。
 - Agent Server 只输出经过平台校验的 Evidence 引用与安全运行状态。
+# 浏览器构建信息
+
+## 品牌名称
+
+独立 Web 在主仓 `.env` 配置 `VITE_ASSISTANT_APP_NAME=企业智能助手`，重新打包并更新
+assistant-web 容器后生效。构建进程中的同名环境变量优先；未配置或为空使用默认名称。
+本地配置属于构建时配置，不是容器启动环境变量。
+
+宿主 Loader 使用 `data-assistant-title="企业业务助手"`；JS 接入使用
+`mountIframeAssistant({ ..., title: "企业业务助手" })`。名称同步到助手 Header 与浮层标签。
+名称只作纯文本展示，最多 80 字符，不构成授权或业务 Context。
+
+独立 Web、嵌入助手和宿主 Loader 启动时分别输出 `[assistant-web]`、
+`[assistant-embed]`、`[assistant-loader]` 构建信息。
+`builtAt` 为 UTC 构建时间，`branch` 为主仓分支，`commit` 为完整 SHA，
+`dirty` 表示构建时存在未提交修改（包括未忽略的新文件）。
+元数据在 Vite 构建时写入，Docker 使用打包产物中的信息；只重启容器不会改变构建时间。
+无 Git 元数据的源码包显示 `unknown`，不阻止构建。

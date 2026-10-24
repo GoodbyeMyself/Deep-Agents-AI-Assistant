@@ -17,6 +17,8 @@ import { createRoot } from "react-dom/client";
 
 const BOOTSTRAP_TIMEOUT_MS = 15_000;
 
+console.log("[assistant-embed] 构建信息", import.meta.env["VITE_BUILD_INFO"]);
+
 function EmbedContextSync({ context }: { context: RawHostContext }) {
   const { controller } = useAssistant();
   useEffect(() => {
@@ -27,6 +29,7 @@ function EmbedContextSync({ context }: { context: RawHostContext }) {
 
 function EmbedApp() {
   const params = useMemo(() => new URLSearchParams(location.search), []);
+  const assistantTitle = params.get("assistantTitle")?.trim().slice(0, 80) || "业务智能助手";
   const hostOrigin = params.get("hostOrigin") ?? "";
   const channelId = params.get("channelId") ?? "";
   const [credential, setCredential] = useState<string>();
@@ -109,7 +112,7 @@ function EmbedApp() {
           },
           onUnauthenticated: requestCredentialRefresh,
           initialContext: context,
-          title: "业务智能助手",
+          title: assistantTitle,
           layout: "panel",
           onHostAction,
         }}

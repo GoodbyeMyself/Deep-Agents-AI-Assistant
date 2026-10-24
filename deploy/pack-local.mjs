@@ -10,13 +10,14 @@ const demoRoot = resolve(process.env.DEMO_REPO_PATH ?? resolve(root, "../Deep-Ag
 for (const directory of [mcpRoot, demoRoot]) {
   if (!existsSync(resolve(directory, "package.json"))) throw new Error(`Required repository is missing: ${directory}`);
 }
-function run(cwd, args) {
+function run(cwd, args, environment = process.env) {
   const result = spawnSync(process.platform === "win32" ? "pnpm.cmd" : "pnpm", args,
-    { cwd, stdio: "inherit", shell: process.platform === "win32" });
+    { cwd, stdio: "inherit", shell: process.platform === "win32", env: environment });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
-run(root, ["pack:deploy"]);
+run(root, ["pack:deploy"], { ...process.env,
+  VITE_ASSISTANT_WEB_URL: process.env.VITE_ASSISTANT_WEB_URL ?? "http://127.0.0.1:8080/assistant" });
 run(mcpRoot, ["pack:product-a"]);
 run(demoRoot, ["--filter", "@assistant/demo-product-a-web", "build"]);
 cpSync(resolve(mcpRoot, "deploy/out/product-a-mcp"), resolve(root, "deploy/out/product-a-mcp"), { recursive: true });

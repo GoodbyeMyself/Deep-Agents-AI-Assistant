@@ -2,6 +2,43 @@
 
 更新日期：2026-10-24
 
+## 用户提供的助手 SVG（待用户构建验证）
+
+- 根据用户指定的“智能助手.svg”，替换 Loader、Panel Header、独立 Web 与 favicon。保留原图蓝色/浅蓝色，圆形入口配浅蓝底、蓝色边框与阴影。
+- 仅提取 8 个静态 path 与颜色，不复制 DOCTYPE、编辑器属性或外部引用；不加载远端 SVG 资源。名称配置与权限不变。
+- pnpm、构建和 Docker 发布尚未执行；待用户重新打包验证。
+
+## 助手品牌与名称配置（待用户构建验证）
+
+- 圆形 Loader、Panel Header 和独立 Web 使用星芒与轨道标识，Web 同步提供 SVG favicon。
+- 宿主 data-assistant-title / JS title 经 assistantTitle URL 参数传入 iframe 并应用到 SDK Header；纯展示参数，不参与授权。空名称回退默认值，限制 80 字符，标题省略并保留 title 提示。
+- Web 的 VITE_ASSISTANT_APP_NAME 支持主仓 .env（对应模式文件）与构建进程环境变量，后者优先；用于品牌和页面标题。空值默认“企业智能助手”。
+- 只修改品牌相关前端；pnpm、构建、Docker 发布与浏览器验收尚未执行。差异检查通过，待用户验证。
+
+## 前端构建信息（待用户构建验证）
+
+- Web、Embed 与宿主 Loader 分别在模块启动时 console.info 输出构建信息，前缀区分来源，避免 React StrictMode 重复输出。
+- 两个 Vite 配置复用 deploy/build-info.mjs，仅注入构建时间（UTC ISO 8601）、主仓分支、完整 commit 与 dirty 标记；不读取 .env。Git 不可用时显示 unknown，detached HEAD 明确标识。
+- Node 直接调用元数据采集已通过；pnpm 未执行，打包后浏览器输出与 Docker 更新待用户验证。
+
+## 独立 Web 管理页面拆分（待用户构建验证）
+
+- 用户确认拆分：模型配置 `/models`、MCP 管理 `/mcp`、平台扩展 `/platform-extensions`；旧 `/runtime` 使用 replace 重定向至 `/mcp`。
+- MCP 页面上下展示接入状态与工具列表；状态仅表示部署接入元数据，不宣称持续探活。模型配置仅展示，修改仍走部署配置。
+- 各区域独立请求、刷新、加载与错误提示；身份切换隐藏旧数据；管理员区域不向普通用户发送请求，后端鉴权保持不变。
+- 三个页面沿用内容区内部滚动；不改聊天页面、数据库、模型运行时或 MCP 业务契约。
+- 本次未执行 pnpm，未构建或更新 Docker；Lint、类型、构建及浏览器验证等待用户执行命令后继续。
+
+## 助手入口与会话操作（已完成）
+
+- 用户确认圆形 AI 入口、头部独立页按钮和会话重命名/二次确认软删除，并明确授权本任务由 Codex 执行 pnpm。
+- 入口和宿主头部链接已实现，地址可配置，保持 iframe 隔离与凭证边界；本地打包注入独立 Web 地址。
+- Shared Chat Core 通过现有 Transport 接口管理会话；名称校验、失败提示和执行中禁用保护已实现。
+- ADR-032 记录前端端口扩展与交互边界；pnpm lint、typecheck、test、pack:local 实际通过。
+- Web/Embed/Demo 镜像已更新；六服务运行，后端/MCP/PostgreSQL 健康。浏览器验证圆形入口、新标签页打开、重命名刷新保留、删除取消保留和确认后刷新移除。
+- 验收仅操作新建空白测试会话；现有历史和 PostgreSQL 卷保留。修复固定 Loader 文件名缓存引用旧资源问题：Embed no-cache，Demo 更新入口版本。
+- 会话操作在独立 Web 的 Shared Chat Core 完成真实 API 验收；嵌入页验证入口、头部链接和历史渲染，未另行重复模型调用。
+
 ## Docker / PostgreSQL 持久化（实施中）
 
 **最终本地状态（2026-10-24）：六服务已启动，本地持久化与真实模型恢复验收通过。**

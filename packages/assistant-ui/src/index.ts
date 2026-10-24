@@ -1,6 +1,8 @@
 export { AssistantViewRenderer } from "./view/AssistantViewRenderer.js";
+export { AssistantBrandIcon } from "./AssistantBrandIcon.js";
 export { ChatComposer } from "./chat/ChatComposer.js";
 export { ChatWorkspace, type SelectedBusinessObject } from "./chat/ChatWorkspace.js";
+export { SessionActionDialog, type SessionAction } from "./chat/SessionActionDialog.js";
 export { EvidencePanel } from "./evidence/EvidencePanel.js";
 export { ExecutionTimeline } from "./execution/ExecutionTimeline.js";
 export { MessageList } from "./chat/MessageList.js";

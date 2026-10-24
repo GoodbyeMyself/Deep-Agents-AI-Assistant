@@ -52,10 +52,12 @@ body,
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: #1f1f1f;
+  background: #eef5ff;
+  color: #1261ed;
   box-shadow: none;
   font-size: 10px;
 }
+.assistant-embed-page .assistant-header-actions { padding-left: 40px; }
 
 .assistant-embed-page .assistant-chat-scroll {
   min-height: 0;

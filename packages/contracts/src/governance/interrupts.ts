@@ -1,3 +1,10 @@
+/**
+ * Run 中断与恢复相关 schema。
+ *
+ * - `enterpriseApprovalInterruptValueSchema`：Graph/interrupt 写入时的完整审批载荷。
+ * - `assistantInterruptSchema`：写入 SSE / AG-UI 对外可见字段（不含 Tool 原始参数）。
+ * - `resumeRunRequestSchema`：客户端 resume 端点，带幂等 clientRequestId。
+ */
 import { z } from "zod";
 
 /** `POST /api/v1/runs/{id}/resume`；恢复一个由服务端登记的 AG-UI interrupt。 */

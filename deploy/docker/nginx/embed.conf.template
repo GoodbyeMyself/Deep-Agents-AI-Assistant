@@ -8,6 +8,7 @@ server {
   add_header X-Content-Type-Options "nosniff" always;
   add_header Access-Control-Allow-Origin "${ASSISTANT_HOST_ORIGIN}" always;
   add_header Vary "Origin" always;
+  add_header Cache-Control "no-cache" always;
 
   location /api/ {
     proxy_pass http://agent-server:3000;

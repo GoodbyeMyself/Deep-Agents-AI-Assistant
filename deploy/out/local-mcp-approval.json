@@ -1,0 +1,32 @@
+[
+  {
+    "serverId": "product-a-mcp",
+    "endpoint": "http://product-a-mcp:3101/mcp",
+    "allowedHosts": [
+      "product-a-mcp:3101"
+    ],
+    "localDemoHttp": true,
+    "approvals": [
+      {
+        "toolName": "get_quality_trend",
+        "schemaDigest": "1e186399a946e06fc251f535634a99d0321b409c8c2eb190b97e3a397745812e",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "list_table_sample_rows",
+        "schemaDigest": "03f9da7b21f7b939067086a0a4ce73fd4616a8775adab5521a1a4d01a5b8ec02",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "get_table_metadata",
+        "schemaDigest": "2d2e31afa7ad70790db3d6be316135f46929f2cba0e16e1d06ebec2d41cf17ab",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "search_data_assets",
+        "schemaDigest": "2036488ae65f79f663b176ba9c77c6534169df8d24b6e17b5f8f5a008b0fb761",
+        "riskLevel": "read"
+      }
+    ]
+  }
+]

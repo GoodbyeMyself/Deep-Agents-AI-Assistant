@@ -1,5 +1,22 @@
 # 实施进度
 
+## 2026-10-24 独立管理页面拆分
+
+- 经用户确认，实现 ModelsPage、McpPage、PlatformExtensionsPage；复用现有只读 Transport 接口。
+- App 路由和菜单切换为三个独立入口；旧 runtime 重定向到 MCP 管理，三个页面具备内容区滚动。
+- ResourcePanel 独立处理请求和失败，刷新时显示加载状态，身份切换通过 owner 隔离与 effect 清理避免旧响应显示。
+- 本次 pnpm 恢复仅用户执行；构建、Docker 发布与浏览器验收未执行。待用户提供 lint/typecheck/pack:local 输出。
+
+## 2026-10-24 助手交互与 Docker 更新
+
+- 用户确认方案，并明确授权本任务 Codex 执行 pnpm。
+- Loader 改为圆形机器人图标，宿主头部增加安全的新标签页独立助手链接；Shared Chat Core 和会话管理页复用重命名/删除确认弹窗。
+- pnpm test 实际通过；最终 pnpm lint、pnpm typecheck、pnpm pack:local 均 exit 0。首次沙箱测试受依赖读取限制，沙箱外通过。
+- 浏览器发现固定 Loader 缓存引用旧 chunk，补充 Embed Cache-Control: no-cache 和 Demo 引用版本。Demo 单独构建首次命中系统旧 TypeScript，使用 pack:local 同一工具链后构建成功。
+- Docker compose up --build --no-deps --wait 更新 Web/Embed/Demo；后端/MCP/PostgreSQL 保留且健康，数据库卷未删除。
+- 实际浏览器验收：圆形入口、头部新标签页链接、Shared Chat Core 新建空会话重命名与刷新保留、删除取消保留、确认后刷新移除。
+- 截图：deploy/out/ui-launcher.png、ui-panel.png、ui-delete-confirm.png。现有业务会话未修改；身份/业务仍为本地 Mock，模型调用未重复。
+
 ## 2026-10-23
 
 - 完成当前部署与存储实现的只读调研，确认 Docker 可用。

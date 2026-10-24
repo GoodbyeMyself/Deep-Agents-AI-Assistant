@@ -1,3 +1,6 @@
+/**
+ * 受控 ViewModel 联合类型。新增 viewType 必须同步 AssistantViewRenderer 与 SSE view.created 投影。
+ */
 import { z } from "zod";
 
 import { hostNavigationActionSchema } from "./host-actions.js";
@@ -35,6 +38,7 @@ export const assistantViewSchema = z.discriminatedUnion("viewType", [
       rows: z.array(z.record(z.string(), scalarSchema)),
     }),
   }),
+  // chart.line 要求 title 必填，与 metric/table 可选 title 的 base 形态不同，故单独定义。
   z.object({
     viewId: z.string().uuid(),
     viewType: z.literal("chart.line"),

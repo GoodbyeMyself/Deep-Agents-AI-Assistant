@@ -188,6 +188,14 @@
   align-items: center;
   margin-left: auto;
 }
+.assistant-panel-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.assistant-panel-brand .assistant-heading-mark { flex-shrink: 0; padding: 2px; box-sizing: border-box; background: #eef5ff; color: #1261ed; }
+.assistant-panel-brand-name { margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.assistant-session-name-field {
+  display: grid;
+  gap: 8px;
+  margin-block: 16px 24px;
+}
 .assistant-header-icon.ant-btn {
   width: 36px;
   height: 36px;

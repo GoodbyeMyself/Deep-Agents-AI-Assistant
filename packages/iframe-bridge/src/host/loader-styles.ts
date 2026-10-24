@@ -5,22 +5,30 @@ export function loaderStylesheet(accent: string, zIndex: number): string {
     :host { display: contents; pointer-events: none; color-scheme: light; --assistant-accent: ${accent}; }
     *, *::before, *::after { box-sizing: border-box; }
     .assistant-loader-launcher {
-      position: fixed; right: 24px; bottom: 22px; z-index: ${zIndex + 1};
-      display: flex; align-items: center; gap: 10px; min-width: 150px; height: 54px;
-      padding: 0 18px 0 9px; border: 1px solid color-mix(in srgb, var(--assistant-accent) 35%, white);
-      border-radius: 18px; color: white; background: #12241f;
-      box-shadow: 0 18px 42px rgb(5 30 24 / 28%); cursor: pointer;
+      position: fixed; right: max(24px, env(safe-area-inset-right)); bottom: max(22px, env(safe-area-inset-bottom)); z-index: ${zIndex + 1};
+      display: grid; place-items: center; width: 56px; height: 56px; padding: 0;
+      border: 1px solid #b9d3ff;
+      border-radius: 50%; color: #1261ed; background: linear-gradient(145deg, #fff, #e8f2ff);
+      box-shadow: 0 8px 24px rgb(18 97 237 / 18%); cursor: pointer;
       pointer-events: auto;
       font: 600 14px/1.2 "Microsoft YaHei", "PingFang SC", sans-serif;
       transition: transform 180ms ease, box-shadow 180ms ease, opacity 160ms ease;
     }
-    .assistant-loader-launcher:hover { transform: translateY(-2px); box-shadow: 0 22px 48px rgb(5 30 24 / 34%); }
+    .assistant-loader-launcher:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgb(18 97 237 / 25%); }
     .assistant-loader-launcher[hidden] { display: none; }
+    .assistant-loader-launcher:focus-visible { outline: 3px solid #1261ed; outline-offset: 4px; }
     .assistant-loader-mark {
-      display: grid; place-items: center; width: 38px; height: 38px; border-radius: 13px;
-      color: #10251f; background: var(--assistant-accent); font-size: 13px; font-weight: 900;
-      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 48%);
+      display: grid; place-items: center; width: 36px; height: 36px;
     }
+    .assistant-loader-mark svg { width: 36px; height: 36px; }
+    .assistant-loader-standalone {
+      position: absolute; top: 8px; right: 120px; z-index: 3;
+      display: grid; place-items: center; width: 36px; height: 36px;
+      border-radius: 6px; color: #1f1f1f; text-decoration: none;
+    }
+    .assistant-loader-standalone svg { width: 17px; height: 17px; }
+    .assistant-loader-standalone:hover { color: #1f1f1f; background: #f3f3f3; }
+    .assistant-loader-standalone:focus-visible { outline: 2px solid #1677ff; outline-offset: -2px; }
     .floating-assistant-panel {
       position: fixed; right: 24px; bottom: 22px; z-index: ${zIndex};
       --assistant-panel-width: ${ASSISTANT_PANEL_DEFAULT_WIDTH}px;
@@ -77,8 +85,7 @@ export function loaderStylesheet(accent: string, zIndex: number): string {
     .assistant-loader-status[hidden] { display: none; }
     .assistant-loader-status.is-error { color: #a33b32; }
     @media (max-width: 640px) {
-      .assistant-loader-launcher { right: 14px; bottom: 14px; min-width: 54px; padding-right: 9px; }
-      .assistant-loader-launcher strong { display: none; }
+      .assistant-loader-launcher { right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); }
       .floating-assistant-panel {
         right: 8px; bottom: 8px; width: calc(100vw - 16px); height: calc(100vh - 16px);
         border-radius: 10px;

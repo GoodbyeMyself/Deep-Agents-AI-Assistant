@@ -1,12 +1,14 @@
+import { ModelsPage, McpPage, PlatformExtensionsPage } from "./RuntimePages.js";
+import { assistantAppName } from "./brand.js";
 import {
   AgUiChatAgentPort,
-  AssistantApiError,
   AssistantApiTransport,
+  type SessionDto,
 } from "@assistant/assistant-transport";
-import { ChatWorkspace, type SelectedBusinessObject } from "@assistant/assistant-ui";
-import { AppstoreOutlined, HomeOutlined, MessageOutlined } from "@ant-design/icons";
+import { AssistantBrandIcon, ChatWorkspace, SessionActionDialog, type SessionAction, type SelectedBusinessObject } from "@assistant/assistant-ui";
+import { AppstoreOutlined, ApiOutlined, HomeOutlined, MessageOutlined, SettingOutlined } from "@ant-design/icons";
 import { PageContainer, ProCard, ProLayout } from "@ant-design/pro-components";
-import { Alert, Button, Descriptions, Empty, Select, Space, Table, Tag } from "antd";
+import { Alert, Button, Select, Space, Table } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import {
   Link,
@@ -20,14 +22,8 @@ import {
 
 type Profile = "user-a" | "user-b" | "admin";
 
-const PAGE_PATHS = ["/assistant", "/sessions", "/runtime"] as const;
+const PAGE_PATHS = ["/assistant", "/sessions", "/models", "/mcp", "/platform-extensions"] as const;
 type PagePath = (typeof PAGE_PATHS)[number];
-
-function displayValue(value: unknown, fallback = "—"): string {
-  return typeof value === "string" || typeof value === "number" || typeof value === "boolean"
-    ? String(value)
-    : fallback;
-}
 
 const profileConfig: Record<
   Profile,
@@ -55,7 +51,9 @@ const shellRoute = {
   routes: [
     { path: "/assistant", name: "智能对话", icon: <HomeOutlined /> },
     { path: "/sessions", name: "会话管理", icon: <MessageOutlined /> },
-    { path: "/runtime", name: "运行状态", icon: <AppstoreOutlined /> },
+    { path: "/models", name: "模型配置", icon: <SettingOutlined /> },
+    { path: "/mcp", name: "MCP 管理", icon: <ApiOutlined /> },
+    { path: "/platform-extensions", name: "平台扩展", icon: <AppstoreOutlined /> },
   ],
 };
 
@@ -64,128 +62,12 @@ function normalizePathname(pathname: string): PagePath {
   return "/assistant";
 }
 
-function RuntimeStatus({
-  transport,
-  isAdmin,
-}: {
-  transport: AssistantApiTransport;
-  isAdmin: boolean;
-}) {
-  const [models, setModels] = useState<Record<string, unknown>[]>([]);
-  const [mcpTools, setMcpTools] = useState<Record<string, unknown>[]>([]);
-  const [mcpServers, setMcpServers] = useState<Record<string, unknown>[]>([]);
-  const [platformExtensions, setPlatformExtensions] = useState<Record<string, unknown>[]>([]);
-  const [error, setError] = useState<string>();
-  useEffect(() => {
-    let disposed = false;
-    void Promise.all([
-      transport.listModels(),
-      transport.listMcpTools(),
-      isAdmin ? transport.listMcpServers() : Promise.resolve({ items: [] }),
-      isAdmin ? transport.listPlatformExtensions() : Promise.resolve({ items: [] }),
-    ])
-      .then(([modelResult, toolResult, serverResult, extensionResult]) => {
-        if (disposed) return;
-        setModels(modelResult.items);
-        setMcpTools(toolResult.items);
-        setMcpServers(serverResult.items);
-        setPlatformExtensions(extensionResult.items);
-      })
-      .catch((cause: unknown) => {
-        if (!disposed)
-          setError(
-            cause instanceof AssistantApiError
-              ? `${cause.message}（${cause.code}）`
-              : "状态读取失败",
-          );
-      });
-    return () => {
-      disposed = true;
-    };
-  }, [transport, isAdmin]);
-
-  return (
-    <PageContainer
-      header={{
-        title: "运行状态",
-        subTitle: "仅显示安全的部署元数据；MCP Server 与平台扩展明细需要平台管理员权限。",
-      }}
-    >
-      <main id="main-content">
-        {error && <Alert type="error" showIcon title={error} style={{ marginBottom: 16 }} />}
-        <div className="assistant-web-status-grid">
-          <ProCard title="模型配置">
-            <Descriptions column={1}>
-              {models.map((item, index) => (
-                <Descriptions.Item key={index} label={displayValue(item["provider"], "provider")}>
-                  {displayValue(item["model"], displayValue(item["id"]))}
-                </Descriptions.Item>
-              ))}
-            </Descriptions>
-          </ProCard>
-          <ProCard title="MCP Tools">
-            <Table
-              rowKey={(row) => displayValue(row["name"], "unknown-tool")}
-              pagination={false}
-              dataSource={mcpTools}
-              columns={[
-                { title: "Tool", dataIndex: "name" },
-                { title: "MCP Server", dataIndex: "serverId" },
-              ]}
-            />
-          </ProCard>
-          <ProCard title="MCP Server 状态">
-            {isAdmin ? (
-              <Table
-                rowKey={(row) => displayValue(row["serverId"], "unknown-mcp-server")}
-                pagination={false}
-                dataSource={mcpServers}
-                columns={[
-                  { title: "MCP Server", dataIndex: "serverId" },
-                  {
-                    title: "状态",
-                    dataIndex: "status",
-                    render: (value) => (
-                      <Tag color={value === "ready" ? "cyan" : "gold"}>{String(value)}</Tag>
-                    ),
-                  },
-                ]}
-              />
-            ) : (
-              <Empty description="管理员可查看 MCP Server 运行明细" />
-            )}
-          </ProCard>
-          <ProCard title="Platform Extensions">
-            {isAdmin ? (
-              <Table
-                rowKey={(row) => displayValue(row["id"], "unknown-platform-extension")}
-                pagination={false}
-                dataSource={platformExtensions}
-                columns={[
-                  { title: "Extension", dataIndex: "id" },
-                  { title: "版本", dataIndex: "version" },
-                  {
-                    title: "状态",
-                    dataIndex: "status",
-                    render: (value) => <Tag color="cyan">{String(value)}</Tag>,
-                  },
-                ]}
-              />
-            ) : (
-              <Empty description="管理员可查看平台扩展运行明细" />
-            )}
-          </ProCard>
-        </div>
-      </main>
-    </PageContainer>
-  );
-}
-
 function SessionsPage({ transport }: { transport: AssistantApiTransport }) {
-  const [sessions, setSessions] = useState<
-    Array<{ id: string; title: string; status: string; createdAt: string }>
-  >([]);
-  const load = () => void transport.listSessions().then((result) => setSessions(result.items));
+  const [sessions, setSessions] = useState<SessionDto[]>([]);
+  const [sessionAction, setSessionAction] = useState<SessionAction>();
+  const [error, setError] = useState<string>();
+  const load = () => void transport.listSessions().then((result) => setSessions(result.items))
+    .catch(() => setError("无法加载会话，请稍后重试。"));
   useEffect(load, [transport]);
 
   return (
@@ -196,6 +78,7 @@ function SessionsPage({ transport }: { transport: AssistantApiTransport }) {
       }}
     >
       <main id="main-content">
+        {error !== undefined && <Alert type="error" showIcon title={error} />}
         <ProCard>
           <Table
             rowKey="id"
@@ -212,6 +95,9 @@ function SessionsPage({ transport }: { transport: AssistantApiTransport }) {
                 title: "操作",
                 render: (_, row) => (
                   <Space>
+                    <Button onClick={() => setSessionAction({ type: "rename", session: row })}>
+                      重命名
+                    </Button>
                     <Button
                       onClick={() =>
                         void transport
@@ -221,7 +107,7 @@ function SessionsPage({ transport }: { transport: AssistantApiTransport }) {
                     >
                       {row.status === "archived" ? "恢复" : "归档"}
                     </Button>
-                    <Button danger onClick={() => void transport.deleteSession(row.id).then(load)}>
+                    <Button danger onClick={() => setSessionAction({ type: "delete", session: row })}>
                       删除
                     </Button>
                   </Space>
@@ -230,6 +116,18 @@ function SessionsPage({ transport }: { transport: AssistantApiTransport }) {
             ]}
           />
         </ProCard>
+        {sessionAction !== undefined && (
+          <SessionActionDialog key={`${sessionAction.type}:${sessionAction.session.id}`}
+            action={sessionAction} onClose={() => setSessionAction(undefined)}
+            onRename={async (id, title) => {
+              const updated = await transport.updateSession(id, { title });
+              setSessions((current) => current.map((session) => session.id === id ? updated : session));
+            }}
+            onDelete={async (id) => {
+              await transport.deleteSession(id);
+              setSessions((current) => current.filter((session) => session.id !== id));
+            }} />
+        )}
       </main>
     </PageContainer>
   );
@@ -307,9 +205,11 @@ function SessionsRoute() {
   return <SessionsPage transport={transport} />;
 }
 
-function RuntimeRoute() {
+function DeploymentRoute({ page }: { page: "models" | "mcp" | "extensions" }) {
   const { transport, isAdmin } = useAppOutletContext();
-  return <RuntimeStatus transport={transport} isAdmin={isAdmin} />;
+  if (page === "models") return <ModelsPage transport={transport} />;
+  if (page === "mcp") return <McpPage transport={transport} isAdmin={isAdmin} />;
+  return <PlatformExtensionsPage transport={transport} isAdmin={isAdmin} />;
 }
 
 function AppLayout() {
@@ -338,10 +238,10 @@ function AppLayout() {
       className={
         isChatPage ? "assistant-web-layout assistant-web-layout--chat" : "assistant-web-layout"
       }
-      title="Enterprise Assistant"
+      title={assistantAppName}
       logo={
         <div className="assistant-web-logo" aria-hidden>
-          EA
+          <AssistantBrandIcon />
         </div>
       }
       layout="mix"
@@ -360,7 +260,17 @@ function AppLayout() {
       contentStyle={
         isChatPage
           ? { padding: 0, height: "calc(100vh - 56px)", overflow: "hidden" }
-          : { minHeight: "calc(100vh - 56px)" }
+          : ["/models", "/mcp", "/platform-extensions"].includes(pathname)
+            ? {
+                height: "calc(100dvh - 56px)",
+                minHeight: 0,
+                margin: 0,
+                padding: "24px 24px 32px",
+                boxSizing: "border-box",
+                overflowY: "auto",
+                scrollbarGutter: "stable",
+              }
+            : { minHeight: "calc(100vh - 56px)" }
       }
       actionsRender={() => [
         <IdentitySelect key="identity" profile={profile} onChange={setProfile} />,
@@ -378,7 +288,10 @@ export function App() {
         <Route path="/" element={<Navigate to="/assistant" replace />} />
         <Route path="/assistant" element={<AssistantRoute />} />
         <Route path="/sessions" element={<SessionsRoute />} />
-        <Route path="/runtime" element={<RuntimeRoute />} />
+        <Route path="/models" element={<DeploymentRoute page="models" />} />
+        <Route path="/mcp" element={<DeploymentRoute page="mcp" />} />
+        <Route path="/platform-extensions" element={<DeploymentRoute page="extensions" />} />
+        <Route path="/runtime" element={<Navigate to="/mcp" replace />} />
         <Route path="*" element={<Navigate to="/assistant" replace />} />
       </Route>
     </Routes>

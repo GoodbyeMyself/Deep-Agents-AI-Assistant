@@ -1,82 +1,28 @@
-import { EventType, PROTOCOL_VERSION, type Event, type RunAgentInput } from "@ag-ui/core";
-import { EventSchema, RunAgentInputSchema } from "@ag-ui/core/schemas";
-import { z } from "zod";
-
-import type { AssistantEvent } from "./index.js";
-import { runInterruptedDataSchema } from "./interrupts.js";
-import { assistantViewSchema } from "./views.js";
-
-export { EventType } from "@ag-ui/core";
-export type { Interrupt as AgUiInterrupt, ResumeEntry as AgUiResumeEntry } from "@ag-ui/core";
-
-export const ENTERPRISE_ASSISTANT_METADATA_KEY = "enterprise-assistant";
-export const AG_UI_PROTOCOL_VERSION = PROTOCOL_VERSION;
-export const EVIDENCE_ADDED_EVENT_NAME = "enterprise.evidence.added.v1";
-export const VIEW_CREATED_EVENT_NAME = "enterprise.view.created.v1";
-const AG_UI_CURSOR_PREFIX = "agui1.";
-
-export const enterpriseAssistantMetadataSchema = z
-  .object({
-    eventId: z.string().min(1),
-    sourceEventId: z.string().min(1),
-    projectionIndex: z.number().int().nonnegative(),
-    sequence: z.number().int().positive(),
-    sessionId: z.string().uuid(),
-    schemaVersion: z.literal("1"),
-  })
-  .strict();
-
-export const enterpriseEvidenceAddedValueSchema = z
-  .object({
-    referenceId: z.string().min(1),
-    sourceType: z.string().min(1).optional(),
-  })
-  .strict();
-
-export const enterpriseAssistantCustomEventSchema = z.discriminatedUnion("name", [
-  z.object({
-    type: z.literal(EventType.CUSTOM),
-    name: z.literal(EVIDENCE_ADDED_EVENT_NAME),
-    value: enterpriseEvidenceAddedValueSchema,
-  }),
-  z.object({
-    type: z.literal(EventType.CUSTOM),
-    name: z.literal(VIEW_CREATED_EVENT_NAME),
-    value: assistantViewSchema,
-  }),
-]);
-
-export type AgUiEvent = Event;
-export type AgUiRunAgentInput = RunAgentInput;
-
 /**
- * AG-UI 的 Zod 输出类型把可选字段推导为 `field?: T | undefined`，与本仓库启用的
- * exactOptionalPropertyTypes 不兼容；该边界先完成官方 Schema 校验，再收窄为官方 Event 类型。
+ * 将已持久化的 AssistantEvent 序列确定性映射为 AG-UI 1.0 事件流。
+ *
+ * 输入必须是服务端已授权、已校验的事件；不在此接受客户端 Context 或 Tool 执行结果。
+ * 每条输出经 addEnterpriseEnvelope 附加 metadata 并通过官方 EventSchema 复验。
  */
-export const agUiEventSchema: { parse(value: unknown): AgUiEvent } = {
-  parse(value) {
-    return EventSchema.parse(value) as unknown as AgUiEvent;
-  },
-};
+import { EventType, PROTOCOL_VERSION, type Event } from "@ag-ui/core";
+import { EventSchema } from "@ag-ui/core/schemas";
 
-/** 使用官方 AG-UI Schema 校验标准 Agent 运行输入。 */
-export function parseAgUiRunAgentInput(value: unknown): AgUiRunAgentInput {
-  return RunAgentInputSchema.parse(value) as unknown as AgUiRunAgentInput;
-}
-
-export interface AgUiProjectionState {
-  readonly textMessageOpen: boolean;
-  readonly textMessageId?: string;
-}
-
-export const initialAgUiProjectionState: AgUiProjectionState = {
-  textMessageOpen: false,
-};
-
-export interface AgUiProjectionResult {
-  readonly events: readonly AgUiEvent[];
-  readonly state: AgUiProjectionState;
-}
+import { runInterruptedDataSchema } from "../governance/interrupts.js";
+import type { AssistantEvent } from "../sse/assistant-events.js";
+import { assistantViewSchema } from "../ui/views.js";
+import { encodeAgUiEventCursor } from "./cursor.js";
+import {
+  ENTERPRISE_ASSISTANT_METADATA_KEY,
+  EVIDENCE_ADDED_EVENT_NAME,
+  enterpriseAssistantCustomEventSchema,
+  enterpriseAssistantMetadataSchema,
+  enterpriseEvidenceAddedValueSchema,
+  initialAgUiProjectionState,
+  VIEW_CREATED_EVENT_NAME,
+  type AgUiEvent,
+  type AgUiProjectionResult,
+  type AgUiProjectionState,
+} from "./schemas.js";
 
 export class AssistantEventProjectionError extends Error {
   constructor(
@@ -85,43 +31,6 @@ export class AssistantEventProjectionError extends Error {
   ) {
     super(`Cannot project ${eventType}: invalid ${field}.`);
   }
-}
-
-export interface AgUiEventCursor {
-  readonly sourceEventId: string;
-  readonly projectionIndex: number;
-}
-
-export function encodeAgUiEventCursor(cursor: AgUiEventCursor): string {
-  if (cursor.sourceEventId.length === 0 || !Number.isSafeInteger(cursor.projectionIndex))
-    throw new Error("Invalid AG-UI event cursor.");
-  if (cursor.projectionIndex < 0) throw new Error("Invalid AG-UI event cursor.");
-  return `${AG_UI_CURSOR_PREFIX}${encodeURIComponent(cursor.sourceEventId)}.${cursor.projectionIndex}`;
-}
-
-export function decodeAgUiEventCursor(value: string): AgUiEventCursor | undefined {
-  if (!value.startsWith(AG_UI_CURSOR_PREFIX)) return undefined;
-  const separator = value.lastIndexOf(".");
-  if (separator <= AG_UI_CURSOR_PREFIX.length) return undefined;
-  const projectionIndex = Number(value.slice(separator + 1));
-  if (!Number.isSafeInteger(projectionIndex) || projectionIndex < 0) return undefined;
-  try {
-    const sourceEventId = decodeURIComponent(
-      value.slice(AG_UI_CURSOR_PREFIX.length, separator),
-    );
-    return sourceEventId.length === 0 ? undefined : { sourceEventId, projectionIndex };
-  } catch {
-    return undefined;
-  }
-}
-
-export function getAgUiEventCursor(event: AgUiEvent): string {
-  const metadata = (event.metadata as Record<string, unknown> | undefined)?.[
-    ENTERPRISE_ASSISTANT_METADATA_KEY
-  ];
-  const parsed = enterpriseAssistantMetadataSchema.safeParse(metadata);
-  if (!parsed.success) throw new Error("AG-UI event is missing enterprise cursor metadata.");
-  return parsed.data.eventId;
 }
 
 function requiredString(event: AssistantEvent, field: string): string {
@@ -154,6 +63,7 @@ function closeTextMessage(
   };
 }
 
+/** 为候选 AG-UI 事件注入企业 metadata 与稳定游标 eventId。 */
 function addEnterpriseEnvelope(
   source: AssistantEvent,
   candidate: Event,
@@ -315,6 +225,7 @@ export function projectAssistantEventToAgUi(
         state,
       );
 
+    // 审批 UI 由 assistant-ui 消费原生 SSE；AG-UI 流在此不产生额外事件，避免重复卡片。
     case "approval.required":
       return projectCandidates(event, [], state);
 

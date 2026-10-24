@@ -1,0 +1,9 @@
+{
+  "packedAt": "2026-10-24T02:46:06.123Z",
+  "services": [
+    "server",
+    "web",
+    "embed"
+  ],
+  "businessCapabilitySource": "external-mcp"
+}

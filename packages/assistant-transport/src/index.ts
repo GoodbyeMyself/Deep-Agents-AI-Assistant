@@ -83,6 +83,8 @@ export interface AssistantTransportOptions {
 export interface ChatAgentPort<TEvent> {
   listSessions(): Promise<{ items: SessionDto[] }>;
   createSession(input: { title?: string; mode: "assistant" | "standalone" }): Promise<SessionDto>;
+  updateSession(id: string, input: { title?: string; archived?: boolean }): Promise<SessionDto>;
+  deleteSession(id: string): Promise<void>;
   listMessages(sessionId: string): Promise<MessageListDto>;
   createContextSnapshot(
     context: JsonObject,
@@ -365,6 +367,14 @@ export class AgUiChatAgentPort implements ChatAgentPort<AgUiEvent> {
 
   listSessions(): Promise<{ items: SessionDto[] }> {
     return this.transport.listSessions();
+  }
+
+  updateSession(id: string, input: { title?: string; archived?: boolean }): Promise<SessionDto> {
+    return this.transport.updateSession(id, input);
+  }
+
+  deleteSession(id: string): Promise<void> {
+    return this.transport.deleteSession(id);
   }
 
   createSession(input: { title?: string; mode: "assistant" | "standalone" }): Promise<SessionDto> {

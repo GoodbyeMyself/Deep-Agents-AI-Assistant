@@ -1,6 +1,7 @@
 import react from "@vitejs/plugin-react";
 import { fileURLToPath } from "node:url";
 import { defineConfig, type Plugin } from "vite";
+import { createBuildInfo } from "../../deploy/build-info.mjs";
 
 function assistantLoaderAlias(): Plugin {
   return {
@@ -29,6 +30,7 @@ export default defineConfig(() => {
 
   return {
     plugins: [react(), assistantLoaderAlias()],
+    define: { "import.meta.env.VITE_BUILD_INFO": JSON.stringify(createBuildInfo()) },
     resolve: {
       alias: {
         // Dev 默认读 dist，改 src 后不 build 会看不到 loader 样式等行为变更。

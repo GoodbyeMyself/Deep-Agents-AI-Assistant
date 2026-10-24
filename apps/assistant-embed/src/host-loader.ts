@@ -5,6 +5,8 @@ import {
 } from "@assistant/iframe-bridge";
 import { rawHostContextSchema } from "@assistant/context";
 
+console.log("[assistant-loader] 构建信息", import.meta.env["VITE_BUILD_INFO"]);
+
 declare global {
   interface Window {
     enterpriseAssistant?: IframeAssistantHost;
@@ -28,11 +30,15 @@ function initialContext(elementId: string | undefined) {
 
 function optionsFrom(element: HTMLScriptElement): IframeAssistantHostOptions {
   const demoToken = element.dataset["demoAccessToken"]?.trim() || undefined;
+  const configuredStandaloneUrl: unknown = import.meta.env["VITE_ASSISTANT_WEB_URL"];
+  const standaloneUrl = element.dataset["standaloneUrl"]?.trim()
+    || (typeof configuredStandaloneUrl === "string" ? configuredStandaloneUrl.trim() : undefined);
   if (demoToken !== undefined && !["127.0.0.1", "localhost"].includes(location.hostname)) {
     throw new Error("Demo access tokens are restricted to localhost.");
   }
   return {
     iframeUrl: required(element, "iframeUrl"),
+    ...(standaloneUrl ? { standaloneUrl } : {}),
     ticketEndpoint: element.dataset["ticketEndpoint"]?.trim() || "/api/v1/embed/tickets",
     initialContext: initialContext(element.dataset["contextElement"]),
     ...(demoToken === undefined ? {} : { accessToken: demoToken }),

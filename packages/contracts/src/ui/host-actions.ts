@@ -1,5 +1,11 @@
+/**
+ * 宿主导航动作契约（AG-UI Host Action / View action.navigate）。
+ *
+ * 安全模型：只传递 opaque `target` 键与有限标量参数；真实 URL、路由或 DOM 操作由宿主 allowlist 解析。
+ */
 import { z } from "zod";
 
+/** 小写开头的 dotted/slug 动作键，供宿主静态映射表索引。 */
 const actionKeySchema = z
   .string()
   .trim()

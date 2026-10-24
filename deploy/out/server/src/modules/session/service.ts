@@ -1,0 +1,77 @@
+import type { ContextSnapshot, VerifiedPrincipal } from "@assistant/context";
+import {
+  createRunRequestSchema,
+  createSessionRequestSchema,
+  patchSessionRequestSchema,
+  resumeRunRequestSchema,
+} from "@assistant/contracts";
+
+import type { ContextService } from "../context/context-service.js";
+import { ServiceError } from "../../shared/errors.js";
+import type { AgentRunner } from "./runner.js";
+import type { AgentStore } from "./agent-store.js";
+
+function parseOrThrow<T>(
+  schema: { safeParse(value: unknown): { success: true; data: T } | { success: false } },
+  value: unknown,
+): T {
+  const parsed = schema.safeParse(value);
+  if (!parsed.success)
+    throw new ServiceError("INVALID_INPUT", "Request does not satisfy the API contract.", 400);
+  return parsed.data;
+}
+
+export class AgentService {
+  constructor(
+    readonly store: AgentStore,
+    private readonly contexts: ContextService,
+    readonly runner: AgentRunner,
+    readonly runtimeInfo: {
+      readonly models: readonly Record<string, unknown>[];
+      readonly mcpServers: readonly Record<string, unknown>[];
+      readonly mcpTools: readonly Record<string, unknown>[];
+      readonly platformExtensions: readonly Record<string, unknown>[];
+    } = { models: [], mcpServers: [], mcpTools: [], platformExtensions: [] },
+  ) {}
+
+  async createSnapshot(
+    body: unknown,
+    mode: "assistant" | "standalone",
+    principal: VerifiedPrincipal,
+  ): Promise<ContextSnapshot> {
+    const snapshot = await this.contexts.create(body, mode, principal);
+    await this.store.saveSnapshot(snapshot);
+    return snapshot;
+  }
+
+  createSession(body: unknown, principal: VerifiedPrincipal) {
+    const input = parseOrThrow(createSessionRequestSchema, body);
+    return this.store.createSession(principal, input.mode, input.title);
+  }
+
+  patchSession(id: string, body: unknown, principal: VerifiedPrincipal) {
+    const input = parseOrThrow(patchSessionRequestSchema, body);
+    return this.store.patchSession(id, principal, {
+      ...(input.title === undefined ? {} : { title: input.title }),
+      ...(input.archived === undefined ? {} : { archived: input.archived }),
+    });
+  }
+
+  async createRun(sessionId: string, body: unknown, principal: VerifiedPrincipal) {
+    const input = parseOrThrow(createRunRequestSchema, body);
+    const result = await this.store.createRun({ principal, sessionId, ...input });
+    if (result.created) this.runner.start(result.run, principal);
+    return result.run;
+  }
+
+  async resumeRun(runId: string, body: unknown, principal: VerifiedPrincipal) {
+    const input = parseOrThrow(resumeRunRequestSchema, body);
+    const result = await this.store.createResumeRun({
+      principal,
+      interruptedRunId: runId,
+      response: input,
+    });
+    if (result.created) this.runner.resume(result.run, principal, input);
+    return result.run;
+  }
+}

@@ -1,3 +1,4 @@
+import { createAssistantBrandIcon } from "./brand-icon.js";
 /**
  * 业务宿主一键挂载：Shadow DOM 浮层、embed 票据请求，并委托 `createIframeHostBridge` 完成握手。
  */
@@ -16,7 +17,11 @@ import type { IframeAssistantHost, IframeAssistantHostOptions } from "./types.js
 export function mountIframeAssistant(options: IframeAssistantHostOptions): IframeAssistantHost {
   const iframeUrl = new URL(options.iframeUrl, location.href);
   const targetOrigin = canonicalOrigin(iframeUrl.href);
+  const standaloneUrl = options.standaloneUrl === undefined ? undefined : new URL(options.standaloneUrl, location.href);
+  if (standaloneUrl !== undefined && (!/^https?:$/.test(standaloneUrl.protocol) || standaloneUrl.username || standaloneUrl.password))
+    throw new Error("The independent assistant page must use an HTTP(S) URL without credentials.");
   const channelId = crypto.randomUUID();
+  const assistantTitle = options.title?.trim().slice(0, 80) || "企业业务智能助手";
   let context = rawHostContextSchema.parse(options.initialContext ?? {});
   let open = false;
   let ready = false;
@@ -36,16 +41,16 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
   launcher.setAttribute("aria-expanded", "false");
   const mark = document.createElement("span");
   mark.className = "assistant-loader-mark";
-  mark.textContent = "AI";
   mark.setAttribute("aria-hidden", "true");
-  const launcherLabel = document.createElement("strong");
-  launcherLabel.textContent = "业务助手";
-  launcher.append(mark, launcherLabel);
+  const icon = createAssistantBrandIcon();
+  mark.append(icon);
+  launcher.title = "打开智能助手";
+  launcher.append(mark);
 
   const panel = document.createElement("section");
   panel.className = "floating-assistant-panel";
   panel.setAttribute("role", "dialog");
-  panel.setAttribute("aria-label", options.title ?? "企业业务智能助手");
+  panel.setAttribute("aria-label", assistantTitle);
   panel.setAttribute("aria-hidden", "true");
 
   const closeButton = document.createElement("button");
@@ -61,9 +66,10 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
 
   iframeUrl.searchParams.set("hostOrigin", location.origin);
   iframeUrl.searchParams.set("channelId", channelId);
+  iframeUrl.searchParams.set("assistantTitle", assistantTitle);
   const iframe = document.createElement("iframe");
   iframe.className = "assistant-loader-frame";
-  iframe.title = "企业业务智能助手";
+  iframe.title = assistantTitle;
   iframe.src = iframeUrl.href;
   iframe.setAttribute("sandbox", "allow-scripts allow-same-origin");
   const resizeHandle = document.createElement("button");
@@ -71,6 +77,28 @@ export function mountIframeAssistant(options: IframeAssistantHostOptions): Ifram
   resizeHandle.className = "assistant-panel-resize-handle";
   resizeHandle.setAttribute("aria-label", "拖拽调整助手宽度");
   panel.append(resizeHandle, closeButton, status, iframe);
+  if (standaloneUrl !== undefined) {
+    const standaloneButton = document.createElement("a");
+    standaloneButton.className = "assistant-loader-standalone";
+    standaloneButton.href = standaloneUrl.href;
+    standaloneButton.target = "_blank";
+    standaloneButton.rel = "noopener noreferrer";
+    standaloneButton.setAttribute("aria-label", "打开独立助手（新标签页）");
+    standaloneButton.title = "打开独立助手";
+    const externalIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    externalIcon.setAttribute("fill", "none");
+    externalIcon.setAttribute("stroke", "currentColor");
+    externalIcon.setAttribute("stroke-width", "1.8");
+    externalIcon.setAttribute("stroke-linecap", "round");
+    externalIcon.setAttribute("stroke-linejoin", "round");
+    externalIcon.setAttribute("viewBox", "0 0 24 24");
+    const externalPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    externalPath.setAttribute("d", "M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5");
+    externalIcon.setAttribute("aria-hidden", "true");
+    externalIcon.append(externalPath);
+    standaloneButton.append(externalIcon);
+    panel.append(standaloneButton);
+  }
   shadow.append(style, launcher, panel);
   document.body.append(host);
 

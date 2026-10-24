@@ -31,8 +31,10 @@ select {
   place-items: center;
   width: 28px;
   height: 28px;
-  border-radius: 6px;
-  background: linear-gradient(135deg, #1677ff, #0958d9);
+  padding: 1px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  background: #eef5ff;
   color: #fff;
   font-size: 11px;
   font-weight: 700;
@@ -65,14 +67,16 @@ select {
   overflow: hidden;
 }
 
-.assistant-web-status-grid {
+.assistant-web-runtime-sections {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 
-.assistant-web-status-grid .ant-pro-card:last-child {
-  grid-column: 1 / -1;
+.assistant-web-read-time {
+  color: #666;
+  font-size: 12px;
 }
 
 .codex-workspace.assistant-workspace {
@@ -171,11 +175,4 @@ select {
     display: none;
   }
 
-  .assistant-web-status-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .assistant-web-status-grid .ant-pro-card:last-child {
-    grid-column: auto;
-  }
 }

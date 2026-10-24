@@ -1,0 +1,36 @@
+{
+  "name": "@assistant/agent-server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx src/main.ts",
+    "smoke:real": "tsx src/main.ts",
+    "smoke:deepseek": "node --env-file=../../.env --import tsx src/main.ts",
+    "serve": "node --env-file=../../.env --import tsx src/server-main.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@assistant/agent-runtime": "workspace:*",
+    "@assistant/context": "workspace:*",
+    "@assistant/contracts": "workspace:*",
+    "@assistant/evidence": "workspace:*",
+    "@assistant/mcp-client-runtime": "workspace:*",
+    "@assistant/platform-diagnostics-extension": "workspace:*",
+    "@assistant/platform-extension-runtime": "workspace:*",
+    "@assistant/platform-host-navigation-extension": "workspace:*",
+    "@langchain/core": "catalog:",
+    "@langchain/langgraph": "catalog:",
+    "@langchain/langgraph-checkpoint": "catalog:",
+    "@langchain/langgraph-checkpoint-postgres": "1.0.6",
+    "@langchain/openai": "catalog:",
+    "deepagents": "catalog:",
+    "pg": "8.23.1",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1",
+    "tsx": "4.21.0"
+  }
+}
