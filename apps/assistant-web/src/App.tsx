@@ -21,6 +21,7 @@ import {
 } from "react-router-dom";
 
 type Profile = "user-a" | "user-b" | "admin";
+const externalIdentity = import.meta.env["VITE_IDENTITY_MODE"] === "external";
 
 const PAGE_PATHS = ["/assistant", "/sessions", "/models", "/mcp", "/platform-extensions"] as const;
 type PagePath = (typeof PAGE_PATHS)[number];
@@ -133,20 +134,32 @@ function SessionsPage({ transport }: { transport: AssistantApiTransport }) {
   );
 }
 
-function IdentitySelect({
+function HeaderIdentity({
+  externalIdentity,
+  identityDisplayName,
   profile,
-  onChange,
+  onProfileChange,
 }: {
+  externalIdentity: boolean;
+  identityDisplayName: string | undefined;
   profile: Profile;
-  onChange: (profile: Profile) => void;
+  onProfileChange: (profile: Profile) => void;
 }) {
+  if (externalIdentity) {
+    return (
+      <span className="assistant-web-header-user" title={identityDisplayName}>
+        {identityDisplayName}
+      </span>
+    );
+  }
+
   return (
-    <label className="assistant-web-identity">
+    <label className="assistant-web-header-user assistant-web-header-user--select">
       <span>本地模拟身份</span>
       <Select
         aria-label="本地模拟身份"
         value={profile}
-        onChange={onChange}
+        onChange={onProfileChange}
         options={Object.entries(profileConfig).map(([value, config]) => ({
           value,
           label: config.label,
@@ -162,7 +175,7 @@ function AssistantChatPage({
   profileKey,
 }: {
   transport: AssistantApiTransport;
-  selectedObject: SelectedBusinessObject;
+  selectedObject: SelectedBusinessObject | undefined;
   profileKey: Profile;
 }) {
   const chatTransport = useMemo(() => new AgUiChatAgentPort(transport), [transport]);
@@ -171,7 +184,8 @@ function AssistantChatPage({
       <ChatWorkspace
         key={profileKey}
         transport={chatTransport}
-        selectedObject={selectedObject}
+        {...(selectedObject === undefined ? {} : { selectedObject })}
+        {...(externalIdentity ? { getContext: () => ({ page: { route: "/assistant", title: "智能助手", type: "assistant" } }) } : {})}
         workspaceClassName="codex-workspace"
       />
     </div>
@@ -182,7 +196,7 @@ type AppOutletContext = {
   transport: AssistantApiTransport;
   profile: Profile;
   isAdmin: boolean;
-  selectedObject: SelectedBusinessObject;
+  selectedObject: SelectedBusinessObject | undefined;
 };
 
 function useAppOutletContext(): AppOutletContext {
@@ -216,9 +230,23 @@ function AppLayout() {
   const location = useLocation();
   const [profile, setProfile] = useState<Profile>("user-a");
   const [collapsed, setCollapsed] = useState(true);
+  const [identity, setIdentity] = useState<{ displayName: string; isAdmin: boolean }>();
+  const [identityError, setIdentityError] = useState(false);
+  useEffect(() => {
+    if (!externalIdentity) return;
+    const abort = new AbortController();
+    void fetch("/api/v1/identity", { credentials: "same-origin", signal: abort.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Authentication required.");
+        const value = await response.json() as { displayName?: unknown; isAdmin?: unknown };
+        if (typeof value.displayName !== "string" || typeof value.isAdmin !== "boolean") throw new Error("Invalid identity.");
+        setIdentity({ displayName: value.displayName, isAdmin: value.isAdmin });
+      }).catch(() => { if (!abort.signal.aborted) setIdentityError(true); });
+    return () => abort.abort();
+  }, []);
   const current = profileConfig[profile];
   const transport = useMemo(
-    () => new AssistantApiTransport({ getAccessCredential: () => current.token }),
+    () => new AssistantApiTransport({ getAccessCredential: () => externalIdentity ? "" : current.token }),
     [current.token],
   );
   const pathname = normalizePathname(location.pathname);
@@ -227,11 +255,15 @@ function AppLayout() {
     () => ({
       transport,
       profile,
-      isAdmin: profile === "admin",
-      selectedObject: current.object,
+      isAdmin: externalIdentity ? identity?.isAdmin === true : profile === "admin",
+      selectedObject: externalIdentity ? undefined : current.object,
     }),
-    [transport, profile, current.object],
+    [transport, profile, current.object, identity],
   );
+
+  if (externalIdentity && !identity) return <Alert type={identityError ? "warning" : "info"}
+    title={identityError ? "请先登录业务系统，再刷新此页面。" : "正在验证登录身份…"}
+    action={identityError ? <a href={String(import.meta.env["VITE_IDENTITY_LOGIN_URL"] ?? "/")}>前往登录</a> : undefined} />;
 
   return (
     <ProLayout
@@ -273,7 +305,13 @@ function AppLayout() {
             : { minHeight: "calc(100vh - 56px)" }
       }
       actionsRender={() => [
-        <IdentitySelect key="identity" profile={profile} onChange={setProfile} />,
+        <HeaderIdentity
+          key="identity"
+          externalIdentity={externalIdentity}
+          identityDisplayName={identity?.displayName}
+          profile={profile}
+          onProfileChange={setProfile}
+        />,
       ]}
     >
       <Outlet context={outletContext} />

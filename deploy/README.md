@@ -1,103 +1,152 @@
-# 平台部署
+# 智能体平台部署与更新
 
-## 本地六服务 Docker（2026-10-24）
+本文件只说明智能体平台，分组名称 assistant-agents，仅包含 postgres、agent-server、assistant-web、assistant-embed。
+业务系统和 MCP 分别按其所属仓库的 deploy/README.md 部署；不再提供单独的总指南。
+适用环境：Windows PowerShell、Docker Desktop Linux containers、Node22+、项目声明的 pnpm。
+所有 pnpm 命令由用户本人执行，每一步成功后再继续。
 
-本地组合包含 PostgreSQL、Agent Server、独立 Web、Embed、Product A MCP 和 Product A Demo。
-当前身份与业务 API 为 Mock；数据库、模型请求与容器网络按实际结果验收，不能据此宣称生产接入。
+## 1. 首次部署前置条件
 
-所有 pnpm 必须由用户执行。三个仓库默认同级，可用 MCP_REPO_PATH、DEMO_REPO_PATH 覆盖构建仓库位置；
-跨仓只由本地打包编排器调用独立构建，不引入业务包依赖。
+- Product A 已按自身说明构建并启动，业务网关在 assistant-integration 网络中可访问。
+- MCP 已构建并打包，deploy/out/product-a-mcp/approvals.json 存在，product-a-mcp 服务可用。
+- 平台数据库端口55432、API端口3411、Web端口8080、Embed端口5511未被占用。
+- 三仓默认位于 D:\Git 下；其他位置可设置 DEMO_REPO_PATH、MCP_REPO_PATH。
 
-1. 用户在 MCP 仓运行 `pnpm test:product-a`。
-2. 用户在主仓运行 `pnpm typecheck`、`pnpm lint`、`pnpm test` 与 `pnpm pack:local`。
-   最后一条分别构建三仓并复制产物到 deploy/out，不读取密钥。Codex 不得间接调用该脚本。
-3. 运行 `./deploy/initialize-local.ps1`，保留已有数据库密码并补充随机委托密钥。
-   模型配置放在主仓 .env；Compose 先加载 deploy/.env.local，再加载主仓 .env。
-4. 运行 `./deploy/local-compose.ps1 start`，仅执行 Docker 构建/启动，缺少产物明确失败，不自动 pnpm。
+业务和 MCP 属于平台的外部依赖，不会被平台 pack:local 自动构建。
 
-| 服务 | 本地地址 | 说明 |
-| --- | --- | --- |
-| Product A Demo | http://127.0.0.1:5411 | iframe 和导航验收入口 |
-| 独立 Web | http://127.0.0.1:8080 | 同一后端的独立入口 |
-| Embed | http://127.0.0.1:5511 | iframe 与 Loader |
-| Agent Server | http://127.0.0.1:3411 | 调试 API，仅绑定回环 |
-| PostgreSQL | 127.0.0.1:55432 | assistant 应用库、assistant_test 专项库 |
-| Product A MCP | 容器内 product-a-mcp:3101 | 不发布本机端口 |
+## 2. 初始化配置
 
-现有 Demo Loader 使用固定 5511 地址，本地方案保留端口；使用 127.0.0.1，保持 iframe Origin、票据与
-CSP 一致。生产域名需要另配 TLS，不能直接复用本地 HTTP 例外。
+```powershell
+cd D:\Git\Deep-Agents-AI-Assistant
+./deploy/initialize-local.ps1
+```
 
-`./deploy/local-compose.ps1 status` 查看状态；`stop` 停止本组合且保留卷；`logs` 查看后端日志。
-不执行 down -v。数据卷默认名 assistant-local_postgres-data；不要变更已有卷的数据库密码。
+随机 PostgreSQL 密码与 MCP 发现密钥保存在 deploy/.env.local，初始化只补缺失项，不覆盖既有值。
+MCP 独立部署也使用其中的发现密钥，因此可以先初始化此文件，再按 MCP 仓说明启动 MCP。
+模型 Key、MODEL_NAME、需要时的模型地址配置在平台已有 .env 或 deploy/.env.local 中，不要提交或发送这些文件。
+启动器先加载 deploy/.env.local，再加载平台 .env，同名项以后者为准；避免重复定义数据库密码或发现密钥。
 
-运行 `node deploy/backup-local.mjs` 可用 pg_dump 导出应用库，包括平台及官方 Checkpoint schema。
-备份位于忽略的 deploy/backups，按敏感数据保管；恢复应在明确维护窗口内执行，勿覆盖运行中的库。
+identity-http.local.json 是可信身份查询的非秘密配置，指定原业务 /me 地址、字段映射和允许的浏览器 Origin。
+它与 .env.local 用途不同，不能作为临时文件删除。
 
-批准文件 deploy/out/local-mcp-approval.json 使用固定 Server/Tool/Schema/risk，漂移会拒绝启动。
-本地签名凭证只用于 Mock 演示，不能作为真实业务网关凭证。企业 IdP、业务 Evidence 再鉴权和生产 TLS 待接入。
+## 3. 构建与启动平台
 
-源码变更后由用户重新打包，再构建 Docker。验收应确认模型 Tool 调用、消息/事件/审计/Checkpoint 入库，
-以及重建 Agent Server 后相同 Session 可继续对话；脚本实现不代表这些验收已经通过。
-
-本地 pack:local 为 Loader 注入独立页地址 http://127.0.0.1:8080/assistant，可用构建变量
-VITE_ASSISTANT_WEB_URL 覆盖；宿主 HTML 的 data-standalone-url 优先。新标签页不传递 Token。
-2026-10-24 用户已单独授权本轮 UI 更新由 Codex 执行 pnpm；其他任务仍按当次用户授权和仓库规则执行。
-
-以下为平台三服务单独打包说明。
-
-`deploy/` 只构建和发布 Agent Server、独立 Web 与 iframe Embed，不发现、构建或复制任何业务
-Adapter/Plugin。业务能力由部署环境批准并连接的外部 MCP Server 提供。
-
-## 打包
-
-由用户在仓库根目录执行：
-
-```bash
+```powershell
+cd D:\Git\Deep-Agents-AI-Assistant
 pnpm install
-pnpm pack:deploy
+pnpm lint
+pnpm typecheck
+pnpm test:identity-http
+pnpm test
+pnpm pack:local
+./deploy/local-compose.ps1 start -Group agents
+./deploy/local-compose.ps1 status -Group agents
 ```
 
-输出目录 `deploy/out/` 包含：
+pnpm test 已包含 test:mcp-http，不必重复执行。pack:local 构建平台并读取已审核的 MCP 批准产物，
+输出 deploy/out/server、web、embed、release.json、local-mcp-approval.json，不复制业务服务进平台镜像。
+Docker 只复制构建产物，启动器不执行 Maven 或 pnpm。
 
-```text
-server/
-web/
-embed/
-release.json
+| 平台入口 | 地址 |
+| --- | --- |
+| 独立助手 | http://127.0.0.1:8080/assistant |
+| Embed/Loader | http://127.0.0.1:5511 |
+| Agent API 调试 | http://127.0.0.1:3411/api/v1/openapi.json |
+| PostgreSQL 调试 | 127.0.0.1:55432 |
+
+先在业务 Govern 的 http://127.0.0.1:19001 登录，再使用同一浏览器打开平台助手。
+使用127.0.0.1，避免和localhost混用造成 Cookie、Origin 和 iframe 策略不一致。
+独立助手应显示真实身份，不提供 Mock 身份切换；未登录应拒绝访问。
+
+本地调试前端时可用 `pnpm dev:web`（默认 http://127.0.0.1:5173），Vite 将 `/api` 代理到 Docker agent-server（127.0.0.1:3411）。若修改了 `identity-http.local.json` 中的 `browserOrigins`，需重启 agents 组中的 `agent-server` 容器后生效。
+
+## 4. 后续更新
+
+平台源码有变化时，重新执行本文件第3节的门禁、pack:local 和 start -Group agents。
+依赖未变时可省略 pnpm install。普通更新不必先停止所有业务服务，不删除数据库卷。
+平台重启清空内存业务凭证仓，刷新宿主与助手页面重新建立认证；持久化会话仍从 PostgreSQL 读取。
+
+MCP 实现更新但 Tool/Schema 不变时，按 MCP 仓说明更新 MCP 即可。
+MCP Tool、Schema 或风险配置变化后，先在 MCP 仓完成审核和打包，再在平台执行 pnpm pack:local 并更新 agents。
+更新期间旧快照拒绝漂移属于预期行为，不通过关闭批准检查处理。
+
+模型运行时环境变量变化后，需要重建相应容器使配置生效；前端构建变量变化还需要重新打包。
+不要在普通更新时删除或重建 .env.local，已有数据库卷的密码不会因改环境文件自动同步。
+
+## 5. 状态、日志、停止和检查
+
+以下命令在平台仓根目录执行：
+
+```powershell
+./deploy/local-compose.ps1 status -Group agents
+./deploy/local-compose.ps1 logs -Group agents
+./deploy/local-compose.ps1 stop -Group agents
+node deploy/verify-local.mjs
 ```
 
-`release.json` 的 `businessCapabilitySource` 固定为 `external-mcp`。
+verify-local 检查三组运行服务、基础健康及未登录拒绝，不验证模型回答或业务数据正确性。
+stop 保留 assistant-agents_postgres-data，普通更新不要使用 down -v。
 
-## 独立部署
+local-compose.ps1 仍提供可选的跨仓生命周期协调：不指定 Group 时按业务→MCP→平台启动，反序停止。
+它只协调独立 Compose 项目，不改变各仓部署归属；日常平台操作使用 -Group agents。
 
-同一平台代码可以分别部署给 Product A、Product B，但每个部署只连接本系统批准的 MCP Server。
-不同实例的模型密钥、MCP 凭证引用、Session Repository 和 Checkpointer 必须隔离。平台不根据
-Product ID 动态路由业务能力。
+## 6. 备份与回退
 
-`deploy/env/*.example` 只能填写非敏感示例；真实模型 Key 和 MCP 凭证由密钥系统注入。MCP 生产
-连接配置和 Streamable HTTP 生命周期仍属于后续阶段，当前不得把开发 stdio 配置当作生产方案。
+```powershell
+cd D:\Git\Deep-Agents-AI-Assistant
+node deploy/backup-local.mjs
+```
 
-## 安全边界
+平台会话、消息与官方 Checkpoint 的逻辑备份写入 deploy/backups，按敏感资料保管。
+该脚本不备份业务 MySQL；业务备份由 Product A 自身管理。
+构建产物可以重新生成，但不等于数据备份。当前镜像使用 local 标签，回退前需保留旧镜像或源码版本。
+回退应用不会自动回退数据库结构；数据库变化需单独的迁移和恢复步骤。
 
-- MCP Server/Tool/Schema 摘要/风险必须显式批准；发现不等于可用。
-- UI Context、Prompt 和 Tool 参数不能授予权限。
-- MCP Server 与原业务 API 必须执行最终对象、行、列权限和脱敏。
-- Agent Server 只输出经过平台校验的 Evidence 引用与安全运行状态。
-# 浏览器构建信息
+## 7. deploy 目录用途与残留核查
 
-## 品牌名称
+核查依据：当前 package.json、三个 Compose 文件、打包/生命周期脚本、Vite 配置和仓库中的文本引用。
+没有读取环境文件或备份中的秘密内容；“未使用”指不参与当前部署链路，不表示没有历史留存价值。
 
-独立 Web 在主仓 `.env` 配置 `VITE_ASSISTANT_APP_NAME=企业智能助手`，重新打包并更新
-assistant-web 容器后生效。构建进程中的同名环境变量优先；未配置或为空使用默认名称。
-本地配置属于构建时配置，不是容器启动环境变量。
+### 当前仍需要
 
-宿主 Loader 使用 `data-assistant-title="企业业务助手"`；JS 接入使用
-`mountIframeAssistant({ ..., title: "企业业务助手" })`。名称同步到助手 Header 与浮层标签。
-名称只作纯文本展示，最多 80 字符，不构成授权或业务 Context。
+| 文件或目录 | 用途 |
+| --- | --- |
+| README.md | 本平台部署和更新说明 |
+| docker-compose.yml | 平台Server/Web/Embed基础编排 |
+| docker-compose.postgres.yml | PostgreSQL、平台数据卷与测试库初始化 |
+| docker-compose.local.yml | 当前真实身份接入、网络与端口覆盖 |
+| local-compose.ps1 | Docker生命周期、分组顺序与产物检查 |
+| initialize-local.ps1 | 初始化并保留本地秘密配置 |
+| identity-http.local.json | 可信业务身份查询配置 |
+| .env.local | 本地秘密，必须保留 |
+| pack.mjs | 平台打包基础脚本，pack:deploy使用 |
+| pack-local.mjs | 当前部署打包入口与MCP批准产物装配 |
+| verify-local.mjs | 部署健康检查 |
+| backup-local.mjs | 平台数据库备份 |
+| build-info.mjs、build-info.d.mts | 两个Vite项目引用的构建信息与类型声明 |
+| .dockerignore | 防止环境文件、备份等进入镜像构建上下文 |
+| docker/server.Dockerfile、web.Dockerfile、embed.Dockerfile | 三个平台应用镜像 |
+| docker/nginx/ | Web与Embed的代理、CSP、静态资源配置 |
+| docker/postgres/init-test-database.sql | 初始化独立测试库 |
+| docker/normalize-deploy-links.cjs | 修正Windows pnpm链接供Linux镜像使用 |
 
-独立 Web、嵌入助手和宿主 Loader 启动时分别输出 `[assistant-web]`、
-`[assistant-embed]`、`[assistant-loader]` 构建信息。
-`builtAt` 为 UTC 构建时间，`branch` 为主仓分支，`commit` 为完整 SHA，
-`dirty` 表示构建时存在未提交修改（包括未忽略的新文件）。
-元数据在 Vite 构建时写入，Docker 使用打包产物中的信息；只重启容器不会改变构建时间。
-无 Git 元数据的源码包显示 `unknown`，不阻止构建。
+### 已清理的旧残留（2026-10-24）
+
+| 文件 | 判定依据 |
+| --- | --- |
+| docker/demo.Dockerfile | 仍复制已删除的out/product-a-demo；当前业务Dockerfile已在Demo仓 |
+| docker/mcp.Dockerfile | 仍复制主仓旧out/product-a-mcp；当前MCP镜像已在MCP仓 |
+| acceptance-state.local | 旧版本验收脚本状态文件，当前verify-local不读取 |
+| ui-demo-build.local、ui-pack.local、ui-test.local、ui-typecheck.local | 历史命令输出，无当前运行时读取引用 |
+
+上述七个文件已按用户确认删除，不影响当前三个独立部署分组。
+
+### 有用途但不属于部署源文件
+
+| 目录 | 如何处理 |
+| --- | --- |
+| out/ | 可再生成的打包产物；当前内容可能来自旧构建，下一次pack:local会整体重建，不当作源码维护 |
+| backups/ | 历史数据库备份，不参与启动，但有数据恢复价值，不能当作普通缓存删除 |
+| env/ | 其他部署模式和A/B进程样例；不被当前启动器读取，部分样例仍被历史验收文档引用，适合后续单独归档或整理 |
+
+2026-10-24 已完成三个分组的镜像构建和启动（共15个容器），部署健康检查、未登录401、真实业务身份与查询均通过。当前MCP为七个真实只读工具，host-navigation@1.0.0已按固定摘要批准并传入容器。浏览器已验证管理端/门户验证码登录、工作台数据、嵌入助手查询和按钮跳转数据源管理；详细记录见 ../docs/acceptance/evolution/product-a-real-navigation-2026-10-24.md。历史Mock工具已退出Product A源码和运行包。

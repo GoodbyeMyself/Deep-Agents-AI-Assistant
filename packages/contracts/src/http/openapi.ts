@@ -28,6 +28,7 @@ export const openApiDocument = {
     },
     "/api/v1/evidence/{referenceId}": { get: { summary: "Resolve evidence after authorization" } },
     "/api/v1/models": { get: { summary: "List safe model metadata for this deployment" } },
+    "/api/v1/identity": { get: { summary: "Return the authenticated display identity and platform admin flag without credentials" } },
     "/api/v1/mcp/servers": { get: { summary: "List configured MCP server status" } },
     "/api/v1/mcp/tools": { get: { summary: "List approved MCP tools" } },
     "/api/v1/platform/extensions": {

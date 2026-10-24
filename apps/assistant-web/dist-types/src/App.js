@@ -8,6 +8,7 @@ import { PageContainer, ProCard, ProLayout } from "@ant-design/pro-components";
 import { Alert, Button, Select, Space, Table } from "antd";
 import { useEffect, useMemo, useState } from "react";
 import { Link, Navigate, Outlet, Route, Routes, useLocation, useOutletContext, } from "react-router-dom";
+const externalIdentity = import.meta.env["VITE_IDENTITY_MODE"] === "external";
 const PAGE_PATHS = ["/assistant", "/sessions", "/models", "/mcp", "/platform-extensions"];
 const profileConfig = {
     "user-a": {
@@ -73,15 +74,18 @@ function SessionsPage({ transport }) {
                         setSessions((current) => current.filter((session) => session.id !== id));
                     } }, `${sessionAction.type}:${sessionAction.session.id}`))] }) }));
 }
-function IdentitySelect({ profile, onChange, }) {
-    return (_jsxs("label", { className: "assistant-web-identity", children: [_jsx("span", { children: "\u672C\u5730\u6A21\u62DF\u8EAB\u4EFD" }), _jsx(Select, { "aria-label": "\u672C\u5730\u6A21\u62DF\u8EAB\u4EFD", value: profile, onChange: onChange, options: Object.entries(profileConfig).map(([value, config]) => ({
+function HeaderIdentity({ externalIdentity, identityDisplayName, profile, onProfileChange, }) {
+    if (externalIdentity) {
+        return (_jsx("span", { className: "assistant-web-header-user", title: identityDisplayName, children: identityDisplayName }));
+    }
+    return (_jsxs("label", { className: "assistant-web-header-user assistant-web-header-user--select", children: [_jsx("span", { children: "\u672C\u5730\u6A21\u62DF\u8EAB\u4EFD" }), _jsx(Select, { "aria-label": "\u672C\u5730\u6A21\u62DF\u8EAB\u4EFD", value: profile, onChange: onProfileChange, options: Object.entries(profileConfig).map(([value, config]) => ({
                     value,
                     label: config.label,
                 })) })] }));
 }
 function AssistantChatPage({ transport, selectedObject, profileKey, }) {
     const chatTransport = useMemo(() => new AgUiChatAgentPort(transport), [transport]);
-    return (_jsx("div", { className: "assistant-web-chat-host", children: _jsx(ChatWorkspace, { transport: chatTransport, selectedObject: selectedObject, workspaceClassName: "codex-workspace" }, profileKey) }));
+    return (_jsx("div", { className: "assistant-web-chat-host", children: _jsx(ChatWorkspace, { transport: chatTransport, ...(selectedObject === undefined ? {} : { selectedObject }), ...(externalIdentity ? { getContext: () => ({ page: { route: "/assistant", title: "智能助手", type: "assistant" } }) } : {}), workspaceClassName: "codex-workspace" }, profileKey) }));
 }
 function useAppOutletContext() {
     const context = useOutletContext();
@@ -110,16 +114,36 @@ function AppLayout() {
     const location = useLocation();
     const [profile, setProfile] = useState("user-a");
     const [collapsed, setCollapsed] = useState(true);
+    const [identity, setIdentity] = useState();
+    const [identityError, setIdentityError] = useState(false);
+    useEffect(() => {
+        if (!externalIdentity)
+            return;
+        const abort = new AbortController();
+        void fetch("/api/v1/identity", { credentials: "same-origin", signal: abort.signal })
+            .then(async (response) => {
+            if (!response.ok)
+                throw new Error("Authentication required.");
+            const value = await response.json();
+            if (typeof value.displayName !== "string" || typeof value.isAdmin !== "boolean")
+                throw new Error("Invalid identity.");
+            setIdentity({ displayName: value.displayName, isAdmin: value.isAdmin });
+        }).catch(() => { if (!abort.signal.aborted)
+            setIdentityError(true); });
+        return () => abort.abort();
+    }, []);
     const current = profileConfig[profile];
-    const transport = useMemo(() => new AssistantApiTransport({ getAccessCredential: () => current.token }), [current.token]);
+    const transport = useMemo(() => new AssistantApiTransport({ getAccessCredential: () => externalIdentity ? "" : current.token }), [current.token]);
     const pathname = normalizePathname(location.pathname);
     const isChatPage = pathname === "/assistant";
     const outletContext = useMemo(() => ({
         transport,
         profile,
-        isAdmin: profile === "admin",
-        selectedObject: current.object,
-    }), [transport, profile, current.object]);
+        isAdmin: externalIdentity ? identity?.isAdmin === true : profile === "admin",
+        selectedObject: externalIdentity ? undefined : current.object,
+    }), [transport, profile, current.object, identity]);
+    if (externalIdentity && !identity)
+        return _jsx(Alert, { type: identityError ? "warning" : "info", title: identityError ? "请先登录业务系统，再刷新此页面。" : "正在验证登录身份…", action: identityError ? _jsx("a", { href: String(import.meta.env["VITE_IDENTITY_LOGIN_URL"] ?? "/"), children: "\u524D\u5F80\u767B\u5F55" }) : undefined });
     return (_jsx(ProLayout, { className: isChatPage ? "assistant-web-layout assistant-web-layout--chat" : "assistant-web-layout", title: assistantAppName, logo: _jsx("div", { className: "assistant-web-logo", "aria-hidden": true, children: _jsx(AssistantBrandIcon, {}) }), layout: "mix", fixSiderbar: true, defaultCollapsed: true, collapsed: collapsed, onCollapse: setCollapsed, breakpoint: false, location: { pathname }, route: shellRoute, menuItemRender: (item, dom) => {
             const target = typeof item.path === "string" ? item.path : "/assistant";
             return _jsx(Link, { to: target, children: dom });
@@ -136,7 +160,7 @@ function AppLayout() {
                     scrollbarGutter: "stable",
                 }
                 : { minHeight: "calc(100vh - 56px)" }, actionsRender: () => [
-            _jsx(IdentitySelect, { profile: profile, onChange: setProfile }, "identity"),
+            _jsx(HeaderIdentity, { externalIdentity: externalIdentity, identityDisplayName: identity?.displayName, profile: profile, onProfileChange: setProfile }, "identity"),
         ], children: _jsx(Outlet, { context: outletContext }) }));
 }
 export function App() {

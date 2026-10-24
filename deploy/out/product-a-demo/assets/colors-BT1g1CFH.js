@@ -1,2 +1,0 @@
-import{J as e}from"./SizeContext-DVxfGvIF.js";import{y as t}from"./fieldMode-CcesR3Fo.js";function n(t,n){return e.reduce((e,r)=>{let i=t[`${r}1`],a=t[`${r}3`],o=t[`${r}6`],s=t[`${r}7`];return{...e,...n(r,{lightColor:i,lightBorderColor:a,darkColor:o,textColor:s})}},{})}var r=e.map(e=>`${e}-inverse`),i=[`success`,`processing`,`error`,`default`,`warning`];function a(n,i=!0){return i?[].concat(t(r),t(e)).includes(n):e.includes(n)}function o(e){return i.includes(e)}export{o as n,n as r,a as t};
-//# sourceMappingURL=colors-BT1g1CFH.js.map

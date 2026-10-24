@@ -39,7 +39,11 @@ const principals = new Map<string, VerifiedPrincipal>([
 ]);
 
 export interface IdentityProvider {
-  authenticate(authorization: string | null): Promise<VerifiedPrincipal>;
+  authenticate(authorization: string | null, request?: Request): Promise<VerifiedPrincipal>;
+}
+
+export interface EmbedIdentityProvider extends IdentityProvider {
+  issueTemporaryCredential(principal: VerifiedPrincipal, ttlMs?: number): string;
 }
 
 export class MockIdentityProvider implements IdentityProvider {

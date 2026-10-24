@@ -1,40 +1,69 @@
-# Operates Docker only. All pnpm builds must be performed by the user beforehand.
+# Docker lifecycle only. Never builds sources or invokes pnpm.
 [CmdletBinding()]
-param([ValidateSet('start', 'stop', 'status', 'logs')][string]$Action = 'status')
+param([ValidateSet('start', 'stop', 'status', 'logs')][string]$Action = 'status',
+      [ValidateSet('all', 'product-a', 'mcp', 'agents')][string]$Group = 'all')
 $ErrorActionPreference = 'Stop'
-$repositoryRoot = Split-Path $PSScriptRoot -Parent
-Push-Location $repositoryRoot
-try {
-    if ($Action -eq 'start') {
-        & (Join-Path $PSScriptRoot 'initialize-local.ps1')
-        foreach ($artifact in @('server/dist/server-main.js', 'web/index.html', 'embed/assistant-loader.js',
-            'product-a-mcp/dist/http.js', 'product-a-demo/index.html', 'local-mcp-approval.json')) {
-            if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot "out/$artifact"))) {
-                throw "Missing deploy artifact: $artifact. Run pnpm pack:local yourself first."
+$root = Split-Path $PSScriptRoot -Parent
+$demoRoot = if ($env:DEMO_REPO_PATH) { $env:DEMO_REPO_PATH } else { Join-Path $root '../Deep-Agents-AI-Assistant-Demo' }
+$mcpRoot = if ($env:MCP_REPO_PATH) { $env:MCP_REPO_PATH } else { Join-Path $root '../Deep-Agents-AI-Assistant-MCP' }
+$productDeploy = [IO.Path]::GetFullPath((Join-Path $demoRoot 'product-a/deploy'))
+$mcpDeploy = [IO.Path]::GetFullPath((Join-Path $mcpRoot 'deploy'))
+function Invoke-CheckedDocker([string[]]$Arguments) {
+    & docker @Arguments
+    if ($LASTEXITCODE -ne 0) { throw "Docker operation failed: $($Arguments[0])" }
+}
+if ($Action -eq 'start') {
+    & (Join-Path $PSScriptRoot 'initialize-local.ps1')
+    & (Join-Path $productDeploy 'initialize.ps1')
+    & docker network inspect assistant-integration *> $null
+    if ($LASTEXITCODE -ne 0) { Invoke-CheckedDocker -Arguments @('network', 'create', 'assistant-integration') }
+}
+$platformEnvironment = Join-Path $PSScriptRoot '.env.local'
+$product = @('--project-name', 'assistant-product-a', '--env-file', (Join-Path $productDeploy '.env'), '-f', (Join-Path $productDeploy 'docker-compose.yml'))
+$mcp = @('--project-name', 'assistant-mcp', '--env-file', $platformEnvironment, '-f', (Join-Path $mcpDeploy 'docker-compose.yml'))
+$agents = @('--project-name', 'assistant-agents', '--env-file', $platformEnvironment)
+if (Test-Path -LiteralPath (Join-Path $root '.env')) { $agents += @('--env-file', (Join-Path $root '.env')) }
+$agents += @('-f', (Join-Path $PSScriptRoot 'docker-compose.postgres.yml'), '-f', (Join-Path $PSScriptRoot 'docker-compose.yml'), '-f', (Join-Path $PSScriptRoot 'docker-compose.local.yml'))
+$groups = [ordered]@{'product-a'=$product; 'mcp'=$mcp; 'agents'=$agents}
+$names = if ($Group -eq 'all') { @($groups.Keys) } else { @($Group) }
+if ($Action -eq 'start') {
+    if ($names -contains 'agents') {
+        $identityArtifact = Join-Path $PSScriptRoot 'out/server/dist/modules/identity/http-profile-identity.js'
+        if (-not (Test-Path -LiteralPath $identityArtifact)) { throw 'Build the updated platform with pnpm pack:local yourself first.' }
+        $approvalPath = Join-Path $PSScriptRoot 'out/local-mcp-approval.json'
+        if (-not (Test-Path -LiteralPath $approvalPath)) { throw 'The current MCP deployment approval artifact is missing.' }
+        $approvedServers = @(Get-Content -LiteralPath $approvalPath -Raw | ConvertFrom-Json)
+        if (-not $approvedServers.Count -or ($approvedServers | Where-Object { $_.authentication -ne 'current-user' })) {
+            throw 'The deployment approval is stale; rebuild MCP and run pnpm pack:local yourself.'
+        }
+    }
+    if (($names -contains 'mcp') -and -not (Test-Path -LiteralPath (Join-Path $mcpDeploy 'out/product-a-mcp/dist/http/business-auth.js'))) {
+        throw 'Build the updated MCP with pnpm pack:product-a yourself first.'
+    }
+    if ($names -contains 'product-a') {
+        $productRoot = Split-Path $productDeploy -Parent
+        foreach ($frontend in @('govern', 'portal')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $productRoot "web/apps/$frontend/dist/index.html"))) {
+                throw "Missing Product A $frontend frontend. Build it yourself first."
             }
         }
-        $localConfig = [IO.File]::ReadAllLines((Join-Path $PSScriptRoot '.env.local'))
-        $keyConfigured = ($localConfig | Where-Object { $_ -match '^(DEEPSEEK_API_KEY|OPENAI_API_KEY)=.+' }) -or
-            (-not [string]::IsNullOrWhiteSpace($env:DEEPSEEK_API_KEY)) -or
-            (-not [string]::IsNullOrWhiteSpace($env:OPENAI_API_KEY))
-        if (-not $keyConfigured -and -not (Test-Path -LiteralPath '.env')) {
-            throw 'Configure a model key in deploy/.env.local before starting; never send it in chat.'
+        foreach ($module in @('gateway','service/auth-center','service/bms-service','service/data-source','service/data-metadata','service/iot-device','service/iot-collection')) {
+            $target = Join-Path $productRoot "microservice/$module/target"
+            if (-not (Get-ChildItem -LiteralPath $target -Filter '*-SNAPSHOT.jar' -ErrorAction SilentlyContinue)) {
+                throw "Missing Product A artifact for $module. Run Maven package first."
+            }
         }
     }
-    $composeArguments = @('compose')
-    $composeArguments += @('--env-file', 'deploy/.env.local')
-    if (Test-Path -LiteralPath '.env') { $composeArguments += @('--env-file', '.env') }
-    $composeArguments += @('-f', 'deploy/docker-compose.postgres.yml',
-        '-f', 'deploy/docker-compose.yml', '-f', 'deploy/docker-compose.local.yml')
+}
+if ($Action -eq 'stop') { [array]::Reverse($names) }
+foreach ($name in $names) {
+    $arguments = @('compose') + $groups[$name]
     switch ($Action) {
-        'start' { $composeArguments += @('up', '-d', '--build', '--wait', '--wait-timeout', '180') }
-        'stop' { $composeArguments += @('stop') }
-        'status' { $composeArguments += @('ps') }
-        'logs' { $composeArguments += @('logs', '--tail', '100', 'agent-server', 'product-a-mcp') }
+        'start' { $arguments += @('up', '-d', '--build', '--wait', '--wait-timeout', '300') }
+        'stop' { $arguments += @('stop') }
+        'status' { $arguments += @('ps') }
+        'logs' { $arguments += @('logs', '--tail', '80') }
     }
-    & docker @composeArguments
-    if ($LASTEXITCODE -ne 0) { throw "Docker Compose $Action failed (exit $LASTEXITCODE)." }
-    if ($Action -eq 'start') {
-        Write-Host 'Demo: http://127.0.0.1:5411  Web: http://127.0.0.1:8080  Embed: http://127.0.0.1:5511'
-    }
-} finally { Pop-Location }
+    Invoke-CheckedDocker -Arguments $arguments
+}
+if ($Action -eq 'start') { Write-Host 'Product A: http://127.0.0.1:19001  Assistant: http://127.0.0.1:8080  Embed: http://127.0.0.1:5511' }

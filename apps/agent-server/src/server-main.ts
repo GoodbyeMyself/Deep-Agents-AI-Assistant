@@ -14,6 +14,7 @@ import {
 import { importInstalledPlatformExtension } from "./composition/platform-extension-bootstrap.js";
 import { createNodeHttpServer } from "./http/node-http.js";
 import { connectApprovedHttpMcps, readHttpMcpDeploymentConfig } from "./composition/http-mcp-bootstrap.js";
+import { HttpProfileIdentityProvider } from "./modules/identity/http-profile-identity.js";
 
 function envValue(name: string): string | undefined {
   const value = process.env[name]?.trim();
@@ -51,8 +52,12 @@ const httpMcpConfig = readHttpMcpDeploymentConfig(httpMcpFile === undefined ? pr
 if (developmentMcpConfig !== undefined && httpMcpConfig !== undefined)
   throw new Error("Configure either stdio or HTTP MCP, not both.");
 const mcpConfig = httpMcpConfig ?? developmentMcpConfig;
+const identityFile = envValue("IDENTITY_HTTP_CONFIG_FILE");
+const identity = identityFile === undefined ? undefined
+  : new HttpProfileIdentityProvider(JSON.parse(readFileSync(identityFile, "utf8")));
 const mcpRuntime =
-  httpMcpConfig !== undefined ? await connectApprovedHttpMcps(httpMcpConfig)
+  httpMcpConfig !== undefined ? await connectApprovedHttpMcps(httpMcpConfig,
+    identity === undefined ? undefined : (context) => identity.credentialFor(context))
     : developmentMcpConfig === undefined ? undefined : await connectApprovedDevelopmentMcps(developmentMcpConfig);
 const extensionConfig = readPlatformExtensionDeploymentConfig(process.env);
 const extensionRuntime =
@@ -79,6 +84,7 @@ const skillPermissions: readonly FilesystemPermission[] = [
   { operations: ["write"], paths: ["/**"], mode: "deny" },
 ];
 const application = await createAgentApplication({
+  ...(identity === undefined ? {} : { identity }),
   model,
   ...(envValue("DATABASE_URL") === undefined ? {} : { databaseUrl: envValue("DATABASE_URL")! }),
   ...(tools.length === 0 ? {} : { tools }),

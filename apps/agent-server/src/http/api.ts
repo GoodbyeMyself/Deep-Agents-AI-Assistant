@@ -122,9 +122,13 @@ export function createApiHandler(options: {
           "cache-control": "no-store",
         });
       }
-      const principal = await options.identity.authenticate(request.headers.get("authorization"));
+      const principal = await options.identity.authenticate(request.headers.get("authorization"), request);
       if (!limiter.check(principal.id))
         throw new ServiceError("RATE_LIMITED", "Too many requests.", 429);
+
+      if (url.pathname === "/api/v1/identity" && request.method === "GET")
+        return json({ id: principal.id, displayName: principal.displayName,
+          isAdmin: principal.permissionScopes.includes("platform:admin") }, 200, { "cache-control": "no-store" });
 
       if (url.pathname === "/api/v1/context/snapshots" && request.method === "POST") {
         const mode =

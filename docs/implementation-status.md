@@ -581,3 +581,32 @@ SDK 发布、生产 IdP 委派或生产 CSP/域名白名单已上线。
 - 修复 pnpm 隔离布局下的 Extension 解析：bare package 由 Agent Server Composition Root 从自身依赖
   解析后交给通用 Loader 校验，避免 Runtime 包目录无法看到消费方 Extension；专项测试覆盖真实已安装
   `host-navigation` 包解析。
+# Product A YAML 接口配置补充（2026-10-24）
+
+- 对应 ADR-034：MCP 仓 Product A 增加启动时 YAML 快照加载、受限 Schema 校验、单次只读网关请求和自动 Tool 注册；一文件可声明多个 Tool。现有四个代码 Tool 保留。
+- 配置目录使用 PRODUCT_A_MCP_TOOLS_DIR，网关使用 PRODUCT_A_GATEWAY_BASE_URL；不包含跨系统业务契约或主平台自动批准能力。
+- 配置接口要求可信认证主体与租户，不使用 Mock 身份回退，不合成 Evidence。真实 IdP/网关凭证及对象、行、列权限仍需业务环境验收。
+- 新增 YAML 接入文档、非默认启用示例与 Mock 测试；仅执行测试文件语法检查和 diff 空白检查，未安装新依赖，未运行 pnpm、类型检查、构建或测试。退出门禁待用户验证。
+
+# Demo Product A 业务接口补充（2026-10-24）
+
+- ADR-035：Demo Product A 增加独立 Spring Boot 业务 API，提供授权目录搜索、表详情与只读批量评分，前后端共用 catalog.json。MCP config/tools 增加三个 demo_ 查询，旧 examples/mock 已删除。
+- 现有本地 Docker 编排增加 product-a-api；用户预先 Maven 构建 JAR，pack:local 复制产物与 MCP 配置，并仅为固定 YAML 摘要批准三个明确 Tool。平台 Runtime 不持有业务契约。
+- 最终业务授权由 Demo API 执行；验签恢复主体，按既有演示用户隔离对象。数据仍为演示数据，不生成可信 Evidence。
+- 本轮 mvn -B test：4项测试通过，覆盖真实 Spring Controller、认证、权限、分页和参数校验；Compose config 与脚本语法检查通过。新增前端 JSON 引入、MCP 本地 HTTP 配置、Docker 打包与全链路 pnpm 门禁待用户验证，未运行任何 pnpm 命令。
+# 真实 Product A 与独立部署迁移（2026-10-24，ADR-036）
+
+- 新 Product A 保留自身前后端与 MySQL/Nacos；MCP business 模式只注册五个真实只读 YAML Tool，原有 Mock 不暴露到这套部署。旧 ADR-035 演示 API 与旧 demo_ 配置已退出当前流程。
+- 平台增加配置化 HTTP profile 认证与内存凭证仓；Cookie 保持 HttpOnly，iframe 通过一次性 ticket 获得短期平台凭证，业务 JWT 不进入 Session/Graph/Tool 参数。MCP 每次恢复真实业务主体，原网关执行原系统授权；输出按字段白名单裁剪。
+- 三个 Compose 项目为 assistant-product-a、assistant-mcp、assistant-agents；最后一组仅 postgres、agent-server、assistant-web、assistant-embed。构建、批准产物和生命周期分仓，主仓只做平台与部署配置。
+- 按用户明确授权清理旧 assistant-local 六容器、旧演示 PostgreSQL 卷和主仓三个旧业务部署副本，保留旧治理业务容器及其他项目。用户随后明确授权 Codex 执行后续命令至部署完成，本次依此执行 pnpm 门禁。
+- 实际验证：Maven 九模块 package 成功，网关身份头防伪测试通过；Govern/Portal 类型检查和生产构建成功；MCP 类型检查、Product A 20项及Product B 6项测试、pack:product-a 成功；平台 lint、typecheck（含build）、全量test、身份专项3项和pack:local通过。真实部署YAML解析及固定摘要批准已验证。
+- 三个 Compose 项目共15个容器启动完成，up --wait成功；verify-local检查页面/API和未登录401通过。真实网关身份、数据源、工作台接口返回200且success=true；平台恢复管理员身份，MCP ready且五Tool approved。
+- 真实模型验收Run `29a58200-99ff-4bc8-b25d-b33d6b93fa65` completed，工作台查询返回新数据库的八项0计数，未填充Mock数据或Evidence。该接口验收使用仅在内存中签发的短期管理员测试JWT，不代表图形验证码登录已经验收；浏览器中业务登录页和独立助手未登录提示已确认，用户仍需登录检查嵌入交互。
+
+## 真实页面与宿主导航修复（ADR-037）
+
+- 已修复ES Module加载方式、门户公网模板baseURL/假Token、页面fake接口及Nginx内部端口重定向。活跃业务路由改用真实查询组件；当前仅提供查询展示，不宣称已完成原模板的写入表单。
+- Product A MCP移除旧四个Mock实现及假身份回退，扩为七个真实YAML工具；源码和发布文件清单明确隔离协议测试夹具。平台Compose传入host-navigation固定批准，Product A声明五个真实路由动作白名单。
+- 管理端、门户真实验证码登录与工作台展示已在浏览器完成；嵌入助手真实查询、action.navigate生成及实际跳转数据源管理通过，成功Run为`56550c45-8d16-4794-b04e-d5fc8c081d52`。MCP11/11、Product B7/7、平台扩展10/10、AG-UI导航4/4、宿主回归4/4通过，双前端类型/构建、平台lint、打包和部署检查通过。
+- 数据仍为空；首次浏览器模型请求失败、同会话重试成功，根因未从现有安全日志确定。完整证据、边界和执行命令见[真实导航验收记录](acceptance/evolution/product-a-real-navigation-2026-10-24.md)。

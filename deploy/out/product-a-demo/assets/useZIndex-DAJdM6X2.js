@@ -1,2 +1,0 @@
-import{r as e}from"./rolldown-runtime-XKyaHtl9.js";import{F as t,in as n}from"./SizeContext-DVxfGvIF.js";var r=e(n()),i=r.createContext(void 0),a=100,o=1e3,s={Modal:a,Drawer:a,Popover:a,Popconfirm:a,Tooltip:a,Tour:a,FloatButton:a},c={SelectLike:50,Dropdown:50,DatePicker:50,Menu:50,ImagePreview:1},l=e=>e in s,u=(e,n)=>{let[,a]=t(),o=r.useContext(i),u=l(e),d;if(n!==void 0)d=[n,n];else{let t=o??0;t+=u?(o?0:a.zIndexPopupBase)+s[e]:c[e],d=[o===void 0?n:t,t]}return d};export{u as n,i as r,o as t};
-//# sourceMappingURL=useZIndex-DAJdM6X2.js.map

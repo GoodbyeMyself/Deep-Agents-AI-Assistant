@@ -23,20 +23,30 @@ pnpm --filter @assistant/assistant-web e2e
 
 ### 连哪个 Agent Server？
 
-独立 Web 只通过 Vite 把 `/api` 代理到 `ASSISTANT_API_TARGET`（默认 `http://127.0.0.1:3000`）。页面上使用的 `mock-token-*` 是 **演示用身份 Mock**，不代表后端一定是假模型。
+独立 Web 只通过 Vite 把 `/api` 代理到 `ASSISTANT_API_TARGET`。配置从**仓库根目录** `.env` 读取（见 `apps/assistant-web/.env.example`）。
 
-| 启动方式 | 典型 API 地址 | 模型 |
+| 启动方式 | 典型 API 地址 | 身份 |
 | --- | --- | --- |
-| 根目录 `pnpm demo`（推荐） | `http://127.0.0.1:3410`（由启动器注入环境变量） | 真实 DeepSeek + Product A 插件 |
-| 仅 `pnpm dev:web` | 默认 `3000` | 若未起服务会失败；若起了 `demo-server serve:web-offline` 则为 **假模型固定话术** |
-| `pnpm dev:server` + `dev:web` | `3000` 上的 `agent-server` | 真实 DeepSeek（需根目录 `.env`） |
+| `deploy/local-compose.ps1 start -Group agents` + `pnpm dev:web` | 默认 `http://127.0.0.1:3411` | 对接 Docker 时自动 `VITE_IDENTITY_MODE=external`；须先在 Govern `http://127.0.0.1:19001` 登录 |
+| `pnpm dev:server` + `dev:web` | `ASSISTANT_API_TARGET=http://127.0.0.1:3000` | 页面 Mock 身份 `mock-token-*` |
+| 根目录历史 `pnpm demo` | `3410` 等（由启动器注入） | 见 demo 文档 |
+
+Docker 平台 API 在 **3411**，容器内 Web 在 **8080**；本地 Vite 默认 **5173**。`deploy/identity-http.local.json` 的 `browserOrigins` 须包含你的 Vite 源（已含 `5173`）；改过后需重启 `agent-server` 容器。
 
 在 **运行状态** 页查看模型：`deepseek` / `deepseek-chat` 表示真实演示；`offline` / `fake-model` 表示离线 Mock。
 
-单独调试前端时，请先 `pnpm demo` 或手动：
+单独调试前端并对接 Docker 平台：
 
-```bash
-# PowerShell（需已有 3410 上的 Standalone Agent Server，例如完整 pnpm demo）
-$env:ASSISTANT_API_TARGET="http://127.0.0.1:3410"
-pnpm --filter @assistant/assistant-web dev
+```powershell
+# 可选：把 apps/assistant-web/.env.example 中的项写入仓库根 .env
+pnpm dev:web
+# 启动日志应显示：/api 代理 → http://127.0.0.1:3411
+```
+
+本机 `pnpm dev:server`（3000）时：
+
+```powershell
+$env:ASSISTANT_API_TARGET="http://127.0.0.1:3000"
+$env:VITE_IDENTITY_MODE=""
+pnpm dev:web
 ```

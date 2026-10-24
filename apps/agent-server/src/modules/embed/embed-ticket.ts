@@ -1,7 +1,7 @@
 import type { VerifiedPrincipal } from "@assistant/context";
 import { randomBytes } from "node:crypto";
 
-import type { MockIdentityProvider } from "../identity/identity.js";
+import type { EmbedIdentityProvider } from "../identity/identity.js";
 import { ServiceError } from "../../shared/errors.js";
 
 interface TicketRecord {
@@ -13,7 +13,7 @@ interface TicketRecord {
 export class EmbedTicketService {
   readonly #tickets = new Map<string, TicketRecord>();
 
-  constructor(private readonly identity: MockIdentityProvider) {}
+  constructor(private readonly identity: EmbedIdentityProvider) {}
 
   create(
     principal: VerifiedPrincipal,

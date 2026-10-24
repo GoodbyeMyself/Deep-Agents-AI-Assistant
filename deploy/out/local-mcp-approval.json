@@ -6,25 +6,41 @@
       "product-a-mcp:3101"
     ],
     "localDemoHttp": true,
+    "authentication": "current-user",
     "approvals": [
       {
-        "toolName": "get_quality_trend",
-        "schemaDigest": "1e186399a946e06fc251f535634a99d0321b409c8c2eb190b97e3a397745812e",
+        "toolName": "list_data_sources",
+        "schemaDigest": "92ad7e272b0c4893307e2dc56f8b078a2c652d8c3bb0dc24ed289b9a309a64a4",
         "riskLevel": "read"
       },
       {
-        "toolName": "list_table_sample_rows",
-        "schemaDigest": "03f9da7b21f7b939067086a0a4ce73fd4616a8775adab5521a1a4d01a5b8ec02",
+        "toolName": "get_data_source",
+        "schemaDigest": "8c39aa1da154f515dea9f494e4cfbfc4b1104a19157c4a4495f7c989bbb35345",
         "riskLevel": "read"
       },
       {
-        "toolName": "get_table_metadata",
-        "schemaDigest": "2d2e31afa7ad70790db3d6be316135f46929f2cba0e16e1d06ebec2d41cf17ab",
+        "toolName": "list_metadata_tasks",
+        "schemaDigest": "596749ad9c9a15cf17aa6998f218e880300bc8772950c5270f8dc912fe2ffbc4",
         "riskLevel": "read"
       },
       {
-        "toolName": "search_data_assets",
-        "schemaDigest": "2036488ae65f79f663b176ba9c77c6534169df8d24b6e17b5f8f5a008b0fb761",
+        "toolName": "get_metadata_task",
+        "schemaDigest": "099aad65b3e7a7bd45df11fb38f299355ae4aa30dcfe177595abb21532dfdcfd",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "get_workbench_overview",
+        "schemaDigest": "e9ad1cdc20d05db14d2d2b83fdafab3050a45872878accc96cc66e046beb1cda",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "list_devices",
+        "schemaDigest": "0561d2f561100a311ce76c6d1a4f84acb544f23db96c4a8329b1e0388344b928",
+        "riskLevel": "read"
+      },
+      {
+        "toolName": "list_device_collection_tasks",
+        "schemaDigest": "8a6b324275adbb6b1b60e152020464d2c82d6ba710804c96f63b1b8934928b2c",
         "riskLevel": "read"
       }
     ]

@@ -10,6 +10,7 @@ const serverSchema = z.object({
   serverId: z.string().regex(/^[a-z0-9][a-z0-9._-]{1,63}$/),
   endpoint: z.string().url(), allowedHosts: z.array(z.string().min(1)).min(1),
   localDemoHttp: z.boolean().default(false),
+  authentication: z.enum(["local-delegation", "current-user"]).default("local-delegation"),
   approvals: z.array(z.object({ toolName: z.string().min(1).max(128),
     schemaDigest: z.string().regex(/^[a-f0-9]{64}$/), riskLevel: z.literal("read") }).strict()).min(1),
 }).strict();
@@ -41,11 +42,13 @@ function tokenFor(secret: string, audience: string, subject: string, tenant: str
 /** Each invocation owns an authenticated connection; credentials never cross principals. */
 export async function connectApprovedHttpMcps(
   config: NonNullable<ReturnType<typeof readHttpMcpDeploymentConfig>>,
+  credentialFor?: (context: { principalId: string; tenantId: string; authorizationRef?: string | undefined }) => Promise<string>,
 ): Promise<ConfiguredMcpRuntime> {
   const tools: ConfiguredMcpRuntime["tools"][number][] = [];
   const serverStatuses: Record<string, unknown>[] = [];
   const toolStatuses: Record<string, unknown>[] = [];
   for (const server of config.servers) {
+    if (server.authentication === "current-user" && !credentialFor) throw new Error("Current-user MCP requires a trusted credential provider.");
     const approvals: McpToolApproval[] = server.approvals.map((approval) => ({ ...approval, serverId: server.serverId }));
     const validate = async (client: Parameters<typeof discoverMcpTools>[0]) => {
       const candidates = await discoverMcpTools(client, { serverId: server.serverId });
@@ -60,10 +63,11 @@ export async function connectApprovedHttpMcps(
       tools.push(...createMcpLangChainTools({ client: discovery.client, approvedTools: snapshot.approved,
         invokeTool: async (request, options, context) => {
           const identity = z.object({ principalId: z.string().min(1), tenantId: z.string().min(1),
-            runId: z.string().uuid(), sessionId: z.string().uuid() }).parse(context);
+            runId: z.string().uuid(), sessionId: z.string().uuid(), authorizationRef: z.string().optional() }).parse(context);
           options.signal?.throwIfAborted();
           const connection = await connectApprovedHttpMcp(server,
-            () => Promise.resolve(tokenFor(config.secret, server.serverId, identity.principalId, identity.tenantId, false)));
+            () => server.authentication === "current-user" ? credentialFor!(identity)
+              : Promise.resolve(tokenFor(config.secret, server.serverId, identity.principalId, identity.tenantId, false)));
           try {
             options.signal?.throwIfAborted();
             await validate(connection.client);

@@ -8,7 +8,7 @@ const backups = resolve(root, "deploy/backups");
 mkdirSync(backups, { recursive: true });
 const filename = resolve(backups, `assistant-${new Date().toISOString().replaceAll(/[:.]/g, "-")}.sql`);
 const temporary = `${filename}.partial`;
-const child = spawn("docker", ["compose", "--env-file", "deploy/.env.local", "-f", "deploy/docker-compose.postgres.yml",
+const child = spawn("docker", ["compose", "--project-name", "assistant-agents", "--env-file", "deploy/.env.local", "-f", "deploy/docker-compose.postgres.yml",
   "exec", "-T", "postgres", "pg_dump", "-U", "assistant", "-d", "assistant", "--no-owner", "--no-privileges"],
 { cwd: root, stdio: ["ignore", "pipe", "ignore"], windowsHide: true });
 const completion = new Promise((resolveExit, reject) => {

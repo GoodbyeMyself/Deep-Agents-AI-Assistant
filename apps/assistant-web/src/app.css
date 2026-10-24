@@ -44,22 +44,51 @@ select {
   min-height: 100%;
 }
 
+.assistant-web-layout .ant-pro-global-header-logo h1 {
+  font-size: 16px;
+}
+
+.assistant-web-layout .ant-pro-layout-header.ant-layout-header {
+  display: flex;
+  align-items: center;
+  line-height: normal;
+}
+
+.assistant-web-layout .ant-pro-global-header {
+  flex: 1;
+  min-width: 0;
+}
+
+.assistant-web-layout .ant-pro-global-header-header-actions-item > .assistant-web-header-user {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  max-height: 40px;
+  margin: 0;
+  padding: 4px 10px;
+  line-height: 1.5;
+}
+
+.assistant-web-header-user {
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.assistant-web-header-user--select {
+  gap: 8px;
+  margin-right: 4px;
+  font-size: 12px;
+}
+
+.assistant-web-header-user--select .ant-select {
+  min-width: 140px;
+}
+
 .assistant-web-layout--chat .ant-pro-page-container-children-content {
   padding: 0;
 }
 
-.assistant-web-identity {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-right: 8px;
-  color: rgba(0, 0, 0, 0.65);
-  font-size: 12px;
-}
-
-.assistant-web-identity .ant-select {
-  min-width: 140px;
-}
 
 .assistant-web-chat-host {
   height: 100%;
@@ -163,11 +192,11 @@ select {
 }
 
 @media (max-width: 760px) {
-  .assistant-web-identity span {
+  .assistant-web-header-user--select > span:first-child {
     display: none;
   }
 
-  .assistant-web-identity .ant-select {
+  .assistant-web-header-user--select .ant-select {
     min-width: 120px;
   }
 

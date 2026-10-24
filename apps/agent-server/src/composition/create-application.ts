@@ -7,7 +7,7 @@ import type { FilesystemPermission } from "deepagents";
 import { createApiHandler } from "../http/api.js";
 import { ContextService, MockContextAuthorizer } from "../modules/context/context-service.js";
 import { EmbedTicketService } from "../modules/embed/embed-ticket.js";
-import { MockIdentityProvider } from "../modules/identity/identity.js";
+import { MockIdentityProvider, type EmbedIdentityProvider } from "../modules/identity/identity.js";
 import { AgentRunner, type StreamingAgent } from "../modules/session/runner.js";
 import { AgentService } from "../modules/session/service.js";
 import { InMemoryAgentStore } from "../modules/session/store.js";
@@ -32,6 +32,7 @@ export async function createAgentApplication(options: {
   };
   runtimePolicy?: AgentRuntimePolicyInput;
   databaseUrl?: string;
+  identity?: EmbedIdentityProvider;
 }) {
   const modelConfig = options.modelConfig ?? {
     id: "default",
@@ -64,7 +65,7 @@ export async function createAgentApplication(options: {
     mcpTools: options.mcpTools ?? [],
     platformExtensions: options.platformExtensions ?? [],
   });
-  const identity = new MockIdentityProvider();
+  const identity = options.identity ?? new MockIdentityProvider();
   const embedTickets = new EmbedTicketService(identity);
   const handler = createApiHandler({ identity, service, embedTickets });
   return Promise.resolve({

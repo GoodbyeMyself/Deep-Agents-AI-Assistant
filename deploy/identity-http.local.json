@@ -1,0 +1,19 @@
+{
+  "endpoint": "http://product-a-gateway:8080/api/auth-center/me",
+  "allowedOrigin": "http://product-a-gateway:8080",
+  "cookieName": "governance_access_token",
+  "tenantId": "product-a",
+  "localHttp": true,
+  "idPath": "data.id",
+  "displayNamePath": "data.nickname",
+  "rolePath": "data.role",
+  "statusPath": "data.status",
+  "activeStatus": "ENABLED",
+  "adminRoles": ["ADMIN"],
+  "browserOrigins": [
+    "http://127.0.0.1:19001",
+    "http://127.0.0.1:8080",
+    "http://127.0.0.1:5511",
+    "http://127.0.0.1:5173"
+  ]
+}
